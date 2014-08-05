@@ -1,0 +1,13 @@
+development:
+  adapter: postgis
+  host: localhost
+  database: zup_api_dev
+  username: root
+  password:
+
+test:
+  adapter: postgis
+  host: localhost
+  database: zup_api_test
+  username: root
+  password:

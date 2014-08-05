@@ -1,0 +1,49 @@
+<%# encoding: utf-8 %>
+<tr>
+  <td bgcolor="#FAFAFA" style="padding: 30px 65px 30px 65px;">
+    <h3 style="color: #b7b7b7; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: -0.5px; font-family: 'Open Sans', Arial; margin: 0px;">
+      Protocolo <%= report.protocol %>
+    </h3>
+
+    <hr style="border:0px;color:#FFF;border-bottom: 1px solid #cfcfcf;margin: 10px 0 10px 0px;">
+
+    <%# History of statuses %>
+    <table align="center" border="0" cellpadding="0" cellspacing="9" width="386">
+      <% report.status_history.each do |history| %>
+        <% status = history.new_status %>
+        <tr>
+          <td bgcolor="<%= status.color %>" width="100" style="border-radius: 20px;color: #FFF; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: -0.5px; font-family: 'Open Sans', Arial; margin: 0px;padding: 5px;text-align: center;">
+            <%= status.title %>
+          </td>
+          <td>
+            <b style="color: #656565; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: -0.5px; font-family: 'Open Sans', Arial;">
+              DESDE <%= short_date(history.created_at) %>
+            </b>
+          </td>
+        </tr>
+      <% end %>
+    </table>
+
+    <hr style="border:0px;color:#FFF;border-bottom: 1px solid #cfcfcf;margin: 10px 0 10px 0px;">
+
+    <h1 style="color: #000; font-size: 29px; font-weight: 300; font-family: 'Open Sans', Arial; margin: 20px 0 0 0;">
+      <%= report.category.title %>
+    </h1>
+    <p style="color: #656565; font-size: 14px; font-weight: 300; font-family: 'Open Sans', Arial; margin: 0px 0 5px 0;">
+      <%= report.address.force_encoding('UTF-8') unless report.address.nil? %>
+    </p>
+    <p style="color: #656565; font-size: 14px; font-weight: 600; font-family: 'Open Sans', Arial; margin: 0px 0 25px 0; letter-spacing: -1;">
+      ENVIADA EM <%= l(report.created_at, format: :long) %>
+    </p>
+
+    <% if report.images.any? %>
+      <%= image_tag(report.images.first.url, { width: 386, height: 386 }) %>
+    <% else %>
+      <%= image_of_position(report, { width: 386, height: 386 })  %>
+    <% end %>
+
+    <p style="color: #909090; font-size: 14px; font-weight: 300; font-family: 'Open Sans', Arial; margin: 25px 0 25px 0;">
+      <%= report.description.force_encoding('UTF-8') unless report.description.nil? %>
+    </p>
+  </td>
+</tr>

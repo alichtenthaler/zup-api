@@ -1,0 +1,33 @@
+ZUP-API
+=======
+
+{<img alt="Wercker status" src="https://app.wercker.com/status/3f058a911b065afe93e7bef8d45b865b"/>}[https://app.wercker.com/project/bykey/3f058a911b065afe93e7bef8d45b865b]
+
+Deploy
+======
+
+== Development
+  * Install ruby-2.0.0-p353
+  * Install PostGIS
+    -> Install Dependencies:
+      - GEOS
+      - PROJ
+      - GDAL
+  * Install Postgres
+    -> Configs:
+      - Copy config/database.yml.sample to config/database.yml
+      - Change the username and password if necessary on config/database.yml
+      - Create databases
+        - With rake: $ rake db:create
+        - Or Postgres command: createdb zup_api_dev
+      - Enable PostGIS: $ psql -d zup_api_dev -c "CREATE EXTENSION postgis;"
+      - Run migrations: $ rake db:migrate
+  * Run Seed: $ rake db:seed
+
+Requirements
+============
+
+* Postgres 9.1
+* postGIS 2.1
+* ImageMagick
+

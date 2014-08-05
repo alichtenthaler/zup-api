@@ -1,0 +1,254 @@
+require "spec_helper"
+
+describe Inventory::Categories::API do
+  let(:user) { create(:user) }
+
+  context "POST /inventory/categories" do
+    let!(:valid_params) do
+      JSON.parse <<-JSON
+        {
+          "title": "Awesome category",
+          "description": "Check this category!",
+          "plot_format": "pin",
+          "color": "#e2e2e2",
+          "require_item_status": true,
+          "statuses": [{
+            "title": "Initial Status",
+            "color": "#ff0000"
+          }]
+        }
+      JSON
+    end
+
+    it "creates the category" do
+      parameters = valid_params.merge({
+        "icon" => Base64.encode64(fixture_file_upload('images/valid_report_category_icon.png').read)
+      })
+
+      post "/inventory/categories", parameters, auth(user)
+      expect(response.status).to eq(201)
+      body = parsed_body
+
+      expect(body).to include("message")
+      expect(body).to include("category")
+      expect(body["category"]).to_not be_empty
+      last_category = Inventory::Category.last
+      expect(last_category.title).to eq("Awesome category")
+      expect(last_category.description).to eq("Check this category!")
+      expect(last_category.color).to eq("#e2e2e2")
+      expect(last_category.require_item_status).to eq(true)
+      expect(last_category.statuses).to_not be_empty
+    end
+  end
+
+  context "GET /inventory/categories/:id" do
+    let(:category) { create(:inventory_category) }
+    let(:valid_params) do
+      JSON.parse <<-JSON
+        {
+          "display_type": "full"
+        }
+      JSON
+    end
+
+    it "returns the category" do
+      get "/inventory/categories/#{category.id}", valid_params, auth(user)
+      expect(response.status).to eq(200)
+      body = parsed_body["category"]
+
+      expect(body["id"]).to eq(category.id)
+      expect(body).to include("sections")
+      expect(body['pin']).to_not be_empty
+      expect(body['icon']).to_not be_empty
+      expect(body['marker']).to_not be_empty
+      expect(body['icon'].keys).to match_array(['default', 'retina'])
+      expect(body['pin'].keys).to match_array(['default', 'retina'])
+      expect(body['marker'].keys).to match_array(['default', 'retina'])
+      expect(body['original_icon']).to_not be_empty
+      expect(body['sections']).to_not be_empty
+    end
+
+    it "returns error if category id doesn't exists" do
+      get "/inventory/categories/123123123", nil, auth(user)
+      expect(response.status).to eq(404)
+      expect(parsed_body).to include("error")
+    end
+  end
+
+  context "PUT /inventory/categories/:id" do
+    let(:category) { create(:inventory_category) }
+    let(:valid_params) do
+      JSON.parse <<-JSON
+        {
+          "title": "A COOLER NAME!",
+          "description": "A COOLER DESCRIPTION!",
+          "require_item_status": true
+        }
+      JSON
+    end
+
+    it "updates the category" do
+      put "/inventory/categories/#{category.id}", valid_params, auth(user)
+      expect(response.status).to eq(200)
+      body = parsed_body
+
+      expect(body).to include("message")
+      category.reload
+      expect(category.title).to eq("A COOLER NAME!")
+      expect(category.description).to eq("A COOLER DESCRIPTION!")
+      expect(category.require_item_status).to eq(true)
+    end
+
+    it "return error messages if record doesn't exists" do
+      put "/inventory/categories/12312312", valid_params, auth(user)
+      expect(response.status).to eq(404)
+      expect(parsed_body).to include("error")
+    end
+  end
+
+  context "GET /inventory/categories" do
+    let!(:category) { create(:inventory_category, title: "Bueiros") }
+    let!(:categories) { create_list(:inventory_category, 5) }
+    let(:valid_params) do
+      JSON.parse <<-JSON
+        {
+          "title": "bue"
+        }
+      JSON
+    end
+
+    it "returns all categories when no params are given" do
+      get "/inventory/categories", nil, auth(user)
+      expect(response.status).to eq(200)
+      body = parsed_body
+
+      expect(body).to include("categories")
+      expect(body["categories"].size).to eq(6)
+    end
+
+    it "return category with specified title (partial)" do
+      get "/inventory/categories", valid_params, auth(user)
+      expect(response.status).to eq(200)
+      body = parsed_body
+
+      expect(body).to include("categories")
+      expect(body["categories"].size).to eq(1)
+      expect(body["categories"].first["title"]).to eq(category.title)
+    end
+
+    context "pagination" do
+      let(:valid_params) do
+        JSON.parse <<-JSON
+          {
+            "per_page": 3
+          }
+        JSON
+      end
+
+      it "returns the correct number of records on 'per_page'" do
+        get "/inventory/categories", valid_params, auth(user)
+        expect(response.status).to eq(200)
+        body = parsed_body
+
+        expect(body["categories"].size).to eq(3)
+      end
+
+      it "returns all categories paginated" do
+        valid_params['page'] = 2
+        get "/inventory/categories", valid_params, auth(user)
+        expect(response.status).to eq(200)
+        body = parsed_body
+
+        expect(body["categories"].size).to eq(3)
+        expect(
+          body["categories"].map do |category|
+            category['id']
+          end
+        ).to_not eq(categories[0..2].map(&:id))
+      end
+    end
+  end
+
+  context "DELETE /inventory/categories/:id" do
+    let(:category) { create(:inventory_category) }
+
+    it "destroys the category" do
+      delete "/inventory/categories/#{category.id}", nil, auth(user)
+      expect(response.status).to eq(200)
+      expect(parsed_body).to include("message")
+      expect(Inventory::Category.find_by(id: category.id)).to be_nil
+    end
+  end
+
+  context "PUT /inventory/categories/:id/form" do
+    let(:category) { create(:inventory_category) }
+    let(:valid_params) do
+      JSON.parse <<-JSON
+        {
+          "sections": [{
+            "title": "Dados técnicos",
+            "permissions": {},
+            "position": 1,
+            "fields": [{
+              "title": "latitude",
+              "kind": "text",
+              "size": "M",
+              "permissions": {},
+              "label": "Latitude",
+              "position": 0,
+              "maximum": 10,
+              "minimum": 1,
+              "required": true
+            }]
+          }]
+        }
+      JSON
+    end
+
+    it "creates the sections and fields correctly" do
+      put "/inventory/categories/#{category.id}/form", valid_params, auth(user)
+      expect(response.status).to eq(200)
+      expect(parsed_body).to include("message")
+      created_section = category.reload.sections.last
+      created_field = created_section.fields.first
+
+      expect(created_section.title).to eq("Dados técnicos")
+      expect(created_section.id).to_not be_nil
+      expect(created_section.position).to eq(1)
+      expect(created_field.title).to eq("latitude")
+      expect(created_field.id).to_not be_nil
+      expect(created_field.maximum).to eq(10)
+      expect(created_field.minimum).to eq(1)
+      expect(created_field.required).to be_truthy
+    end
+
+    it "updates the section and field if it already exists" do
+      section = category.sections.create(title: generate(:name))
+      field = section.fields.create(title: "anotherfield", position: 10, kind: "url")
+      valid_params["sections"].first["fields"].first["id"] = field.id
+      valid_params["sections"].first["id"] = section.id
+
+      put "/inventory/categories/#{category.id}/form", valid_params, auth(user)
+
+      expect(response.status).to eq(200)
+      expect(parsed_body).to include("message")
+      field.reload
+      expect(field.title).to eq("latitude")
+      expect(field.position).to eq(0)
+      expect(field.kind).to eq("text")
+      expect(field.options).to_not be_blank
+    end
+  end
+
+  context "GET /inventory/categories/:id/form" do
+    let!(:category) { create(:inventory_category_with_sections) }
+
+    it "returns the form for the category, including sections and fields" do
+      get "/inventory/categories/#{category.id}/form", nil, auth(user)
+      expect(response.status).to eq(200)
+      body = parsed_body
+      expect(body).to include("sections")
+      expect(body["sections"].map { |d| d["title"]}).to eq(category.sections.map(&:title))
+    end
+  end
+end

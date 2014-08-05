@@ -1,0 +1,122 @@
+module Inventory::Formulas
+  class API < Grape::API
+    helpers do
+      def load_category(inventory_category_id = nil)
+        Inventory::Category.find(inventory_category_id || safe_params[:category_id])
+      end
+    end
+
+    namespace :categories do
+      route_param :category_id do
+
+        # /inventory/categories/:id/formulas
+        resource :formulas do
+
+          desc "Create a new formula for the category"
+          params do
+            requires :category_id, type: Integer
+            requires :inventory_status_id, type: Integer
+            requires :conditions, type: Array
+            optional :groups_to_alert, type: Array
+          end
+          post do
+            authenticate!
+            validate_permission!(:create, Inventory::Formula)
+
+            category = load_category
+
+            status = category.statuses.find(params[:inventory_status_id])
+            formula = category.formulas.build
+
+            # Conditions
+            #
+            # It accepts a hash like this:
+            #
+            #   {
+            #     ...
+            #     "conditions": [
+            #       {
+            #         "inventory_field_id": 123,
+            #         "operator": "equal_to",
+            #         "content": "test"
+            #       }
+            #     ]
+
+            formula.status = status
+            formula.groups_to_alert = params[:groups_to_alert].map(&:to_i)
+            formula.conditions_attributes = params[:conditions]
+            formula.save!
+
+            present formula, using: Inventory::Formula::Entity
+          end
+
+          desc "Updates a formula"
+          params do
+            requires :category_id, type: Integer
+            optional :inventory_status_id, type: Integer
+            optional :conditions, type: Array
+            optional :groups_to_alert, type: Array
+          end
+          put ':formula_id' do
+            authenticate!
+            validate_permission!(:create, Inventory::Formula)
+
+            category = load_category
+
+            formula = category.formulas.find(params[:formula_id])
+
+            formula_params = safe_params.permit(:inventory_status_id)
+
+            unless params[:conditions].blank?
+              formula_params[:conditions_attributes] = params[:conditions]
+            end
+
+            unless params[:groups_to_alert].blank?
+              formula_params[:groups_to_alert] = params[:groups_to_alert].map(&:to_i)
+            end
+
+            formula.update!(formula_params)
+
+            present formula, using: Inventory::Formula::Entity
+          end
+
+          desc "Destroy a formula"
+          delete ':formula_id' do
+            authenticate!
+            validate_permission!(:destroy, Inventory::Formula)
+
+            category = load_category
+            formula = category.formulas.find(params[:formula_id])
+            formula.destroy!
+
+            if formula && formula.destroy
+              { message: "Formula destroyed sucessfully" }
+            else
+              error!("Formula not found", 404)
+            end
+          end
+
+          route_param :formula_id do
+            resources :alerts do
+              desc "List affected items by an alert"
+              get ':alert_id' do
+                authenticate!
+                validate_permission!(:view, Inventory::Formula)
+
+                category = load_category
+                formula = category.formulas.find(params[:formula_id])
+                alert = formula.alerts.find(params[:alert_id])
+
+                present alert, using: Inventory::FormulaAlert::Entity
+              end
+            end
+          end
+
+        end
+
+      end
+    end
+
+  end
+end
+

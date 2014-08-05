@@ -1,0 +1,44 @@
+box: wercker/ubuntu12.04-ruby2.0.0
+services:
+    - wercker/redis
+    - mies/postgis@0.0.5
+build:
+    steps:
+        - bundle-install
+        - rails-database-yml:
+            service: postgresql
+        - script:
+            name: Set up database
+            code: bundle exec rake db:schema:load
+        - script:
+            name: rspec
+            code: bundle exec rspec -f d --color
+    after-steps:
+        - hipchat-notify:
+            token: $HIPCHAT_TOKEN
+            room-id: $HIPCHAT_ROOM_ID
+            from-name: wercker
+deploy:
+    steps:
+        - add-to-known_hosts:
+            hostname: $SERVER_HOSTNAME
+        - script:
+            name: Execute deploy script
+            code: |
+                echo -e "$SECRETIVE_PRIVATE" > ~/.ssh/id_rsa
+                echo -e "$SECRETIVE_PUBLIC" > ~/.ssh/id_rsa.pub
+
+                echo "BatchMode yes" >> ~/.ssh/config
+                echo "IdentityFile $HOME/.ssh/id_rsa" >> ~/.ssh/config
+
+                sudo chmod -R 0600 "/home/ubuntu/.ssh/id_rsa"
+                sudo chmod -R 0600 "/home/ubuntu/.ssh/id_rsa.pub"
+                sudo chmod -R 0600 "/home/ubuntu/.ssh/config"
+
+                git remote add deploy_site $REPO_URL
+                git push -f deploy_site $WERCKER_GIT_COMMIT:$REPO_BRANCH
+    after-steps:
+        - hipchat-notify:
+            token: $HIPCHAT_TOKEN
+            room-id: $HIPCHAT_ROOM_ID
+            from-name: wercker
