@@ -7,6 +7,7 @@ class Reports::ItemStatusHistory < Reports::Base
   validates :new_status, presence: true
 
   default_scope order('id ASC')
+  scope :public, -> { joins(:new_status).where(new_status: { private: false }) }
 
   class Entity < Grape::Entity
     expose :id

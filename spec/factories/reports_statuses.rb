@@ -22,8 +22,14 @@ FactoryGirl.define do
     end
 
     trait :with_category do
-      before(:create) do |status|
-        status.categories << create(:reports_category)
+      ignore do
+        category create(:reports_category)
+      end
+
+      after(:create) do |status, evaluator|
+        status.status_categories.create(
+          category: evaluator.category
+        )
       end
     end
   end

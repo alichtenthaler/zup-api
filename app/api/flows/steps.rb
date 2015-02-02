@@ -15,7 +15,7 @@ module Flows::Steps
         authenticate!
         validate_permission!(:update, Step)
 
-        Flow.find(safe_params[:flow_id]).steps.update_order!(safe_params[:ids])
+        Flow.find(safe_params[:flow_id]).steps.update_order!(safe_params[:ids], current_user)
         { message: I18n.t(:steps_order_updated) }
       end
 
@@ -86,9 +86,7 @@ module Flows::Steps
 
         safe_params[:group_ids].each do |group_id|
           group = Group.find(group_id)
-          permissions = group.permissions[permission_type].present? ? eval(group.permissions[permission_type]) : []
-          group.permissions[permission_type] = permissions.push(safe_params[:id])
-          group.permissions_will_change!
+          group.permission.update(permission_type => group.permission.send(permission_type) + [safe_params[:id].to_i])
           group.save!
         end
 
@@ -109,14 +107,21 @@ module Flows::Steps
 
         safe_params[:group_ids].each do |group_id|
           group = Group.find(group_id)
-          permissions = group.permissions[permission_type].present? ? eval(group.permissions[permission_type]) : []
-          permissions.delete(safe_params[:id])
-          group.permissions[permission_type] = permissions
-          group.permissions_will_change!
+          group.permission.update(permission_type => group.permission.send(permission_type) - [safe_params[:id].to_i])
           group.save!
         end
 
         { message: I18n.t(:permissions_updated) }
+      end
+
+      desc 'Get specific version of Step'
+      params { optional :display_type, type: String, desc: 'Display type for Step' }
+      get ':id/versions/:step_version' do
+        authenticate!
+        validate_permission!(:view, Step)
+
+        step = Flow.find(safe_params[:flow_id]).steps.find(safe_params[:id]).version(safe_params[:step_version].to_i)
+        { step: Step::Entity.represent(step, display_type: safe_params[:display_type]) }
       end
 
       mount Flows::Steps::Fields::API

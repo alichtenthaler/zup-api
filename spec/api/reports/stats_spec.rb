@@ -41,4 +41,32 @@ describe Reports::Stats::API do
 
     expect(body['stats'].size).to eq(Reports::Category.count)
   end
+
+  context "with private status" do
+    let!(:status) { create(:status) }
+
+    before do
+      Reports::StatusCategory.create(
+        category: report_category,
+        status: status,
+        private: true
+      )
+    end
+
+    it "doesn't return the private status" do
+      get '/reports/stats', valid_params, auth(user)
+      expect(response.status).to eq(200)
+      body = parsed_body
+
+      expect(body).to include('stats')
+      expect(body['stats'].size).to eq(1)
+      expect(body['stats'].first['statuses'].size).to eq(report_category.statuses.count - 1)
+
+      returned_status = body['stats'].first['statuses'].select do |s|
+        s['status_id'] == status.id
+      end.first
+
+      expect(returned_status).to be_nil
+    end
+  end
 end

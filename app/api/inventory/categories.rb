@@ -9,12 +9,18 @@ module Inventory::Categories
       end
       get do
         validate_permission!(:view, Inventory::Category)
+
         title = safe_params[:title]
+        permissions = UserAbility.new(current_user)
+
+        if permissions.can?(:manage, Inventory::Category)
+          categories = Inventory::Category.all
+        else
+          categories = Inventory::Category.where(id: permissions.inventory_categories_visible)
+        end
 
         if title
-          categories = Inventory::Category.fuzzy_search(title: "%#{title}%")
-        else
-          categories = Inventory::Category.all.load
+          categories = categories.fuzzy_search(title: "%#{title}%")
         end
 
         {
@@ -38,6 +44,8 @@ module Inventory::Categories
           desc: 'Defines if item of category should have a status'
         optional :sections, type: Array, desc: "An array of sections and it's fields"
         optional :statuses, type: Array, desc: "An array of statuses, fields required: title and color"
+        optional :groups_can_view, type: Array, desc: "An array of groups ids"
+        optional :groups_can_edit, type: Array, desc: "An array of groups ids"
       end
       post do
         authenticate!
@@ -45,7 +53,7 @@ module Inventory::Categories
 
         category_params = safe_params.permit(
           :title, :description, :color, :plot_format,
-          :icon, :require_item_status
+          :icon, :require_item_status, :private
         )
 
         category_params[:marker] = safe_params[:icon]
@@ -62,6 +70,12 @@ module Inventory::Categories
           creator = Inventory::CreateFormForCategory.new(category, safe_params)
           creator.create!
         end
+
+        groups_can_view = safe_params[:groups_can_view]
+        groups_can_edit = safe_params[:groups_can_edit]
+
+        Groups::UpdatePermissions.update(groups_can_view, category, :inventory_categories_can_view)
+        Groups::UpdatePermissions.update(groups_can_edit, category, :inventory_categories_can_edit)
 
         {
           message: "Category created with success",
@@ -102,6 +116,8 @@ module Inventory::Categories
         optional :color, type: String, desc: 'Color of the category'
         optional :require_item_status, type: Boolean,
           desc: 'Defines if item of category should have a status'
+        optional :groups_can_view, type: Array, desc: "An array of groups ids"
+        optional :groups_can_edit, type: Array, desc: "An array of groups ids"
       end
       put ':id' do
         authenticate!
@@ -111,7 +127,7 @@ module Inventory::Categories
 
         category_params = safe_params.permit(
           :title, :description, :color, :plot_format,
-          :require_item_status
+          :require_item_status, :private
         )
         category_params = category_params.merge(
           icon: params[:icon],
@@ -121,9 +137,31 @@ module Inventory::Categories
 
         category.update!(category_params)
         category.reload
-        category.icon.recreate_versions!
-        category.pin.recreate_versions!
-        category.marker.recreate_versions!
+
+        if params[:icon] || params[:color]
+          begin
+            category.icon.cache_stored_file!
+            category.icon.retrieve_from_cache!(category.icon.cache_name)
+            category.icon.recreate_versions!
+
+            category.pin.cache_stored_file!
+            category.pin.retrieve_from_cache!(category.pin.cache_name)
+            category.pin.recreate_versions!
+
+            category.marker.cache_stored_file!
+            category.marker.retrieve_from_cache!(category.marker.cache_name)
+            category.marker.recreate_versions!
+
+            category.save!
+          rescue NoMethodError => e
+          end
+        end
+
+        groups_can_view = safe_params[:groups_can_view]
+        groups_can_edit = safe_params[:groups_can_edit]
+
+        Groups::UpdatePermissions.update(groups_can_view, category, :inventory_categories_can_view)
+        Groups::UpdatePermissions.update(groups_can_edit, category, :inventory_categories_can_edit)
 
         {
           message: "Category updated successfully",
@@ -140,10 +178,23 @@ module Inventory::Categories
         category = Inventory::Category.find(safe_params.delete(:id))
         validate_permission!(:edit, category)
 
-        creator = Inventory::CreateFormForCategory.new(category, safe_params)
-        creator.create!
+        if !category.locked? || (category.locked? && category.locker == current_user)
+          creator = Inventory::CreateFormForCategory.new(category, safe_params)
+          creator.create!
 
-        { message: "Form updated successfully!" }
+          form = Inventory::RenderCategoryFormData.new(category).render
+
+          {
+            message: "Form updated successfully!",
+            form: form
+          }
+        else
+          {
+            message: "Form locked",
+            locker: User::Entity.represent(category.locker),
+            locked_at: category.locked_at
+          }
+        end
       end
 
       desc "Get the form structure for category"
@@ -153,6 +204,16 @@ module Inventory::Categories
         validate_permission!(:edit, category)
 
         Inventory::RenderCategoryFormData.new(category).render
+      end
+
+      desc "Update the access to the inventory category, locking it"
+      patch ':id/update_access' do
+        authenticate!
+
+        category = Inventory::Category.find(safe_params[:id])
+        validate_permission!(:edit, category)
+
+        Inventory::CategoryLocking.new(category, current_user).lock!
       end
     end
   end

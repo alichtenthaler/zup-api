@@ -12,9 +12,10 @@ describe Reports::Categories::API do
         user_response_time: 1 * 60 * 60 * 24,
         color: '#f3f3f3',
         inventory_categories: inventory_categories.map(&:id),
+        confidential: true,
         statuses: {
-          0 =>  { title: 'Open', color: '#ff0000', initial: true, final: false, active: true },
-          1 =>  { title: 'Closed', color: '#f4f4f4', final: true, initial: false, active: false }
+          0 =>  { title: 'Open', color: '#ff0000', initial: true, final: false, active: true, private: false },
+          1 =>  { title: 'Closed', color: '#f4f4f4', final: true, initial: false, active: false, private: false }
         }
     }
   end
@@ -47,17 +48,40 @@ describe Reports::Categories::API do
       expect(response.status).to eq(400)
       body = parsed_body
 
-      expect(body['error'].keys).to match_array(['title', 'color', 'initial', 'final', 'active'])
+      expect(body['error'].keys).to match_array(['title', 'color', 'initial', 'final', 'active', 'private'])
+    end
+
+    it "creates a subcategory" do
+      category = create(:reports_category)
+
+      valid_params[:parent_id] = category.id
+      post '/reports/categories', valid_params, auth(user)
+      body = parsed_body
+
+      expect(body['category']['parent_id']).to eq(category.id)
     end
   end
 
   context 'GET /reports/categories/:id' do
+    let(:category) { create(:reports_category_with_statuses) }
+
     it 'should display an category' do
-      category = fg.create(:reports_category_with_statuses)
-      get '/reports/categories/' + category.id.to_s
+      get "/reports/categories/#{category.id}"
       expect(response.status).to eq(200)
-      body = JSON.parse(response.body)['category']
+      body = parsed_body['category']
       expect(body['id']).to eq(category.id)
+    end
+
+    context "category with subcategory" do
+      let!(:subcategory) { create(:reports_category_with_statuses, parent_category: category) }
+
+      it "should return the subcategories" do
+        get "/reports/categories/#{category.id}", { display_type: 'full' }
+        expect(response.status).to eq(200)
+        body = parsed_body
+        expect(body['category']['subcategories']).to_not be_empty
+        expect(body['category']['subcategories'].first['id']).to eq(subcategory.id)
+      end
     end
   end
 
@@ -131,6 +155,20 @@ describe Reports::Categories::API do
 
       expect(category[:icon]).to_not be_empty
       expect(category[:marker]).to_not be_empty
+    end
+
+    context "updating the confidentiality of reports" do
+      let(:category) { create(:reports_category_with_statuses) }
+
+      it "updates the confidential flag" do
+        valid_params[:confidential] = true
+        put '/reports/categories/' + category.id.to_s, valid_params, auth(user)
+        expect(response.status).to eq(204)
+
+        category.reload
+
+        expect(category).to be_confidential
+      end
     end
   end
 

@@ -5,12 +5,13 @@ class Reports::SearchItems
               :end_date, :limit,
               :group_by_inventory_item, :sort,
               :order, :paginator, :page,
-              :per_page, :address, :query
+              :per_page, :address, :query,
+              :signed_user, :overdue
 
-  def initialize(opts = {})
+  def initialize(user, opts = {})
     @position_params = opts[:position]
     @address         = opts[:address]
-    @category        = opts[:category]
+    @category        = opts[:category] || []
     @inventory_item  = opts[:inventory_item]
     @user            = opts[:user]
     @query           = opts[:query]
@@ -18,12 +19,14 @@ class Reports::SearchItems
     @begin_date      = opts[:begin_date]
     @end_date        = opts[:end_date]
     @statuses        = opts[:statuses]
+    @overdue         = opts[:overdue]
     @sort            = opts[:sort] || "created_at"
     @order           = opts[:order] || "desc"
     @paginator       = opts[:paginator]
     @group_by_inventory_item = opts[:group_by_inventory_item]
     @page            = opts[:page] || 1
     @per_page        = opts[:per_page] || 25
+    @signed_user     = user
   end
 
   def search
@@ -32,6 +35,8 @@ class Reports::SearchItems
     scope = scope.includes(:images)
     scope = scope.includes(:category)
     scope = scope.includes(:inventory_item)
+
+    permissions = UserAbility.new(signed_user)
 
     if inventory_item
       scope = scope.where(inventory_item_id: inventory_item.id)
@@ -66,14 +71,25 @@ class Reports::SearchItems
 
     if category
       if category.kind_of?(Array)
-        category_ids = category.map { |c| c.id }
+        categories_ids = category.map { |c| c.id }
       elsif category.kind_of?(Reports::Category)
-        category_ids = category.id
+        categories_ids = [category.id]
       end
-
-      scope = scope.where(reports_category_id: category_ids)
     end
 
+    if !permissions.can?(:manage, Reports::Category)
+      categories_user_can_see = permissions.reports_categories_visible
+
+      if categories_ids.any?
+        categories_ids = categories_user_can_see & categories_ids
+      else
+        categories_ids = categories_user_can_see
+      end
+
+      scope = scope.where(reports_category_id: categories_ids)
+    elsif categories_ids.any?
+      scope = scope.where(reports_category_id: categories_ids)
+    end
 
     if position_params
       # If it is a simple hash, transform to complex one
@@ -128,6 +144,10 @@ class Reports::SearchItems
       end
     end
 
+    if overdue
+      scope = scope.where(overdue: overdue)
+    end
+
     if statuses
       scope = scope.where('reports_status_id IN (?)', statuses.map(&:id))
     end
@@ -144,7 +164,6 @@ class Reports::SearchItems
         sort = 'scope.id'
       end
 
-      scope = scope.paginate(page: page, per_page: per_page)
       scope = Reports::Item.find_by_sql(
         <<-SQL
           SELECT scope.*
@@ -154,9 +173,13 @@ class Reports::SearchItems
           ORDER BY #{sort} #{order.upcase}
         SQL
       )
-    else
-      if position_params.blank? && !paginator.nil?
+
+      if paginator.present?
         scope = paginator.call(scope)
+      end
+    else
+      if position_params.blank?
+        scope = scope.paginate(page: page, per_page: per_page)
       end
     end
 

@@ -31,7 +31,8 @@ class CategoryStatus < Grape::Validations::Validator
       color: HexaString,
       initial: Boolean,
       final: Boolean,
-      active: Boolean
+      active: Boolean,
+      private: Boolean
     }
 
     errors = []

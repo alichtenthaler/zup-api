@@ -125,6 +125,14 @@ Exemplo de resposta:
         }
     }
 
+### Especificando o usuário na criação do relato
+
+Para especificar o usuário na criação do relato, utilize-se do parâmetro `user_id` na requisição:
+
+    {
+      ...
+      'user_id': 123
+    }
 
 ## Alterando um relato
 
@@ -458,3 +466,30 @@ __Query string:__
 
     &limit=40
     &zoom=18                             O zoom reportado pelo Google Maps
+
+### Criando um relato sigiloso
+
+Para um relato ser marcado como sigiloso, nos endpoints de criação e atualização de um item de relato, você pode passar o parâmetro `confidential` com `true` para torná-lo sigiloso.
+
+__URI__ `POST /reports/:category_id/items`
+
+    {
+      ...
+      "confidential": true
+    }
+
+## Migrando um relato de categoria
+
+Para alterar um relado de categoria, basta utilizar o seguinte endpoint:
+
+__URI__ `PUT /reports/:category_id/items/:id/change_category`
+
+E passar os seguintes parâmetros:
+
+    {
+      "new_category_id": 2,
+      "new_status_id": 3
+    }
+
+* `new_category_id` é o id da nova categoria do item
+* `new_status_id` é o id do novo status (já da nova categoria) que o item deve ser transferido para

@@ -2,8 +2,8 @@ require 'spec_helper'
 
 def add_can_execute_step(user, step)
   group = user.groups.first
-  can_execute_step = group.can_execute_step || []
-  group.update(permissions: group.permissions.merge(can_execute_step: can_execute_step.push(step)))
+  group.permission.can_execute_step = group.permission.can_execute_step + [step.to_i]
+  group.save
 end
 
 describe Cases::API, versioning: true do
@@ -68,7 +68,7 @@ describe Cases::API, versioning: true do
         ]}
       end
 
-      before { user.groups.first.update(permissions: user.groups.first.permissions.merge(can_execute_step: [valid_params[:step_id]])) }
+      before { user.groups.first.permission.update(can_execute_step: [valid_params[:step_id]]) }
 
       context  'no authentication' do
         before { post '/cases', valid_params }
@@ -139,11 +139,10 @@ describe Cases::API, versioning: true do
             {id: fields.second.id, value: 'chapolim@chaves.com'}
         ]}
       end
-
       let(:kase) { Case.last }
 
       before do
-        user.groups.first.update(permissions: user.groups.first.permissions.merge(can_execute_step: [valid_params[:step_id]]))
+        user.groups.first.permission.update(can_execute_step: [valid_params[:step_id]])
         post '/cases', valid_params, auth(user)
       end
 
@@ -241,7 +240,7 @@ describe Cases::API, versioning: true do
       let(:kase) { Case.last }
 
       before do
-        user.groups.first.update(permissions: user.groups.first.permissions.merge(can_execute_step: [valid_params[:step_id]]))
+        user.groups.first.permission.update(can_execute_step: [valid_params[:step_id]])
         post '/cases', valid_params, auth(user)
       end
 
@@ -282,7 +281,7 @@ describe Cases::API, versioning: true do
       let(:kase) { Case.last }
 
       before do
-        user.groups.first.update(permissions: user.groups.first.permissions.merge(can_execute_step: [valid_params[:step_id]]))
+        user.groups.first.permission.update(can_execute_step: [valid_params[:step_id]])
         post '/cases', valid_params, auth(user)
       end
 
@@ -324,7 +323,7 @@ describe Cases::API, versioning: true do
       let(:kase) { Case.last }
 
       before do
-        user.groups.first.update(permissions: user.groups.first.permissions.merge(can_execute_step: [valid_params[:step_id]]))
+        user.groups.first.permission.update(can_execute_step: [valid_params[:step_id]])
         post '/cases', valid_params, auth(user)
       end
 
@@ -359,7 +358,7 @@ describe Cases::API, versioning: true do
     end
     let(:fields) { flow.steps.first.fields.all }
     let!(:kase) do
-      user.groups.first.update(permissions: user.groups.first.permissions.merge(can_execute_step: [flow.steps.first.id]))
+      user.groups.first.permission.update(can_execute_step: [flow.steps.first.id])
       case_params = {step_id: flow.steps.first.id,
                      initial_flow_id: flow.id,
                      version: flow.last_version,
@@ -368,7 +367,7 @@ describe Cases::API, versioning: true do
       Case.first
     end
 
-    before { user.groups.first.update permissions: user.groups.first.permissions.merge(flow_can_view_all_steps: [flow.id]) }
+    before { user.groups.first.permission.update(flow_can_view_all_steps: [flow.id]) }
 
     context  'no authentication' do
       before { get "/cases/#{kase.id}" }
@@ -397,7 +396,7 @@ describe Cases::API, versioning: true do
           context 'with display_type is full'do
             before do
               # set manage_flows=false to realy test Case permissions
-              user.groups.first.update permissions: user.groups.first.permissions.merge('manage_flows' => false)
+              user.groups.first.permission.update(manage_flows: false)
               get "/cases/#{kase.id}", {display_type: 'full'}, auth(user)
             end
 
@@ -454,7 +453,7 @@ describe Cases::API, versioning: true do
           initial_flow_id: flow.id,
           version: flow.last_version,
           fields: [{id: fields.first.id, value: '1'}]}
-        user.groups.first.update permissions: user.groups.first.permissions.merge(can_execute_step: [case_params[:step_id]])
+        user.groups.first.permission.update(can_execute_step: [case_params[:step_id]])
         post '/cases', case_params, auth(user)
         Case.first
       end
@@ -489,22 +488,50 @@ describe Cases::API, versioning: true do
           end
 
           context 'successfully' do
-            let(:success_params) { valid_params.merge(step_id: fields.first.step.id, fields: [{id: fields.first.id, value: '10'}]) }
-            before do
-              user.groups.first.update permissions: user.groups.first.permissions.merge(can_execute_step: [flow.steps.first.id])
-              put "/cases/#{kase.id}", valid_params, auth(user)
-              put "/cases/#{kase.id}", success_params, auth(user)
-            end
-            it     { expect(response.status).to be_a_success_request }
-            it     { expect(parsed_body).to be_a_success_message_with(I18n.t(:update_step_success)) }
-            it     { expect(parsed_body['case']).to be_an_entity_of(kase.reload, display_type: 'full') }
+            context 'when not send data fields' do
+              let(:success_params) { valid_params.merge(step_id: fields.first.step.id, fields: [{id: fields.first.id, value: '10'}]) }
+              before do
+                kase.update disabled_steps: []
+                user.groups.first.permission.update(can_execute_step: [valid_params[:step_id]])
+                put "/cases/#{kase.id}", valid_params.merge(fields: []), auth(user)
+              end
 
-            it 'should finish the Case' do
-              expect(kase.reload.status).to eql('finished')
+              it { expect(response.status).to be_a_success_request }
+              it { expect(parsed_body).to be_a_success_message_with(I18n.t(:started_step_success)) }
+              it { expect(parsed_body['case']).to be_an_entity_of(kase.reload, display_type: 'full') }
+
+              it 'should is active the Case' do
+                expect(kase.reload.status).to eql('active')
+              end
+
+              it 'should has 4 log entries' do
+                expect(kase.reload.cases_log_entries.count).to eql 2
+              end
+
+              it 'should last log entries action started_step' do
+                expect(kase.reload.cases_log_entries.last.action).to eql 'started_step'
+              end
             end
 
-            it 'should has 4 log entries' do
-              expect(kase.reload.cases_log_entries.count).to eql 4
+            context 'when send data fields' do
+              let(:success_params) { valid_params.merge(step_id: fields.first.step.id, fields: [{id: fields.first.id, value: '10'}]) }
+              before do
+                user.groups.first.permission.update(can_execute_step: [flow.steps.first.id])
+                put "/cases/#{kase.id}", valid_params, auth(user)
+                put "/cases/#{kase.id}", success_params, auth(user)
+              end
+
+              it { expect(response.status).to be_a_success_request }
+              it { expect(parsed_body).to be_a_success_message_with(I18n.t(:update_step_success)) }
+              it { expect(parsed_body['case']).to be_an_entity_of(kase.reload, display_type: 'full') }
+
+              it 'should finish the Case' do
+                expect(kase.reload.status).to eql('finished')
+              end
+
+              it 'should has 4 log entries' do
+                expect(kase.reload.cases_log_entries.count).to eql 4
+              end
             end
           end
         end
@@ -532,12 +559,12 @@ describe Cases::API, versioning: true do
           initial_flow_id: flow.id,
           version: flow.last_version,
           fields: [{id: fields.first.id, value: '1'}]}
-        user.groups.first.update permissions: user.groups.first.permissions.merge(can_execute_step: [case_params[:step_id]])
+        user.groups.first.permission.update(can_execute_step: [case_params[:step_id]])
         post '/cases', case_params, auth(user)
         Case.first
       end
 
-      before { user.groups.first.update permissions: user.groups.first.permissions.merge(can_execute_step: [valid_params[:step_id]]) }
+      before { user.groups.first.permission.update(can_execute_step: [valid_params[:step_id]]) }
 
       context  'no authentication' do
         before { put "/cases/#{kase.id}", valid_params }
@@ -604,12 +631,12 @@ describe Cases::API, versioning: true do
           initial_flow_id: flow.id,
           version: flow.last_version,
           fields: [{id: fields.first.id, value: '1'}]}
-        user.groups.first.update permissions: user.groups.first.permissions.merge(can_execute_step: [case_params[:step_id]])
+        user.groups.first.permission.update(can_execute_step: [case_params[:step_id]])
         post '/cases', case_params, auth(user)
         Case.first
       end
 
-      before { user.groups.first.update permissions: user.groups.first.permissions.merge(can_execute_step: [valid_params[:step_id]]) }
+      before { user.groups.first.permission.update(can_execute_step: [valid_params[:step_id]]) }
 
       context  'no authentication' do
         before { put "/cases/#{kase.id}", valid_params }
@@ -678,12 +705,12 @@ describe Cases::API, versioning: true do
           initial_flow_id: flow.id,
           version: flow.last_version,
           fields: [{id: fields.first.id, value: '1'}]}
-        user.groups.first.update permissions: user.groups.first.permissions.merge(can_execute_step: [case_params[:step_id]])
+        user.groups.first.permission.update(can_execute_step: [case_params[:step_id]])
         post '/cases', case_params, auth(user)
         Case.first
       end
 
-      before { user.groups.first.update permissions: user.groups.first.permissions.merge(can_execute_step: [valid_params[:step_id]]) }
+      before { user.groups.first.permission.update(can_execute_step: [valid_params[:step_id]]) }
 
       context  'no authentication' do
         before { put "/cases/#{kase.id}", valid_params }
@@ -739,7 +766,7 @@ describe Cases::API, versioning: true do
           initial_flow_id: flow.id,
           version: flow.last_version,
           fields: [{id: fields.first.id, value: '1'}]}
-        user.groups.first.update permissions: user.groups.first.permissions.merge(can_execute_step: [case_params[:step_id]])
+        user.groups.first.permission.update(can_execute_step: [case_params[:step_id]])
         post '/cases', case_params, auth(user)
         Case.first
       end
@@ -817,12 +844,12 @@ describe Cases::API, versioning: true do
         initial_flow_id: flow.id,
         version: flow.last_version,
         fields: [{id: fields.first.id, value: '1'}]}
-      user.groups.first.update permissions: user.groups.first.permissions.merge(can_execute_step: [case_params[:step_id]])
+      user.groups.first.permission.update(can_execute_step: [case_params[:step_id]])
       post '/cases', case_params, auth(user)
       Case.first
     end
 
-    before { user.groups.first.update permissions: user.groups.first.permissions.merge(can_execute_step: [valid_params[:step_id]]) }
+    before { user.groups.first.permission.update(can_execute_step: [valid_params[:step_id]]) }
 
     context  'no authentication' do
       before { put "/cases/#{kase.id}/case_steps/#{kase.case_steps.last.id}" }
@@ -921,8 +948,8 @@ describe Cases::API, versioning: true do
     end
 
     before do
-      user.groups.first.update       permissions: user.groups.first.permissions.merge('manage_flows' => false)
-      other_user.groups.first.update permissions: other_user.groups.first.permissions.merge('manage_flows' => false)
+      user.groups.first.permission.update(manage_flows: false)
+      other_user.groups.first.permission.update(manage_flows: false)
     end
 
     context 'no authentication' do
@@ -1006,6 +1033,21 @@ describe Cases::API, versioning: true do
         it { expect(case_ids).to_not include kase3.id }
       end
 
+      context 'with filter by completed' do
+        let(:case_ids) { parsed_body['cases'].map { |k| k['id'] } }
+        before do
+          add_can_execute_step(user, kase1.case_steps.first.step.id)
+          put "/cases/#{kase1.id}/finish", {resolution_state_id: kase1.initial_flow.resolution_states.first.id}, auth(user)
+          get '/cases', {completed: true}, auth(user)
+        end
+
+        it { expect(response.status).to be_a_success_request }
+        it { expect(parsed_body['cases'].count).to eql 1 }
+        it { expect(case_ids).to include kase1.id }
+        it { expect(case_ids).to_not include kase2.id }
+        it { expect(case_ids).to_not include kase3.id }
+      end
+
       context 'without filter' do
         context 'when user can see all items' do
           context 'when not use display_type full' do
@@ -1079,7 +1121,7 @@ describe Cases::API, versioning: true do
         initial_flow_id: flow.id,
         version: flow.last_version,
         fields: [{id: fields.first.id, value: '1'}]}
-      user.groups.first.update permissions: user.groups.first.permissions.merge(can_execute_step: [case_params[:step_id]])
+      user.groups.first.permission.update(can_execute_step: [case_params[:step_id]])
       post '/cases', case_params, auth(user)
       Case.first
     end
@@ -1146,12 +1188,12 @@ describe Cases::API, versioning: true do
         initial_flow_id: flow.id,
         version: flow.last_version,
         fields: [{id: flow.steps.first.fields.first.id, value: '1'}]}
-      user.groups.first.update permissions: user.groups.first.permissions.merge(can_execute_step: [case_params[:step_id]])
+      user.groups.first.permission.update(can_execute_step: [case_params[:step_id]])
       post '/cases', case_params, auth(user)
       Case.first
     end
 
-    before { user.groups.first.update permissions: user.groups.first.permissions.merge(flow_can_delete_own_cases: true) }
+    before { user.groups.first.permission.update(flow_can_delete_own_cases: true) }
 
     context  'no authentication' do
       before { delete "/cases/#{kase.id}" }
@@ -1200,12 +1242,12 @@ describe Cases::API, versioning: true do
       flow.reload
     end
     let!(:kase) do
-      user.groups.first.update(permissions: user.groups.first.permissions.merge(flow_can_delete_own_cases: true))
+      user.groups.first.permission.update(flow_can_delete_own_cases: true)
       case_params = {step_id: flow.steps.first.id,
         initial_flow_id: flow.id,
         version: flow.last_version,
         fields: [{id: flow.steps.first.fields.first.id, value: '1'}]}
-      user.groups.first.update permissions: user.groups.first.permissions.merge(can_execute_step: [case_params[:step_id]])
+      user.groups.first.permission.update(can_execute_step: [case_params[:step_id]])
       post '/cases', case_params, auth(user)
       kase = Case.first
       delete "/cases/#{kase.id}", {}, auth(user)
@@ -1246,6 +1288,62 @@ describe Cases::API, versioning: true do
 
           it 'should has a last log entries with action=restored_case' do
             expect(kase.cases_log_entries.last.action).to eql 'restored_case'
+          end
+        end
+      end
+    end
+  end
+
+  describe 'to get Case history' do
+    let(:flow) do
+      flow = create(:flow, initial: true, steps: [build(:step_type_form_without_fields)])
+      flow.steps.first.fields.create title: 'user_age', field_type: 'integer'
+      flow.reload
+    end
+    let!(:kase) do
+      case_params = {step_id: flow.steps.first.id,
+        initial_flow_id: flow.id,
+        version: flow.last_version,
+        fields: [{id: flow.steps.first.fields.first.id, value: '1'}]}
+      user.groups.first.permission.update(can_execute_step: [case_params[:step_id]])
+      post '/cases', case_params, auth(user)
+      kase = Case.first
+    end
+
+    context  'no authentication' do
+      before { get "/cases/#{kase.id}/history" }
+      it     { expect(response.status).to be_an_unauthorized }
+    end
+
+    context 'with authentication' do
+      context 'and user can\'t view the Case' do
+        let(:error) { I18n.t(:permission_denied, action: I18n.t(:show), table_name: I18n.t(:cases)) }
+
+        before { get "/cases/#{kase.id}/history", {}, auth(guest_user) }
+        it     { expect(response.status).to be_a_forbidden }
+        it     { expect(parsed_body).to be_an_error(error) }
+      end
+
+      context 'and user can delete the Case' do
+        context 'and failure' do
+          context 'because case not found' do
+            before { get '/cases/123456789/history', {}, auth(user) }
+            it     { expect(response.status).to be_a_not_found }
+            it     { expect(parsed_body).to be_an_error('Couldn\'t find Case with id=123456789') }
+          end
+        end
+
+        context 'successfully' do
+          context 'when not sent display_type full' do
+            before { get "/cases/#{kase.id}/history", {}, auth(user) }
+            it     { expect(response.status).to be_a_success_request }
+            it     { expect(parsed_body['cases_log_entries']).to include_an_entity_of(kase.cases_log_entries.first) }
+          end
+
+          context 'when sent display_type full' do
+            before { get "/cases/#{kase.id}/history", {display_type: 'full'}, auth(user) }
+            it     { expect(response.status).to be_a_success_request }
+            it     { expect(parsed_body['cases_log_entries']).to include_an_entity_of(kase.cases_log_entries.first, display_type: 'full') }
           end
         end
       end

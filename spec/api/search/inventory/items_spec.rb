@@ -8,6 +8,31 @@ describe Search::Inventory::Items::API do
 
     let(:category) { create(:inventory_category_with_sections) }
 
+    context "filtered by permission" do
+      let!(:items) { create_list(:inventory_item, 3, category: category) }
+      let!(:other_category) { create(:inventory_category_with_sections) }
+      let!(:other_items) { create_list(:inventory_item, 2, category: other_category) }
+      let!(:group) { create(:group) }
+
+      before do
+        group.permission.inventory_categories_can_view = [other_category.id]
+        group.save!
+        user.groups = [group]
+        user.save!
+      end
+
+      it "only can see the category it has the permission" do
+        get "/search/inventory/items?display_type=basic&order=desc&page=1&per_page=30&sort=title", nil, auth(user)
+        expect(response.status).to eq(200)
+        body = parsed_body
+
+        expect(body['items'].size).to eq(2)
+        expect(body['items'].map do |i|
+          i['id']
+        end).to match_array(other_items.map(&:id))
+      end
+    end
+
     context "by address" do
       let(:items) do
         create_list(:inventory_item, 10, category: category)
@@ -511,7 +536,10 @@ describe Search::Inventory::Items::API do
           {
             "fields": {
               "#{field.id}": {
-                "includes": ["is", "a test"]
+                "includes": {
+                  "0": "is",
+                  "1": "a test"
+                }
               }
             }
           }
@@ -556,7 +584,10 @@ describe Search::Inventory::Items::API do
           {
             "fields": {
               "#{field.id}": {
-                "excludes": ["is", "a test"]
+                "excludes": {
+                  "0": "is",
+                  "1": "a test"
+                }
               }
             }
           }

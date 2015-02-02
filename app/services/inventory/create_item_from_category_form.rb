@@ -11,13 +11,14 @@ class Inventory::CreateItemFromCategoryForm
 
   def create!
     item = Inventory::Item.new(category: category, user: user, status: status)
-    item.represented_data.attributes = item_params
+    representer = item.represented_data(user)
+    representer.attributes = item_params
 
-    if item.represented_data.valid?
-      item.represented_data.inject_to_data!
-      item.save!
+    if representer.valid?
+      representer.inject_to_data!
+      representer.item.save!
     else
-      raise ActiveRecord::RecordInvalid.new(item.represented_data)
+      raise ActiveRecord::RecordInvalid.new(representer)
     end
 
     item

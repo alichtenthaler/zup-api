@@ -320,3 +320,11 @@ seu JSON, exemplo:
         }]
       }
     }
+
+## 'Lock' na edição do formulário da categoria
+
+Para travar a edição do formulário da categoria, você deve fazer um request para o seguinte endpoint:
+
+`PATCH /inventory/categories/:id/update_access`
+
+Após 1 minuto, a categoria será destravada automaticamente se não for mais recebido esse `heartbeat`, dessa forma, faça o request com uma frequência menor que 60 segundos.

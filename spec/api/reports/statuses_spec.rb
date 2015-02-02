@@ -50,7 +50,8 @@ describe Reports::Statuses::API do
   end
 
   describe "PUT /reports/categories/:category_id/statuses/:id"  do
-    let!(:status) { create(:status, categories: [category]) }
+    let!(:status) { create(:status, :with_category, category: category) }
+
     context "with valid params do" do
       let(:valid_params) do
         JSON.parse <<-JSON
@@ -84,7 +85,7 @@ describe Reports::Statuses::API do
   end
 
   describe "DELETE /reports/categories/:category_id/statuses/:id"  do
-    let!(:status) { create(:status, categories: [category]) }
+    let!(:status) { create(:status, :with_category, category: category) }
 
     before do
       delete "/reports/categories/#{category.id}/statuses/#{status.id}", {}, auth(user)

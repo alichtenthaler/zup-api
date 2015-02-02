@@ -35,6 +35,10 @@ class PinUploader < CarrierWave::Uploader::Base
     self.to_s.blank?
   end
 
+  def filename
+    "#{super.chomp(File.extname(super))}.png" if original_filename.present?
+  end
+
   def merge_with_base(platform)
     base_file = "public/base/marker_categoria_invenrio_base@2x.png"
 
@@ -62,4 +66,5 @@ class PinUploader < CarrierWave::Uploader::Base
       img
     end
   end
+
 end

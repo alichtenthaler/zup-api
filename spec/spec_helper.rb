@@ -6,6 +6,7 @@ require 'rspec/autorun'
 require 'ffaker'
 require 'cpf_faker'
 require 'sidekiq/testing'
+require 'factory_girl_rails'
 
 ActiveSupport::Deprecation.silenced = true
 
@@ -35,8 +36,13 @@ RSpec.configure do |config|
     DatabaseCleaner.clean_with(:truncation, { :except => %w[spatial_ref_sys] })
   end
 
+  config.fail_fast = true
+
   config.before(:each) do
     DatabaseCleaner.start
+
+    # Always create the guest group
+    FactoryGirl.create(:guest_group)
   end
 
   config.after(:each) do
@@ -54,6 +60,9 @@ RSpec.configure do |config|
   config.after(:all) do
     FileUtils.rm_rf(Dir["#{Rails.root}/public/uploads/test"])
   end
+
+  # For rspec 3
+  # config.infer_spec_type_from_file_location!
 
   # ## Mock Framework
   #

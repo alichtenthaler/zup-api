@@ -13,6 +13,9 @@ FactoryGirl.define do
     address_additional { Faker::Address.secondary_address }
     postal_code '04005000'
     district { Faker::Address.city }
+    device_token { SecureRandom.hex }
+    device_type 'ios'
+
     groups { [Group.find_by(name: 'Admins') || create(:group_for_admin, name: 'Admins')] }
   end
 

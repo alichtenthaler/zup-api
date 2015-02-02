@@ -76,7 +76,7 @@ describe Inventory::CreateFormForCategory do
     end
 
     context "deleting fields" do
-      it "delete fields if it has the 'destroy' attribute on it" do
+      it "mark field as disable if it has the 'destroy' attribute on it" do
         section = category.sections.create(title: generate(:name))
         field = section.fields.create(title: "anotherfield", position: 10, kind: "checkbox")
         form_params["sections"].first["id"] = section.id
@@ -89,7 +89,7 @@ describe Inventory::CreateFormForCategory do
         expect(section).to_not be_nil
 
         field = Inventory::Field.find_by(id: field.id)
-        expect(field).to be_nil
+        expect(field).to be_disabled
       end
     end
 
@@ -97,30 +97,72 @@ describe Inventory::CreateFormForCategory do
       let(:groups) { create_list(:group, 3) }
       it "adds permissions to group" do
         form_params['sections'][0]['fields'][0]['permissions'] = {
-          'groups_can_view' => groups.map(&:id).join(',')
+          'groups_can_view' => groups.map(&:id)
         }
 
         described_class.new(category, form_params).create!
 
         created_field = category.sections.last.fields.first
         groups.each do |group|
-          expect(group.reload.inventory_fields_can_view).to include(created_field.id)
+          expect(group.reload.permission.inventory_fields_can_view).to include(created_field.id)
         end
       end
+
+      it "removes permissions from group" do
+        section = category.sections.create(title: generate(:name))
+        field = section.fields.create(title: "anotherfield", position: 10, kind: "email")
+        form_params["sections"].first["fields"].first["id"] = field.id
+        form_params["sections"].first["id"] = section.id
+
+        groups.each do |group|
+          group.permission.update(inventory_fields_can_view: [field.id])
+        end
+
+        form_params['sections'].last['fields'].first['permissions'] = {
+          'groups_can_view' => []
+        }
+
+        described_class.new(category, form_params).create!
+
+        groups.each do |group|
+          expect(group.reload.permission.inventory_fields_can_view).to_not include(field.id)
+        end
+      end
+
     end
 
     context "updating groups permissions for sections" do
       let(:groups) { create_list(:group, 3) }
+
       it "adds permissions to group" do
         form_params['sections'][0]['permissions'] = {
-          'groups_can_view' => groups.map(&:id).join(',')
+          'groups_can_view' => groups.map(&:id)
         }
 
         described_class.new(category, form_params).create!
 
         created_section = category.sections.last
         groups.each do |group|
-          expect(group.reload.inventory_sections_can_view).to include(created_section.id)
+          expect(group.permission.reload.inventory_sections_can_view).to include(created_section.id)
+        end
+      end
+
+      it "removes permissions from group" do
+        section = category.sections.create(title: generate(:name))
+        form_params["sections"].first["id"] = section.id
+
+        groups.each do |group|
+          group.permission.update(inventory_sections_can_view: [section.id])
+        end
+
+        form_params['sections'].first['permissions'] = {
+          'groups_can_view' => []
+        }
+
+        described_class.new(category, form_params).create!
+
+        groups.each do |group|
+          expect(group.reload.permission.inventory_sections_can_view).to_not include(section.id)
         end
       end
     end

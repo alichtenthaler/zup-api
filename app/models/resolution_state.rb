@@ -44,11 +44,11 @@ class ResolutionState < ActiveRecord::Base
   def set_flow_pending_when_have_no_default_resolution
     return if self.flow.blank?
     flow_status = self.flow.resolution_states.find_by(default: true).blank? ? 'pending' : 'active'
-    self.flow.update(status: flow_status, updated_by: self.user)
+    self.flow.update(status: flow_status, updated_by: self.user) if self.flow.status != flow_status
   end
 
   def set_last_version
-    return if self.last_version_changed? or self.last_version_id_changed?
+    return if self.changes.blank? or self.last_version_changed? or self.last_version_id_changed?
     self.increment :last_version
   end
 

@@ -20,7 +20,6 @@ class User < ActiveRecord::Base
   validates :district, presence: true
 
   before_create :generate_access_key!
-  after_create :add_to_public_group
 
   def self.authorize(token)
     if ak = AccessKey.active.find_by(key: token)
@@ -42,14 +41,6 @@ class User < ActiveRecord::Base
     end
   end
 
-  def add_to_public_group
-    public_group = Group.guest.first
-
-    unless public_group.nil? || self.groups.include?(public_group)
-      self.groups << public_group
-    end
-  end
-
   def to_json(options={})
     options[:except] ||= [:encrypted_password, :salt]
     super(options)
@@ -68,7 +59,10 @@ class User < ActiveRecord::Base
     perms = {}
 
     self.groups.each do |group|
-      group.typed_permissions.each do |key, value|
+      GroupPermission.permissions_columns.each do |c|
+        key = c.name
+        value = group.permission.send(key)
+
         if value.is_a?(Array)
           perms[key] ||= []
           perms[key] += value
@@ -82,11 +76,20 @@ class User < ActiveRecord::Base
     perms
   end
 
+  def groups_names
+    if groups.any?
+      groups.map(&:name)
+    else
+      []
+    end
+  end
+
   class Entity < Grape::Entity
     expose :id
     expose :name
     expose :groups, with: Group::Entity, unless: { collection: true }
     expose :permissions
+    expose :groups_names
 
     with_options(if: { display_type: 'full'}) do
       expose :email
@@ -96,6 +99,8 @@ class User < ActiveRecord::Base
       expose :address_additional
       expose :postal_code
       expose :district
+      expose :device_token
+      expose :device_type
       expose :created_at
       expose :facebook_user_id
       expose :twitter_user_id
@@ -109,7 +114,7 @@ class User < ActiveRecord::Base
     end
 
     def groups
-      [Groups::Public.new]
+      Group.guest
     end
 
     def guest?

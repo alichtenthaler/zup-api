@@ -6,6 +6,7 @@ class Inventory::Item < Inventory::Base
   belongs_to :user
   belongs_to :category, class_name: "Inventory::Category", foreign_key: "inventory_category_id"
   belongs_to :status, class_name: "Inventory::Status", foreign_key: "inventory_status_id"
+  belongs_to :locker, class_name: "User"
 
   has_many :data, class_name: "Inventory::ItemData",
                   foreign_key: "inventory_item_id",
@@ -19,6 +20,8 @@ class Inventory::Item < Inventory::Base
   validates :user, presence: true
   validates :title, presence: true
   validates :status, presence: true, if: :must_have_status?
+
+  scope :locked, -> { where(locked: true) }
 
   def location
     @location ||= Hash[
@@ -35,9 +38,14 @@ class Inventory::Item < Inventory::Base
 
   class Entity < Grape::Entity
     expose :id
-    expose :title
+    expose :title do |obj, _|
+      "#{obj.title} ##{obj.sequence}"
+    end
     expose :address
     expose :inventory_status_id
+    expose :locked
+    expose :locker_id
+    expose :locked_at
 
     # TODO: Find out why this is happening
     expose :position do |obj, _|
@@ -52,13 +60,30 @@ class Inventory::Item < Inventory::Base
     end
 
     expose :inventory_category_id, unless: { display_type: 'full' }
-    expose :data, using: Inventory::ItemData::Entity
+    expose :data, unless: { display_type: 'basic' }
     expose :created_at
+    expose :updated_at
+
+    private
+
+    def data
+      user = options[:user]
+      objects = object.data
+      permissions = UserAbility.new(user)
+
+      unless permissions.can? :manage, Inventory::Item
+        ids = permissions.inventory_fields_visible
+        objects = objects.where(inventory_field_id: ids)
+      end
+
+      Inventory::ItemData::Entity.represent(objects, options)
+    end
+
   end
 
   # Data with Inventory::ItemDataRepresenter
-  def represented_data
-    @represented_data ||= Inventory::ItemDataRepresenter.factory(self)
+  def represented_data(user = nil)
+    @represented_data ||= Inventory::ItemDataRepresenter.factory(self, user)
   end
 
   private
@@ -69,7 +94,8 @@ class Inventory::Item < Inventory::Base
     # TODO: Singularize portuguese words
     def generate_title
       if category && (new_record?)
-        self.title = "#{category.title} ##{category.items.count + 1}"
+        self.title = category.title
+        self.sequence = category.items.count + 1
       end
     end
 

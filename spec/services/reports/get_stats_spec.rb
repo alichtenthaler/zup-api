@@ -36,6 +36,32 @@ describe Reports::GetStats do
 
       expect(returned_count).to eq(7)
     end
+
+    context "category with subcategories" do
+      let!(:subcategory) do
+        create(:reports_category_with_statuses, parent_category: report_category)
+      end
+      let!(:status) do
+        subcategory.statuses.where(initial: false).first
+      end
+
+      before do
+        create_list(:reports_item, 7, category: subcategory, status: status)
+      end
+
+      it "return the right count" do
+        returned_stats = subject.fetch
+
+        expect(returned_stats.size).to eq(1)
+        expect(returned_stats.first[:statuses].size).to eq(report_category.statuses.count)
+
+        returned_count = returned_stats.first[:statuses].select do |s|
+          s[:title] == status.title
+        end.first[:count]
+
+        expect(returned_count).to eq(14)
+      end
+    end
   end
 
   context "filtering by date" do

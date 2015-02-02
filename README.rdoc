@@ -31,3 +31,4 @@ Requirements
 * postGIS 2.1
 * ImageMagick
 
+

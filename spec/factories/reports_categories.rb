@@ -13,6 +13,7 @@ FactoryGirl.define do
     color '#f3f3f3'
     icon { Rails.root.join('spec/fixtures/images/valid_report_category_icon.png').open }
     marker { Rails.root.join('spec/fixtures/images/valid_report_category_marker.png').open }
+    confidential false
 
     factory :reports_category_with_statuses do
       after(:create) do |reports_category, _|
@@ -23,6 +24,17 @@ FactoryGirl.define do
           build(:final_status, title: "Não resolvidas", color: "#999999").as_json
         ])
       end
+    end
+
+    after(:create) do |category, _|
+      Group.guest.each do |group|
+        group.permission.reports_categories_can_view += [category.id]
+        group.save!
+      end
+    end
+
+    trait :confidential do
+      confidential true
     end
   end
 end

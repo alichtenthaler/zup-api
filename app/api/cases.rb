@@ -14,11 +14,15 @@ module Cases
         initial_flow     = Flow.find_by(id: safe_params[:initial_flow_id], initial: true)
         validate_permission!(:create, initial_flow.cases.build.case_steps.build(step: step))
 
-        fields = safe_params[:fields].present? ? safe_params[:fields].map { |field| {field_id: field['id'].to_i, value: field['value'].to_s} } : []
-        case_step_params = {created_by: current_user, responsible_user_id: current_user.id, step: step,
-                            step_version: step.last_version}.merge(case_step_data_fields_attributes: fields)
-        kase = initial_flow.cases.create!({created_by: current_user, case_steps_attributes: [case_step_params],
-                                                       flow_version: initial_flow.last_version})
+        if safe_params[:fields].present?
+          fields = safe_params[:fields].map { |field| {field_id: field['id'].to_i, value: field['value'].to_s} }
+          case_step_params = {created_by: current_user, responsible_user_id: current_user.id, step: step,
+                              step_version: step.last_version}.merge(case_step_data_fields_attributes: fields)
+          kase = initial_flow.cases.create!(created_by: current_user, case_steps_attributes: [case_step_params],
+                                            flow_version: initial_flow.last_version)
+        else
+          kase = initial_flow.cases.create!(created_by: current_user, flow_version: initial_flow.last_version)
+        end
         kase.log!('create_case', user: current_user)
 
         trigger_result = fields.present? && step.triggers.present? ? run_triggers(step, kase, current_user) : {}
@@ -34,6 +38,7 @@ module Cases
         optional :created_by_id,        type: String,  desc: 'String with of Users ID'
         optional :updated_by_id,        type: String,  desc: 'String with of Users ID'
         optional :step_id,              type: String,  desc: 'String with of Steps ID'
+        optional :completed,            type: Boolean, desc: 'true to filter Case with status == "finished"'
         optional :display_type,         type: String,  desc: 'Display type for Case'
         optional :just_user_can_view,   type: Boolean, desc: 'To return all items or only title because user can\'t view (true by default)'
       end
@@ -41,14 +46,19 @@ module Cases
       get do
         authenticate!
         parameters = {}
-        parameters[:initial_flow_id]      = safe_params[:initial_flow_id].split(',').map(&:to_i)      if safe_params[:initial_flow_id].present?
-        parameters[:responsible_user_id]  = safe_params[:responsible_user_id].split(',').map(&:to_i)  if safe_params[:responsible_user_id].present?
-        parameters[:responsible_group_id] = safe_params[:responsible_group_id].split(',').map(&:to_i) if safe_params[:responsible_group_id].present?
-        parameters[:created_by_id]        = safe_params[:created_by_id].split(',').map(&:to_i)        if safe_params[:created_by_id].present?
-        parameters[:updated_by_id]        = safe_params[:updated_by_id].split(',').map(&:to_i)        if safe_params[:updated_by_id].present?
-        parameters[:step_id]              = safe_params[:step_id].split(',').map(&:to_i)              if safe_params[:step_id].present?
+        parameters[:initial_flow_id]      = safe_params[:initial_flow_id].split(',').map(&:to_i)       if safe_params[:initial_flow_id].present?
+        parameters[:responsible_user_id]  = safe_params[:responsible_user_id].split(',').map(&:to_i)   if safe_params[:responsible_user_id].present?
+        parameters[:responsible_group_id] = safe_params[:responsible_group_id].split(',').map(&:to_i)  if safe_params[:responsible_group_id].present?
+        parameters[:created_by_id]        = safe_params[:created_by_id].split(',').map(&:to_i)         if safe_params[:created_by_id].present?
+        parameters[:updated_by_id]        = safe_params[:updated_by_id].split(',').map(&:to_i)         if safe_params[:updated_by_id].present?
+        parameters[:step_id]              = safe_params[:step_id].split(',').map(&:to_i)               if safe_params[:step_id].present?
+        parameters[:status]               = safe_params[:completed] ? "= 'finished'" : "!= 'finished'" if safe_params[:completed].present?
 
-        kases = Case.where(parameters.slice(:initial_flow_id))
+        case_query = []
+        case_query.push("initial_flow_id IN (#{parameters[:initial_flow_id].join(',')})") if parameters.has_key? :initial_flow_id
+        case_query.push("status #{parameters[:status]}") if parameters.has_key? :status
+
+        kases = Case.where(case_query.join(' and '))
         if parameters.has_key?(:step_id) or parameters.has_key?(:responsible_group_id) \
           or parameters.has_key?(:responsible_user_id) or parameters.has_key?(:updated_by_id) or parameters.has_key?(:created_by_id)
           case_steps_params = parameters.slice(:step_id, :responsible_group_id, :responsible_user_id, :updated_by_id, :created_by_id)
@@ -102,7 +112,7 @@ module Cases
         params do
           requires :step_id,      type: Integer, desc: 'Step ID'
           requires :step_version, type: Integer, desc: 'Step Version'
-          requires :fields,       type: Array,   desc: 'Array of hash with if of field and value'
+          optional :fields,       type: Array,   desc: 'Array of hash with if of field and value'
         end
         put do
           authenticate!
@@ -110,30 +120,36 @@ module Cases
           return error!(I18n.t(:case_is_finished), 405) if kase.status == 'finished'
           return error!(I18n.t(:step_is_disabled), 400) if kase.disabled_steps.include? safe_params[:step_id]
 
-          case_step = kase.case_steps.find_by(step_id: safe_params[:step_id], step_version: safe_params[:step_version])
-          fields    = safe_params[:fields].map { |field| {field_id: field['id'].to_i, value: field['value'].to_s} }
+          case_step = kase.case_steps.find_by(step_id: safe_params[:step_id])
+          fields    = safe_params[:fields].present? ? safe_params[:fields].map { |field| {field_id: field['id'].to_i, value: field['value'].to_s} } : []
           if case_step.present?
             validate_permission!(:update, case_step)
+            return error!(I18n.t(:version_not_equal_actual), 400) if case_step.step_version != safe_params[:step_version].to_i
             fields.each { |f| case_step.case_step_data_fields.find_or_initialize_by(field_id: f[:field_id]).update!(value: f[:value]) }
             case_step.update!(updated_by: current_user)
-            step = case_step.step
+            step = case_step.my_step
           else
-            step = Step.active.find(safe_params[:step_id])
+            step = Step.active.find(safe_params[:step_id]).version(safe_params[:step_version])
             case_step = kase.case_steps.build({created_by: current_user, step: step, step_version: step.last_version,
                                                responsible_user_id: current_user.id, case_step_data_fields_attributes: fields})
             validate_permission!(:create, case_step)
           end
+          all_steps = kase.initial_flow.list_all_steps
+          return error!(I18n.t(:step_is_not_of_case), 400) unless all_steps.present? and all_steps.map(&:id).include? step.id
 
-          kase.updated_by = current_user
+          kase.updated_by  = current_user
+          case_step_is_new = case_step.new_record?
           kase.save!
-          if case_step.new_record?
+          if case_step_is_new and case_step.case_step_data_fields.blank?
+            kase.log!('started_step', user: current_user)
+            message = I18n.t(:started_step_success)
+          elsif case_step_is_new
             kase.log!('next_step', user: current_user)
             message = I18n.t(:next_step_success)
           else
             kase.log!('update_step', user: current_user)
             message = I18n.t(:update_step_success)
           end
-          all_steps   = kase.initial_flow.list_all_steps
           step_index  = all_steps.index(step)
           other_steps = all_steps[step_index+1..-1]
           if other_steps.blank?
@@ -141,7 +157,7 @@ module Cases
             kase.log!('finished', user: current_user)
             message = I18n.t(:finished_case)
           end
-          trigger_result = step.triggers.present? ? run_triggers(step, kase, current_user) : {}
+          trigger_result = step.my_triggers.present? ? run_triggers(step, kase, current_user) : {}
           { message: message, case: Case::Entity.represent(kase, display_type: 'full'),
             trigger_type: trigger_result[:type], trigger_values: trigger_result[:value], trigger_description: trigger_result[:description] }
         end
@@ -179,6 +195,16 @@ module Cases
           new_kase.log!('create_case', user: current_user)
 
           { message: I18n.t(:case_updated), case: Case::Entity.represent(new_kase, display_type: safe_params[:display_type]) }
+        end
+
+        desc 'Get Case History'
+        params { optional :display_type, type: String,  desc: 'Display type for CasesLogEntry' }
+        get '/history' do
+          authenticate!
+          kase = Case.find(safe_params[:id])
+          validate_permission!(:show, kase)
+
+          { cases_log_entries: CasesLogEntry::Entity.represent(kase.cases_log_entries, display_type: safe_params[:display_type]) }
         end
 
         resources '/case_steps' do

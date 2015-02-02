@@ -1,4 +1,3 @@
-GrapeSwaggerRails.discoveryUrl = "/swagger_doc.json"
-GrapeSwaggerRails.appName      = 'zup-api'
-GrapeSwaggerRails.appUrl       = 'http://production.zup.sapience.io'
-GrapeSwaggerRails.apiKey       = ''
+GrapeSwaggerRails.options.url      = '/swagger_doc.json'
+GrapeSwaggerRails.options.app_name = 'zup-api'
+GrapeSwaggerRails.options.app_url  = ENV['API_DOMAIN'] || 'http://zup-stagging.cognita.ntxdev.com.br'

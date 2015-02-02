@@ -35,7 +35,7 @@ describe Reports::Item do
     it "create a new entry on status history when status is created" do
       item = create(:reports_item)
       new_status = item.statuses.last
-      item.update_status(new_status)
+      Reports::UpdateItemStatus.new(item).set_status(new_status)
 
       expect(item.save!).to eq(true)
       expect(item.status_history.reload.size).to eq(2)
@@ -47,7 +47,7 @@ describe Reports::Item do
     let(:report) { create(:reports_item) }
 
     it "returns true if the report is final and the time isn't expired" do
-      report.update_status!(report.category.statuses.final.first)
+      Reports::UpdateItemStatus.new(report).update_status!(report.category.statuses.final.first)
       expect(report.can_receive_feedback?).to eq(true)
     end
 
@@ -57,7 +57,7 @@ describe Reports::Item do
     end
 
     it "returns false if the report is final but the time expired" do
-      report.update_status!(report.category.statuses.final.first)
+      Reports::UpdateItemStatus.new(report).update_status!(report.category.statuses.final.first)
       report.status_history
             .last
             .update!(

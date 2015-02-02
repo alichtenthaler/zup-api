@@ -22,6 +22,8 @@ module Inventory::Items
                  desc: 'The field to sort the items. Either created_at, updated_at or id'
         optional :order, type: String,
                  desc: 'Either ASC or DESC.'
+        optional :display_type, type: String,
+                 desc: 'Can be \'full\' or \'basic\''
       end
       get do
         search_params = {
@@ -42,14 +44,21 @@ module Inventory::Items
           end
         end
 
-        items = Inventory::SearchItems.new(search_params).search
+        items = Inventory::SearchItems.new(current_user, search_params).search
         if safe_params[:position].nil?
           items = paginate(items)
         end
 
         garner.bind(Inventory::ItemCacheControl.new(items)).options(expires_in: 15.minutes) do
-          { items: Inventory::Item::Entity.represent(items, serializable: true) }
+          { items: Inventory::Item::Entity.represent(items, display_type: safe_params[:display_type], user: current_user, serializable: true) }
         end
+      end
+
+      desc 'Get an individual item'
+      get ':id' do
+        item = Inventory::Item.find(safe_params[:id])
+
+        { item: Inventory::Item::Entity.represent(item, user: current_user) }
       end
     end
 
@@ -83,7 +92,7 @@ module Inventory::Items
 
             {
               message: "Item created successfully",
-              item: Inventory::Item::Entity.represent(item)
+              item: Inventory::Item::Entity.represent(item, user: current_user)
             }
           end
 
@@ -92,7 +101,7 @@ module Inventory::Items
             category = load_category
             item = category.items.find(safe_params[:id])
 
-            { item: Inventory::Item::Entity.represent(item) }
+            { item: Inventory::Item::Entity.represent(item, user: current_user) }
           end
 
           desc "Destroy item"
@@ -101,7 +110,7 @@ module Inventory::Items
             category = load_category
 
             item = category.items.find(safe_params[:id])
-            validate_permission!(:destroy, item)
+            validate_permission!(:delete, item)
             item.destroy!
 
             { message: "Inventory item successfully destroyed!" }
@@ -118,20 +127,40 @@ module Inventory::Items
 
             category = load_category
             item = category.items.find(safe_params[:id])
+
             validate_permission!(:edit, item)
 
-            if safe_params[:data]
-              updater = Inventory::UpdateItemFromCategory.new(item, safe_params[:data])
-              item = updater.update!
-            end
+            if !item.locked? || (item.locked? && item.locker == current_user)
+              if safe_params[:data]
+                updater = Inventory::UpdateItemFromCategory.new(item, safe_params[:data], current_user)
+                item = updater.update!
+              end
 
-            if safe_params[:inventory_status_id]
-              status = category.statuses.find(safe_params[:inventory_status_id])
-              item.reload.update!(status: status)
-            end
+              if safe_params[:inventory_status_id]
+                status = category.statuses.find(safe_params[:inventory_status_id])
+                item.reload.update!(status: status)
+              end
 
-            { message: "Inventory item updated successfully!" }
+              { message: "Inventory item updated successfully!" }
+            else
+              {
+                message: "Form locked",
+                locker: User::Entity.represent(item.locker),
+                locked_at: item.locked_at
+              }
+            end
           end
+
+          desc "Update the access to the inventory item, locking it"
+          patch ':id/update_access' do
+            authenticate!
+
+            item = Inventory::Item.find(safe_params[:id])
+            validate_permission!(:edit, item)
+
+            Inventory::ItemLocking.new(item, current_user).lock!
+          end
+
         end
       end
     end

@@ -21,16 +21,39 @@ module Reports::Items
                desc: 'An array of images(post data or encoded on base64) for this report.'
       optional :status_id, type: Integer,
                desc: 'The new status id'
+      optional :user_id, type: Integer,
+               desc: 'An user id to associate with it'
+      optional :confidential, type: Boolean,
+               desc: 'If the report is confidential or not'
+      optional :from_panel, type: Boolean,
+               desc: 'If the report is coming from the panel this should be true'
     end
     post ':category_id/items' do
       authenticate!
       category = Reports::Category.find(params[:category_id])
 
-      report_params = safe_params.permit(:description, :address, :reference)
+      report_params = safe_params.permit(:description, :address, :reference, :confidential)
 
       Reports::Item.transaction do
-        report = Reports::Item.new report_params.merge(category: category, user: current_user)
-        validate_permission!(:create, report)
+        if params[:user_id]
+          validate_permission!(:edit, Reports::Item)
+          author = User.find(params[:user_id])
+        else
+          author = current_user
+        end
+
+        reporter = current_user
+
+        report = Reports::Item.new(
+          report_params.merge(category: category, user: author, reporter: reporter)
+        )
+
+        # Permission validation
+        if safe_params.delete(:from_panel)
+          validate_permission!(:create_from_panel, report)
+        else
+          validate_permission!(:create, report)
+        end
 
         if params[:inventory_item_id]
           report.inventory_item = Inventory::Item.find(params[:inventory_item_id])
@@ -44,7 +67,7 @@ module Reports::Items
         report.update_images(params[:images]) if params[:images]
         report.save!
 
-        { report: Reports::Item::Entity.represent(report, display_type: 'full') }
+        { report: Reports::Item::Entity.represent(report, display_type: 'full', user: current_user) }
       end
     end
 
@@ -68,6 +91,8 @@ module Reports::Items
                desc: 'The new status of the item'
       optional :images, type: Array,
                desc: 'An array of images(post data or encoded on base64) for this report.'
+      optional :confidential, type: Boolean,
+               desc: 'If the report is confidential or not'
     end
     put ':reports_category_id/items/:id' do
       authenticate!
@@ -78,7 +103,7 @@ module Reports::Items
       validate_permission!(:edit, report)
 
       Reports::Item.transaction do
-        report_params = safe_params.permit(:description, :address, :reference)
+        report_params = safe_params.permit(:description, :address, :reference, :confidential)
 
         if safe_params[:category_id].present?
           new_category = Reports::Category.find(safe_params[:category_id])
@@ -105,16 +130,45 @@ module Reports::Items
 
         if params[:status_id]
           new_status = category.statuses.find(params[:status_id])
-          report.update_status!(new_status)
+          Reports::UpdateItemStatus.new(report).update_status!(new_status)
         end
 
 
         {
           report: Reports::Item::Entity.represent(
-            report, display_type: 'full'
+            report, display_type: 'full', user: current_user
           )
         }
       end
+    end
+
+    desc 'Change migration'
+    params do
+      optional :new_category_id, type: Integer,
+               desc: 'The id of the new reports category of the report'
+      optional :new_status_id, type: Integer,
+               desc: 'The id of the new status of the new category to change'
+    end
+    put ':reports_category_id/items/:id/change_category' do
+      authenticate!
+
+      category = Reports::Category.find(safe_params[:reports_category_id])
+      new_category = Reports::Category.find(safe_params[:new_category_id])
+      item = Reports::Item.find_by!(id: safe_params[:id], reports_category_id: category.id)
+
+      validate_permission!(:edit, item)
+
+      new_status = new_category.statuses.find(safe_params[:new_status_id])
+
+      # Move to new category and status
+      service = Reports::ChangeItemCategory.new(item, new_category, new_status)
+      service.process!
+
+      {
+        report: Reports::Item::Entity.represent(
+          item, display_type: 'full', user: current_user
+        )
+      }
     end
 
     # #####################
@@ -181,6 +235,7 @@ module Reports::Items
       end
 
       reports = Reports::SearchItems.new(
+        current_user,
         category: category,
         user: user,
         inventory_item: inventory_item,
@@ -204,6 +259,7 @@ module Reports::Items
           reports: Reports::Item::Entity.represent(
             reports,
             display_type: safe_params[:display_type],
+            user: current_user,
             serializable: true
           )
         }
@@ -223,6 +279,7 @@ module Reports::Items
       {
         report: Reports::Item::Entity.represent(
           report,
+          user: current_user,
           display_type: 'full'
         )
       }
@@ -266,6 +323,7 @@ module Reports::Items
       category = Reports::Category.find(params[:category_id])
       position = safe_params[:position]
       reports  = Reports::SearchItems.new(
+        current_user,
         category: category,
         position: position,
         limit: safe_params[:limit],
@@ -277,6 +335,7 @@ module Reports::Items
       {
         reports: Reports::Item::Entity.represent(
           reports,
+          user: current_user,
           display_type: safe_params[:display_type]
         )
       }
@@ -298,6 +357,7 @@ module Reports::Items
       item = Inventory::Item.find(params[:inventory_item_id])
       position = safe_params[:position]
       reports  = Reports::SearchItems.new(
+        current_user,
         inventory_item: item,
         position: position,
         limit: safe_params[:limit],
@@ -310,6 +370,7 @@ module Reports::Items
       {
         reports: Reports::Item::Entity.represent(
           reports,
+          user: current_user,
           display_type: safe_params[:display_type]
         )
       }
@@ -330,6 +391,7 @@ module Reports::Items
 
       position = safe_params[:position]
       reports  = Reports::SearchItems.new(
+        current_user,
         user: current_user,
         position: position,
         limit: safe_params[:limit]
@@ -340,6 +402,7 @@ module Reports::Items
       {
         reports: Reports::Item::Entity.represent(
           reports,
+          user: current_user,
           display_type: 'full'
         ),
         total_reports_by_user: total_reports_by_user
@@ -362,6 +425,7 @@ module Reports::Items
       user = User.find(params[:user_id])
       position = safe_params[:position]
       reports  = Reports::SearchItems.new(
+        current_user,
         user: user,
         position: position,
         limit: safe_params[:limit]
@@ -372,6 +436,7 @@ module Reports::Items
       {
         reports: Reports::Item::Entity.represent(
           reports,
+          user: current_user,
           display_type: 'full'
         ),
         total_reports_by_user: total_reports_by_user

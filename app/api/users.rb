@@ -4,13 +4,24 @@ module Users
     params do
       requires :email, type: String, desc: "User's email address"
       requires :password, type: String, desc: "User's password"
+      optional :device_token, type: String, desc: "The device token if registration is from mobile"
+      optional :device_type, type: String, desc: "Could be ios or android"
     end
     post :authenticate do
       user = User.authenticate(params[:email], params[:password])
 
+      if params[:device_token] || params[:device_type]
+        user_params = safe_params.permit(:device_token, :device_type)
+        user.update(user_params)
+      end
+
       if user
         return {
-          user: user,
+          user: User::Entity.represent(
+                  user,
+                  display_type: 'full',
+                  display_groups: true
+                ),
           token: user.last_access_key
         }
       else
@@ -134,10 +145,14 @@ module Users
         optional :address_additional, type: String, desc: "Address complement"
         requires :postal_code, type: String, desc: "CEP"
         requires :district, type: String, desc: "User's neighborhood"
+        optional :groups_ids, type: Array, desc: "User groups"
 
         optional :facebook_user_id, type: Integer, desc: "User's id on facebook"
         optional :twitter_user_id, type: Integer, desc: "User's id on twitter"
         optional :google_plus_user_id, type: Integer, desc: "User's id on G+"
+
+        optional :device_token, type: String, desc: "The device token if registration is from mobile"
+        optional :device_type, type: String, desc: "Could be `ios` or `android`"
       end
       post do
         user = User.new(
@@ -146,9 +161,20 @@ module Users
             :name, :email, :phone, :document, :address,
             :address_additional, :postal_code, :district,
             :facebook_user_id, :twitter_user_id,
-            :google_plus_user_id
+            :google_plus_user_id, :groups_ids,
+            :device_token, :device_type
           )
         )
+
+        if params[:groups_ids].present?
+          validate_permission!(:manage, User)
+          user.groups = params[:groups_ids].map do |id|
+            Group.find(id)
+          end
+        else
+          guest_group = Group.guest
+          user.groups << guest_group if guest_group
+        end
 
         user.save!
 
@@ -178,6 +204,9 @@ module Users
         optional :address_additional, type: String, desc: "Address complement"
         optional :postal_code, type: String, desc: "CEP"
         optional :district, type: String, desc: "User's neighborhood"
+
+        optional :device_token, type: String, desc: "The device token if registration is from mobile"
+        optional :device_type, type: String, desc: "Could be ios or android"
       end
       put ':id' do
         authenticate!
@@ -187,7 +216,8 @@ module Users
         user_params = safe_params.permit(
           :email, :current_password, :password,
           :password_confirmation, :name, :phone, :document, :address,
-          :address_additional, :postal_code, :district
+          :address_additional, :postal_code, :district,
+          :device_token, :device_type
         )
 
         user.update!(user_params)

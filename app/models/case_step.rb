@@ -26,7 +26,7 @@ class CaseStep < ActiveRecord::Base
   def fields_of_step
     return if self.case_step_data_fields.blank?
     field_data = convert_field_data self.case_step_data_fields
-    self.step.fields.each do |field|
+    my_step.my_fields.each do |field|
       data_field = field_data.select{|f| f.field_id == field.id}.try(:first)
       requirement = Hash(field.requirements)
       if data_field.present?
@@ -37,7 +37,6 @@ class CaseStep < ActiveRecord::Base
         value, minimum, maximum = nil
       end
       presence = (requirement['presence'] == 'true')
-
       custom_validations(field, value, minimum, maximum, presence)
     end
     @items_with_update.map(&:save!) if self.errors.blank? and @items_with_update.present?
@@ -178,5 +177,6 @@ class CaseStep < ActiveRecord::Base
     expose :updated_by, using: User::Entity, unless: lambda { |instance, options| Array(options[:simplify_to]).include? instance.id }
     expose :created_at, unless: lambda { |instance, options| Array(options[:simplify_to]).include? instance.id }
     expose :updated_at, unless: lambda { |instance, options| Array(options[:simplify_to]).include? instance.id }
+    expose :executed do |instance, options| instance.case_step_data_fields.present? end
   end
 end

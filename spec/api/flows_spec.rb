@@ -127,7 +127,7 @@ describe Flows::API, versioning: true do
 
   describe 'on update' do
     let(:valid_params) { {title: 'new title test'} }
-    let(:flow)         { create(:flow, initial: true) }
+    let(:flow)         { create(:flow, initial: true, resolution_states: [create(:resolution_state, default: false)]) }
 
     context 'no authentication' do
       before { put "/flows/#{flow.id}", valid_params }
@@ -331,7 +331,7 @@ describe Flows::API, versioning: true do
 
           it { expect(response.status).to be_a_success_request }
           it { expect(response.body).to be_a_success_message_with(I18n.t(:permissions_updated)) }
-          it { expect(user.groups.first.reload.permissions[valid_params[:permission_type]]).to eql "[\"#{flow.id}\"]" }
+          it { expect(user.groups.first.reload.permission.send(valid_params[:permission_type])).to eql([flow.id]) }
         end
       end
     end
@@ -370,7 +370,7 @@ describe Flows::API, versioning: true do
 
           it { expect(response.status).to be_a_success_request }
           it { expect(response.body).to be_a_success_message_with(I18n.t(:permissions_updated)) }
-          it { expect(user.groups.first.reload.permissions[valid_params[:permission_type]]).to eql "[]" }
+          it { expect(user.groups.first.reload.permission.send(valid_params[:permission_type])).to eql [] }
         end
       end
     end

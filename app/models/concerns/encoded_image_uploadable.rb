@@ -3,8 +3,8 @@ module EncodedImageUploadable
 
   # Get encoded file and add to a temp
   # encoded images
-  def encoded_to_file(encoded_image, extension = 'jpg')
-    temp_file = Tempfile.new([SecureRandom.hex(3), ".#{extension}"])
+  def encoded_to_file(encoded_image, extension = 'png')
+    temp_file = Tempfile.new([SecureRandom.hex(3), ".#{extension}"], Rails.root.join('tmp'))
     temp_file.binmode
     temp_file.write(Base64.decode64(encoded_image))
     temp_file.close

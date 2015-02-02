@@ -32,7 +32,7 @@ describe Reports::Feedbacks::API do
     end
 
     it "creates the feedback for the report" do
-      report.update_status!(report.category.statuses.final.first)
+      Reports::UpdateItemStatus.new(report).update_status!(report.category.statuses.final.first)
 
       post "/reports/#{report.id}/feedback", valid_params, auth(user)
       expect(response.status).to eq(201)
@@ -59,7 +59,7 @@ describe Reports::Feedbacks::API do
     end
 
     it "can't create if the user_response_time already is expired" do
-      report.update_status!(report.category.statuses.final.first)
+      Reports::UpdateItemStatus.new(report).update_status!(report.category.statuses.final.first)
       report.status_history
             .last
             .update!(

@@ -7,11 +7,21 @@ class Reports::Status < Reports::Base
 
   has_many :reports_items, class_name: 'Reports::Item', foreign_key: 'reports_status_id'
 
+  has_many :status_categories,
+    class_name: 'Reports::StatusCategory',
+    foreign_key: 'reports_status_id'
+  has_many :categories,
+    class_name: "Reports::Category",
+    through: :status_categories,
+    source: :category
+
+
   validates :color, css_hex_color: true
   validates :title, presence: true, uniqueness: true
   validates :initial, inclusion: { in: [false, true] }
   validates :final, inclusion: { in: [false, true] }
   validates :active, inclusion: { in: [false, true] }
+  validates :private, inclusion: { in: [false, true] }
 
   before_validation :set_default_attributes
 
@@ -19,9 +29,25 @@ class Reports::Status < Reports::Base
   scope :initial, -> { where(initial: true) }
   scope :active, -> { where(active: true) }
   scope :inactive, -> { where(active: false) }
+  scope :public, -> { where(private: false) }
+
+  # Check if the status is private for
+  # the report category.
+  #
+  # Because we won't send any emails for the user
+  # if it's private, you know.
+  def private_for_category?(category)
+    relation = Reports::StatusCategory.private.find_by(
+      reports_status_id: id,
+      reports_category_id: category.id
+    )
+
+    relation.present?
+  end
 
   class Entity < Grape::Entity
     expose :id
+    expose :private
     expose :title
     expose :color
     expose :initial
@@ -36,9 +62,10 @@ class Reports::Status < Reports::Base
 
   private
     def set_default_attributes
-      self.initial = false if initial.nil?
-      self.final = false if final.nil?
-      self.active = true if active.nil?
+      self.initial = false if self.initial.nil?
+      self.final = false if self.final.nil?
+      self.active = true if self.active.nil?
+      self.private = false if self.private.nil?
       true
     end
 end

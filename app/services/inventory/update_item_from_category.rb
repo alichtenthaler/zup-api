@@ -1,17 +1,19 @@
 class Inventory::UpdateItemFromCategory
-  attr_reader :item, :item_params
+  attr_reader :item, :item_params, :user
 
-  def initialize(item, item_params)
+  def initialize(item, item_params, user)
     @item = item
     @item_params = item_params
+    @user = user
   end
 
   def update!
-    item.represented_data.attributes = item_params
+    item_representer = item.represented_data(user)
+    item_representer.attributes = item_params
 
-    if item.represented_data.valid?
-      item.represented_data.inject_to_data!
-      item.save!
+    if item_representer.valid?
+      item_representer.inject_to_data!
+      item_representer.item.save!
 
       check_formulas
     else

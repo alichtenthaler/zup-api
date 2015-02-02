@@ -5,16 +5,19 @@ class Inventory::Category < Inventory::Base
 
   has_many :sections, class_name: "Inventory::Section",
                       foreign_key: "inventory_category_id",
-                      autosave: true
+                      autosave: true,
+                      dependent: :destroy
   has_many :fields, through: :sections,
                     autosave: true
-  has_many :items, class_name: "Inventory::Item", foreign_key: "inventory_category_id"
+  has_many :items, class_name: "Inventory::Item", foreign_key: "inventory_category_id", dependent: :destroy
   has_many :statuses, class_name: "Inventory::Status", foreign_key: "inventory_category_id"
-  has_many :formulas, class_name: "Inventory::Formula", foreign_key: "inventory_category_id"
+  has_many :formulas, class_name: "Inventory::Formula", foreign_key: "inventory_category_id", dependent: :destroy
 
   has_and_belongs_to_many :reports_categories, class_name: 'Reports::Category',
                           association_foreign_key: 'reports_category_id',
                           foreign_key: 'inventory_category_id'
+
+  belongs_to :locker, class_name: 'User'
 
   accepts_nested_attributes_for :statuses
 
@@ -36,12 +39,30 @@ class Inventory::Category < Inventory::Base
   accepts_encoded_file :icon, :marker, :pin
   expose_multiple_versions :icon, :marker, :pin
 
+  scope :locked, -> { where(locked: true) }
+
   def entity
     Entity.new(self)
   end
 
   def original_icon
     self.icon.to_s
+  end
+
+  # Group permissions
+  def permissions
+    {
+      groups_can_view: groups_can_view,
+      groups_can_edit: groups_can_edit
+    }
+  end
+
+  def groups_can_view
+    Group.that_includes_permission(:inventory_categories_can_view, self.id).map(&:id)
+  end
+
+  def groups_can_edit
+    Group.that_includes_permission(:inventory_categories_can_edit, self.id).map(&:id)
   end
 
   class Entity < Grape::Entity
@@ -56,6 +77,9 @@ class Inventory::Category < Inventory::Base
     expose :color
     expose :original_icon
     expose :sections, using: Inventory::Section::Entity
+    expose :locked
+    expose :locker, using: User::Entity
+    expose :permissions
 
     with_options(if: { display_type: 'full' }) do
       expose :statuses, using: Inventory::Status::Entity

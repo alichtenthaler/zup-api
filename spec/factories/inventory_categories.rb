@@ -12,6 +12,13 @@ FactoryGirl.define do
     marker { fixture_file_upload(Rails.root.join('spec/fixtures/images/valid_report_category_marker.png')) }
     pin { fixture_file_upload(Rails.root.join('spec/fixtures/images/valid_report_category_marker.png')) }
 
+    after(:create) do |category, _|
+      Group.guest.each do |group|
+        group.permission.inventory_categories_can_view += [category.id]
+        group.save!
+      end
+    end
+
     factory :inventory_category_with_sections do
       after(:create) do |category, evaluator|
         create_list(:inventory_section_with_fields, 3, category: category)

@@ -11,6 +11,7 @@ class Inventory::ItemDataImage < Inventory::Base
   end
 
   class Entity < Grape::Entity
+    expose :id
     expose :inventory_item_data_id
     expose :url
     expose :image_structure, as: :versions

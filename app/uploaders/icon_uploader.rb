@@ -60,7 +60,7 @@ class IconUploader < CarrierWave::Uploader::Base
   end
 
   def filename
-    super.chomp(File.extname(super)) + '.png' if original_filename.present?
+    "#{super.chomp(File.extname(super))}.png" if original_filename.present?
   end
 
   def blank?

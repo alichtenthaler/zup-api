@@ -5,7 +5,7 @@ describe Inventory::Categories::API do
 
   context "POST /inventory/categories" do
     let!(:valid_params) do
-      JSON.parse <<-JSON
+      p = JSON.parse <<-JSON
         {
           "title": "Awesome category",
           "description": "Check this category!",
@@ -18,14 +18,14 @@ describe Inventory::Categories::API do
           }]
         }
       JSON
+
+      p.merge(
+        "icon" => Base64.encode64(fixture_file_upload('images/valid_report_category_icon.png').read)
+      )
     end
 
     it "creates the category" do
-      parameters = valid_params.merge({
-        "icon" => Base64.encode64(fixture_file_upload('images/valid_report_category_icon.png').read)
-      })
-
-      post "/inventory/categories", parameters, auth(user)
+      post "/inventory/categories", valid_params, auth(user)
       expect(response.status).to eq(201)
       body = parsed_body
 
@@ -38,6 +38,22 @@ describe Inventory::Categories::API do
       expect(last_category.color).to eq("#e2e2e2")
       expect(last_category.require_item_status).to eq(true)
       expect(last_category.statuses).to_not be_empty
+    end
+
+    context "permissions" do
+      let(:group) { create(:group) }
+      it "updates the permissions groups_can_view" do
+        valid_params['groups_can_view'] = [group.id]
+        expect(group.permission.inventory_categories_can_view).to be_empty
+
+        post "/inventory/categories", valid_params, auth(user)
+        expect(response.status).to eq(201)
+        body = parsed_body
+        group.reload
+
+        last_category = Inventory::Category.last
+        expect(group.permission.inventory_categories_can_view).to eq([last_category.id])
+      end
     end
   end
 
@@ -104,6 +120,23 @@ describe Inventory::Categories::API do
       expect(response.status).to eq(404)
       expect(parsed_body).to include("error")
     end
+
+    context "permissions" do
+      let(:group) { create(:group) }
+
+      it "updates the permissions groups_can_view" do
+        valid_params['groups_can_view'] = [group.id]
+        expect(group.permission.inventory_categories_can_view).to be_empty
+
+        put "/inventory/categories/#{category.id}", valid_params, auth(user)
+        expect(response.status).to eq(200)
+        body = parsed_body
+        group.reload
+
+        last_category = Inventory::Category.last
+        expect(group.permission.inventory_categories_can_view).to eq([last_category.id])
+      end
+    end
   end
 
   context "GET /inventory/categories" do
@@ -165,6 +198,28 @@ describe Inventory::Categories::API do
             category['id']
           end
         ).to_not eq(categories[0..2].map(&:id))
+      end
+    end
+
+    context "when the user doesn't have permission to see inventory" do
+      let(:group) { create(:group) }
+      let(:allowed_category) { categories.sample }
+
+      before do
+        group.permission.inventory_categories_can_view = [allowed_category.id]
+        group.save!
+        user.groups = [group]
+        user.save!
+      end
+
+      it "returns only the category" do
+        get "/inventory/categories", nil, auth(user)
+        expect(response.status).to eq(200)
+        body = parsed_body
+
+        expect(body).to include("categories")
+        expect(body['categories'].size).to eq(1)
+        expect(body['categories'].first['id']).to eq(allowed_category.id)
       end
     end
   end
@@ -238,6 +293,37 @@ describe Inventory::Categories::API do
       expect(field.kind).to eq("text")
       expect(field.options).to_not be_blank
     end
+
+    context "category locked" do
+      let(:locker) { create(:user) }
+
+      before do
+        category.update(locked: true, locked_at: Time.now, locker: locker)
+      end
+
+      context "user is not the locker" do
+        it "can't edit" do
+          put "/inventory/categories/#{category.id}/form", valid_params, auth(user)
+          expect(response.status).to eq(200)
+          body = parsed_body
+
+          expect(body['locker']['id']).to eq(locker.id)
+          expect(body['message']).to_not be_empty
+          expect(body['locked_at']).to be < 1.minute.from_now
+        end
+      end
+
+      context "user is locked" do
+        it "can edit" do
+          put "/inventory/categories/#{category.id}/form", valid_params, auth(locker)
+          expect(response.status).to eq(200)
+          body = parsed_body
+
+          expect(body['locker']).to be_nil
+          expect(body['message']).to_not be_empty
+        end
+      end
+    end
   end
 
   context "GET /inventory/categories/:id/form" do
@@ -249,6 +335,19 @@ describe Inventory::Categories::API do
       body = parsed_body
       expect(body).to include("sections")
       expect(body["sections"].map { |d| d["title"]}).to eq(category.sections.map(&:title))
+    end
+  end
+
+  context "PATCH /inventory/categories/:id/updates_access" do
+    let(:category) { create(:inventory_category_with_sections) }
+
+    it "locks the inventory category" do
+      patch "/inventory/categories/#{category.id}/update_access", nil, auth(user)
+      expect(response.status).to eq(200)
+
+      category.reload
+      expect(category).to be_locked
+      expect(category.locker).to eq(user)
     end
   end
 end

@@ -28,8 +28,12 @@ ZupApi::Application.configure do
   # number of complex assets.
   config.assets.debug = true
 
+  config.action_controller.asset_host = ENV['ASSET_HOST_URL']
+
   # Adds profiling tool to development
-  config.middleware.use ::Rack::PerftoolsProfiler, mode: :walltime, :default_printer => 'text', bundler: true
+  if ::Rack.const_defined?('PerftoolsProfiler')
+    config.middleware.use ::Rack::PerftoolsProfiler, mode: :walltime, :default_printer => 'text', bundler: true
+  end
 
   ActiveSupport::Dependencies.autoload_paths << File::join( Rails.root, 'app/api')
   ActiveSupport::Dependencies.explicitly_unloadable_constants << 'API'

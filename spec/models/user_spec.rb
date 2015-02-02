@@ -197,12 +197,23 @@ describe User do
 
   context "changing the password" do
     it "to change the password you need to provide the current password" do
+      allow_any_instance_of(UserAbility).to \
+        receive(:can?).with(:manage, User).and_return(false)
       user = create(:user)
       user.current_password = "1234"
       user.password = "123456"
       user.password_confirmation = "123456"
       expect(user.valid?).to eq(false)
       expect(user.errors.messages).to include(:current_password)
+    end
+
+    it "if he user can manage users, he doesn't need to provide the current password" do
+      allow_any_instance_of(UserAbility).to \
+        receive(:can?).with(:manage, User).and_return(true)
+      user = create(:user)
+      user.password = "123456"
+      user.password_confirmation = "123456"
+      expect(user.valid?).to eq(true)
     end
 
     it "changes if the password is the same" do
@@ -221,26 +232,15 @@ describe User do
     end
   end
 
-  describe "#add_to_public_group" do
-    it "adds to public group after create" do
-      guest_group = create(:guest_group)
-      user = build(:user, groups: [])
-      expect(user.groups).to be_empty
-
-      user.save!
-      expect(user.groups).to include(guest_group)
-    end
-  end
-
   describe 'permissions' do
     let(:group1) do
       group = create(:group)
-      group.update(inventory_categories_can_edit: [1,3], manage_users: 'true')
+      group.permission.update(inventory_categories_can_edit: [1,3], manage_users: 'true')
       group
     end
     let(:group2) do
       group = create(:group)
-      group.update(inventory_categories_can_edit: [3,9], manage_users: 'false')
+      group.permission.update(inventory_categories_can_edit: [3,9], manage_users: 'false')
       group
     end
     let(:user) { create(:user, groups: [group1, group2]) }

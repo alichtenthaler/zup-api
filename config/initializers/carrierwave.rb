@@ -1,4 +1,4 @@
-if Rails.env.production? && !(ENV['AWS_ACCESS_KEY_ID'].nil? || ENV['AWS_SECRET_ACCESS_KEY'].nil?)
+if (Rails.env.production? || Rails.env.deployment?) && !(ENV['AWS_ACCESS_KEY_ID'].nil? || ENV['AWS_SECRET_ACCESS_KEY'].nil?)
   CarrierWave.configure do |config|
     config.fog_credentials = {
         :provider => 'AWS',
@@ -12,6 +12,7 @@ if Rails.env.production? && !(ENV['AWS_ACCESS_KEY_ID'].nil? || ENV['AWS_SECRET_A
 else
   CarrierWave.configure do |config|
     config.storage = :file
+    config.asset_host = ActionController::Base.asset_host
 
     if Rails.env.test?
       config.enable_processing = false

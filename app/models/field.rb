@@ -10,7 +10,7 @@ class Field < ActiveRecord::Base
                    meter centimeter kilometer year month day hour minute second previous_field
                    radio select checkbox category_inventory category_inventory_field category_report}
 
-  KEYS_TO_CREATE_VERSION = %w{field_type requirements active order_number values}
+  KEYS_TO_CREATE_VERSION = %w{field_type requirements active values}
 
   belongs_to :step
   belongs_to :category_inventory, class_name: 'Inventory::Category', foreign_key: :category_inventory_id
@@ -32,12 +32,24 @@ class Field < ActiveRecord::Base
   after_save       :call_bump_on_initial_flow, if: :need_create_version_by_keys?
   after_save       :update_last_version_id!, unless: :last_version_id_changed?
 
-  def self.update_order!(ids)
+  def self.update_order!(ids, user=nil)
     ids.each_with_index { |id, index| self.find(id).update!(order_number: index + 1) }
+    elem = self.find(ids.first)
+    return unless elem.get_flow.try(:verify_if_need_create_version?)
+    elem.update!(last_version: elem.last_version + 1, user: user)
+    elem.get_flow.try(:bump_version_cascade!, elem)
   end
 
   def inactive!
     get_flow.try(:verify_if_need_create_version?) ? self.update!(active: false) : self.destroy!
+  end
+
+  def get_flow(object=nil)
+    if object.blank?
+      return if self.try(:step).try(:flow).blank?
+      object = self.step.flow
+    end
+    @get_flow ||= object
   end
 
   private
@@ -66,7 +78,7 @@ class Field < ActiveRecord::Base
       self.last_version = get_flow.try(:last_version)
       return
     end
-    return if self.last_version_changed? or self.last_version_id_changed?
+    return if self.changes.blank? or self.last_version_changed? or self.last_version_id_changed?
     self.increment :last_version
   end
 
@@ -77,14 +89,6 @@ class Field < ActiveRecord::Base
 
   def call_bump_on_initial_flow
     get_flow.try(:bump_version_cascade!, self)
-  end
-
-  def get_flow(object=nil)
-    if object.blank?
-      return if self.try(:step).try(:flow).blank?
-      object = self.step.flow
-    end
-    @get_flow ||= object
   end
 
   def need_create_version_by_keys?

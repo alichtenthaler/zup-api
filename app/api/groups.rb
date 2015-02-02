@@ -57,7 +57,7 @@ module Groups
         validate_permission!(:create, Group)
 
         group_params = safe_params.permit(:name, :description)
-        group_params[:permissions] = safe_params[:permissions] if safe_params[:permissions]
+        permission_params = safe_params[:permissions].permit! if safe_params[:permissions]
 
         group = Group.create!(group_params)
 
@@ -66,6 +66,11 @@ module Groups
           group.users = users
         end
 
+        permission_params.each do |key, value|
+          permission_params[key] = value.map(&:to_i) if value.is_a?(Array)
+        end
+
+        group.build_permission(permission_params)
         group.save!
 
         { message: "Group created successfully", group: Group::Entity.represent(group) }
@@ -115,12 +120,17 @@ module Groups
 
         group.name = safe_params[:name] if safe_params[:name]
         group.description = safe_params[:description] if safe_params[:description]
-        group.permissions = safe_params[:permissions] if safe_params[:permissions]
+        permission_params = safe_params[:permissions].permit! if safe_params[:permissions]
 
         if safe_params[:users].present?
           users = User.where(id: safe_params[:users].map(&:to_i))
           group.users << users
         end
+
+        permission_params.each do |key, value|
+          permission_params[key] = value.map(&:to_i) if value.is_a?(Array)
+        end
+        group.build_permission(permission_params)
 
         if group.save
           { message: "Group updated succesfully", group: group }
@@ -137,59 +147,64 @@ module Groups
         optional :manage_inventory_categories, type: Boolean, desc: "Can inventory categories"
         optional :manage_inventory_items, type: Boolean, desc: "Can manage inventory items"
         optional :manage_reports_categories, type: Boolean, desc: "Can manage inventory categories"
-        optional :manage_reports, type: Boolean, desc: "Can manage reports"
+        optional :edit_reports, type: Boolean, desc: "Can edit reports"
+        optional :delete_reports, type: Boolean, desc: "Can delete reports"
         optional :manage_users, type: Boolean, desc: "Can manage users"
         optional :manage_flows, type: Boolean, desc: "Can manage flows"
         optional :manage_inventory_formulas, type: Boolean, desc: "Can manage formulas"
 
         # Flows
-        optional :flow_can_view_all_steps, type: Array,
+        optional :flow_can_view_all_steps, type: Array[Integer],
                  desc: "Flow ids that can be viewed by the group"
-        optional :flow_can_execute_all_steps, type: Array,
+        optional :flow_can_execute_all_steps, type: Array[Integer],
                  desc: "Flow ids that can be executed by the group"
-        optional :flow_can_delete_own_cases, type: Array,
+        optional :flow_can_delete_own_cases, type: Array[Integer],
                  desc: "Flow ids that can be delete by the group"
-        optional :flow_can_delete_all_cases, type: Array,
+        optional :flow_can_delete_all_cases, type: Array[Integer],
                  desc: "Flow ids that can be delete by the group"
 
         # Steps
-        optional :can_view_step, type: Array,
+        optional :can_view_step, type: Array[Integer],
                  desc: "Step ids that can be viewed by the group"
-        optional :can_execute_step, type: Array,
+        optional :can_execute_step, type: Array[Integer],
                  desc: "Step ids that can be executed by the group"
 
         # Categories and sections
         optional :view_categories, type: Boolean, desc: "Can view inventory categories"
         optional :view_sections, type: Boolean, desc: "Can view sections"
 
+        # Panel access
+        optional :panel_access, type: Boolean, desc: "Can access panel"
+        optional :create_reports_from_panel, type: Boolean, desc: "Can create reports while on panel"
+
         # Groups
-        optional :groups_can_edit, type: Array,
+        optional :groups_can_edit, type: Array[Integer],
                  desc: "Groups ids that can be edited by the group"
-        optional :groups_can_view, type: Array,
+        optional :groups_can_view, type: Array[Integer],
                  desc: "Groups ids that can be viewed by the group"
 
         # Reports Categories
-        optional :reports_categories_can_edit, type: Array,
+        optional :reports_categories_can_edit, type: Array[Integer],
                  desc: "Reports categories ids that can be edited by the group"
-        optional :reports_categories_can_view, type: Array,
+        optional :reports_categories_can_view, type: Array[Integer],
                  desc: "Reports categories ids that can be viewed by the group"
 
         # Inventory Categories
-        optional :inventory_categories_can_edit, type: Array,
+        optional :inventory_categories_can_edit, type: Array[Integer],
                  desc: "Inventory categories ids that can be edited by the group"
-        optional :inventory_categories_can_view, type: Array,
+        optional :inventory_categories_can_view, type: Array[Integer],
                  desc: "Inventory sections ids that can be viewed by the group"
 
         # Inventory Sections
-        optional :inventory_sections_can_view, type: Array,
+        optional :inventory_sections_can_view, type: Array[Integer],
                  desc: "Inventory sections ids that can be edited by the group"
-        optional :inventory_sections_can_edit, type: Array,
+        optional :inventory_sections_can_edit, type: Array[Integer],
                  desc: "Inventory sections ids that can be edited by the group"
 
         # Inventory Fields
-        optional :inventory_fields_can_view, type: Array,
+        optional :inventory_fields_can_view, type: Array[Integer],
                  desc: "Inventory fields ids that can be edited by the group"
-        optional :inventory_fields_can_edit, type: Array,
+        optional :inventory_fields_can_edit, type: Array[Integer],
                  desc: "Inventory fields ids that can be edited by the group"
       end
       put ':id/permissions' do
@@ -197,12 +212,13 @@ module Groups
         group = Group.find(params[:id])
         validate_permission!(:edit, group)
 
-        group_params = safe_params.permit(
+        permission_params = safe_params.permit(
           :manage_users,                :manage_inventory_categories,
           :manage_inventory_items,      :manage_groups,
           :manage_reports_categories,   :manage_reports,
           :manage_flows,                :view_categories,
-          :manage_inventory_formulas,
+          :manage_inventory_formulas,   :edit_reports, :delete_reports,
+          :create_reports_from_panel,   :panel_access,
           :view_sections,               :groups_can_edit => [],
           :inventory_sections_can_view => [], :inventory_sections_can_edit => [],
           :inventory_categories_can_view => [], :inventory_categories_can_edit => [],
@@ -214,14 +230,8 @@ module Groups
           :step_view_all_case => [],          :step_execute_all_case => []
         )
 
-        unless group_params.empty?
-          group_params.each do |attr, value|
-            # Remove this on Rails 4.1
-            group.send("#{attr}=", value)
-            group.permissions_will_change!
-          end
-
-          group.save!
+        unless permission_params.empty?
+          group.permission.update(permission_params)
         end
 
         { group: Group::Entity.represent(group) }
@@ -268,7 +278,7 @@ module Groups
         {
           group: Group::Entity.represent(group),
           users: User::Entity.represent(
-            paginate(group.users),
+            paginate(group.users.distinct),
             display_type: 'full'
           )
         }

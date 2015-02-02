@@ -34,8 +34,9 @@ class Case < ActiveRecord::Base
   end
 
   def next_step
-    actual_step = self.case_steps.present? ? self.case_steps.last.step : nil
-    self.initial_flow.get_new_step_to_case(actual_step)
+    actual_step = self.case_steps.present? ? self.case_steps.last : nil
+    return actual_step.step if actual_step.present? and actual_step.case_step_data_fields.blank?
+    self.initial_flow.get_new_step_to_case(actual_step.try(:step))
   end
 
   private
@@ -114,7 +115,7 @@ class Case < ActiveRecord::Base
         end.compact if instance.case_steps.any?
         case_step_ids = case_steps.map(&:id) if case_steps.present?
       end
-      CaseStep::Entity.represent instance.case_steps, simplify_to: case_step_ids
+      CaseStep::Entity.represent instance.case_steps, options.merge(simplify_to: case_step_ids)
     end
 
     def current_step(instance, options={})
@@ -153,12 +154,14 @@ class Case < ActiveRecord::Base
     expose :responsible_user_id
     expose :responsible_group_id
     expose :status
+    expose :completed do |instance, options| instance.status == 'finished' end
     with_options(if: {display_type: 'full'}) do
       expose :created_by,            using: User::Entity
       expose :updated_by,            using: User::Entity
       expose :get_responsible_user,  using: User::Entity
       expose :get_responsible_group, using: Group::Entity
       expose :original_case,         using: Case::Entity
+      expose :case_steps do |instance, options| case_steps(instance, options) end
       expose :current_step do |instance, options| current_step(instance, options) end
       expose :steps do |instance, options| list_tree_steps(instance, options) end
     end

@@ -49,7 +49,7 @@ class Inventory::CreateFormForCategory
             found_field = section.fields.find(field["id"])
 
             if field["destroy"]
-              found_field.destroy and found_field = nil
+              found_field.disable! and found_field = nil
             else
               found_field.update(params_for_field(field))
             end
@@ -62,6 +62,7 @@ class Inventory::CreateFormForCategory
       end
     end
 
+    # TODO: Refactor these methods
     def updates_group_permission_for_field(field, permissions)
       return if field.nil?
 
@@ -70,19 +71,31 @@ class Inventory::CreateFormForCategory
         groups_can_edit = permissions['groups_can_edit']
 
         if groups_can_view
-          groups_can_view.split(',').each do |group_id|
+          # Remove permission of groups
+          Group.that_includes_permission(:inventory_fields_can_view, field.id).each do |group|
+            group = Group.find(group.id)
+            group.permission.inventory_fields_can_view = group.permission.inventory_fields_can_view - [field.id]
+            group.save!
+          end
+
+          groups_can_view.each do |group_id|
             group = Group.find(group_id)
-            group.inventory_fields_can_view = group.inventory_fields_can_view + [field.id]
-            group.permissions_will_change!
+            group.permission.inventory_fields_can_view = (group.permission.inventory_fields_can_view + [field.id]).uniq
             group.save!
           end
         end
 
         if groups_can_edit
-          groups_can_edit.split(',').each do |group_id|
+          # Remove permission of groups
+          Group.that_includes_permission(:inventory_fields_can_edit, field.id).each do |group|
+            group = Group.find(group.id)
+            group.permission.inventory_fields_can_view = group.permission.inventory_fields_can_view - [field.id]
+            group.save!
+          end
+
+          groups_can_edit.each do |group_id|
             group = Group.find(group_id)
-            group.inventory_fields_can_edit = group.inventory_fields_can_edit + [field.id]
-            group.permissions_will_change!
+            group.permission.inventory_fields_can_edit = (group.permission.inventory_fields_can_edit + [field.id]).uniq
             group.save!
           end
         end
@@ -97,19 +110,30 @@ class Inventory::CreateFormForCategory
         groups_can_edit = permissions['groups_can_edit']
 
         if groups_can_view
-          groups_can_view.split(',').each do |group_id|
+          # Remove permission of groups
+          Group.that_includes_permission(:inventory_sections_can_view, section.id).each do |group|
+            group = Group.find(group.id)
+            group.permission.inventory_sections_can_view = group.permission.inventory_sections_can_view - [section.id]
+            group.save!
+          end
+
+          groups_can_view.each do |group_id|
             group = Group.find(group_id)
-            group.inventory_sections_can_view = group.inventory_sections_can_view + [section.id]
-            group.permissions_will_change!
+            group.permission.inventory_sections_can_view = group.permission.inventory_sections_can_view + [section.id]
             group.save!
           end
         end
 
         if groups_can_edit
-          groups_can_edit.split(',').each do |group_id|
+          # Remove permission of groups
+          Group.that_includes_permission(:inventory_sections_can_edit, section.id).each do |group|
+            group.permission.inventory_sections_can_edit = group.permission.inventory_sections_can_edit - [section.id]
+            group.save!
+          end
+
+          groups_can_edit.each do |group_id|
             group = Group.find(group_id)
-            group.inventory_sections_can_edit = group.inventory_sections_can_edit + [section.id]
-            group.permissions_will_change!
+            group.permission.inventory_sections_can_edit = group.permission.inventory_sections_can_edit + [section.id]
             group.save!
           end
         end

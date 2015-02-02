@@ -32,7 +32,7 @@ describe Inventory::Items::API do
       expect(category.items.last).to_not be_nil
       expect(category.items.last.data).to_not be_empty
       expect(category.items.last.data.where(field: { kind: 'text' }).first.content).to eq("Test")
-      expect(category.items.last.user).to_not be_nil
+      expect(category.items.last.user).to eq(user)
       expect(category.items.last.status).to eq(status)
     end
 
@@ -74,12 +74,53 @@ describe Inventory::Items::API do
       expect(category.items.last.user).to_not be_nil
     end
 
+    it "creates the item object with attachments" do
+      attachments_field_id = category.sections.last.fields.create(
+        title: "Anexos",
+        kind: "attachments",
+        position: 0
+      ).id
+
+      fields = category.fields.order("id ASC")
+      item_params = []
+
+      fields.each do |field|
+        unless field.kind == "attachments"
+          valid_params['data'][field.id] = 'Rua do Banco'
+        else
+          valid_params['data'][field.id] = [
+            {
+              file_name: 'test.docx',
+              content: Base64.encode64(fixture_file_upload('images/valid_report_item_photo.jpg').read)
+            },
+            {
+              file_name: 'test2.docx',
+              content: Base64.encode64(fixture_file_upload('images/valid_report_item_photo.jpg').read)
+            }
+          ]
+        end
+      end
+
+      post "/inventory/categories/#{category.id}/items", valid_params, auth(user)
+      expect(response.status).to eq(201)
+      body = parsed_body
+
+      expect(body).to include("message")
+
+      attachment_data = category.items.last.data.find_by(inventory_field_id: attachments_field_id)
+      expect(category.items.last).to_not be_nil
+      expect(category.items.last.data).to_not be_empty
+      expect(attachment_data.content).to be_kind_of(Array)
+      expect(category.items.last.user).to_not be_nil
+    end
+
     it "doesn't allow to miss required fields" do
       category.fields.each do |field|
         valid_params['data'][field.id] = 'Test'
       end
 
       required_field = create(:inventory_field, section: category.sections.sample, required: true)
+      user.groups.first.permission.update!(inventory_fields_can_edit: [required_field.id])
       last_item = category.items.last
 
       post "/inventory/categories/#{category.id}/items", valid_params, auth(user)
@@ -138,7 +179,7 @@ describe Inventory::Items::API do
       item_data = body['item']
       expect(item_data).to include('data')
       expect(item_data['data']).to_not be_empty
-      expect(item_data['data'].first['content']).to eq(item.data.first.content.to_s)
+      expect(item_data['data'].first['content']).to eq(item.data.first.converted_content)
       expect(item_data['position']).to_not be_nil
       expect(item_data['position']['latitude']).to_not be_nil
       expect(item_data['position']['longitude']).to_not be_nil
@@ -195,6 +236,128 @@ describe Inventory::Items::API do
         expect(response.status).to eq(200)
         expect(item.reload.status).to eq(status)
       end
+    end
+
+    context "removing a image from item data" do
+
+      it "removes the image" do
+        images_field_id = category.sections.last.fields.create(
+          title: "Imagens",
+          kind: "images",
+          position: 0
+        ).id
+
+        data = item.data.where(inventory_field_id: images_field_id).first
+        image = data.images.create(image: fixture_file_upload('images/valid_report_item_photo.jpg'))
+
+        expect(data.reload.images).to_not be_empty
+
+        valid_params['data'][images_field_id] = [
+          {
+            id: image.id,
+            destroy: true
+          }
+        ]
+
+        put "/inventory/categories/#{category.id}/items/#{item.id}", valid_params, auth(user)
+        expect(data.reload.images).to be_empty
+      end
+
+    end
+
+    context "removing an attachment from item data" do
+
+      it "removes the attachment" do
+        attachments_field_id = category.sections.last.fields.create(
+          title: "Anexos",
+          kind: "attachments",
+          position: 0
+        ).id
+
+        data = item.data.where(inventory_field_id: attachments_field_id).first
+        attachment = data.attachments.create(attachment: fixture_file_upload('images/valid_report_item_photo.jpg'))
+
+        expect(data.reload.attachments).to_not be_empty
+
+        valid_params['data'][attachments_field_id] = [
+          {
+            id: attachment.id,
+            destroy: true
+          }
+        ]
+
+        put "/inventory/categories/#{category.id}/items/#{item.id}", valid_params, auth(user)
+        expect(data.reload.attachments).to be_empty
+      end
+
+    end
+
+    context "adding a image to item data" do
+      it "adds a new images to item data" do
+        images_field_id = category.sections.last.fields.create(
+          title: "Imagens",
+          kind: "images",
+          position: 0
+        ).id
+
+        data = item.data.where(inventory_field_id: images_field_id).first
+        image = data.images.create(image: fixture_file_upload('images/valid_report_item_photo.jpg'))
+
+        expect(data.reload.images).to_not be_empty
+
+        valid_params['data'][images_field_id] = [
+          {
+            content: Base64.encode64(fixture_file_upload('images/valid_report_item_photo.jpg').read)
+          }
+        ]
+
+        put "/inventory/categories/#{category.id}/items/#{item.id}", valid_params, auth(user)
+        expect(data.reload.images.count).to eq(2)
+      end
+    end
+
+    context "item locked" do
+      let(:locker) { create(:user) }
+
+      before do
+        item.update(locked: true, locked_at: Time.now, locker: locker)
+      end
+
+      context "user is not the locker" do
+        it "can't edit" do
+          put "/inventory/categories/#{category.id}/items/#{item.id}", valid_params, auth(user)
+          expect(response.status).to eq(200)
+          body = parsed_body
+
+          expect(body['locker']['id']).to eq(locker.id)
+          expect(body['message']).to_not be_empty
+          expect(body['locked_at']).to be < 1.minute.from_now
+        end
+      end
+
+      context "user is locked" do
+        it "can edit" do
+          put "/inventory/categories/#{category.id}/items/#{item.id}", valid_params, auth(locker)
+          expect(response.status).to eq(200)
+          body = parsed_body
+
+          expect(body['locker']).to be_nil
+          expect(body['message']).to_not be_empty
+        end
+      end
+    end
+
+  end
+
+  context "GET /inventory/items/:id" do
+    let(:item) { create(:inventory_item) }
+
+    it "returns the info about the item" do
+      get "/inventory/items/#{item.id}", nil, auth(user)
+      expect(response.status).to be_a_success_request
+      body = parsed_body
+
+      expect(body['item']['id']).to eq(item.id)
     end
   end
 
@@ -325,6 +488,44 @@ describe Inventory::Items::API do
       end
     end
 
+    context "basic display type" do
+      it "doesn't return the `data`" do
+        get "/inventory/items",
+          {
+            inventory_category_id: category.id,
+            display_type: 'basic'
+          }, auth(user)
+
+        expect(response.status).to eq(200)
+        body = parsed_body
+
+        expect(body['items'].first['data']).to be_nil
+      end
+    end
+
+    context "guest group" do
+      let(:other_category) { create(:inventory_category_with_sections) }
+      let!(:other_items) { create_list(:inventory_item, 2, category: other_category) }
+
+      before do
+        Group.guest.each do |group|
+          group.permission.inventory_categories_can_view = [other_category.id]
+          group.save!
+        end
+      end
+
+      it "only can see the category it has the permission" do
+        get "/inventory/items"
+        expect(response.status).to eq(200)
+        body = parsed_body
+
+        expect(body['items'].size).to eq(2)
+        expect(body['items'].map do |i|
+          i['id']
+        end).to match_array(other_items.map(&:id))
+      end
+    end
+
     context "search by position" do
       let(:empty_category) { create(:inventory_category) }
       let(:valid_params) do
@@ -398,6 +599,20 @@ describe Inventory::Items::API do
 
         expect(body["items"].map { |i| i["id"] }).to match_array(nearby_items.map { |i| i["id"] })
       end
+    end
+  end
+
+  context "PATCH /inventory/categories/:category_id/item/:id/update_access" do
+    let(:category) { create(:inventory_category_with_sections) }
+    let(:item) { create(:inventory_item, category: category) }
+
+    it "locks the inventory item" do
+      patch "/inventory/categories/#{category.id}/items/#{item.id}/update_access", nil, auth(user)
+      expect(response.status).to eq(200)
+
+      item.reload
+      expect(item).to be_locked
+      expect(item.locker).to eq(user)
     end
   end
 end

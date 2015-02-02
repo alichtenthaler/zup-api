@@ -62,7 +62,7 @@ module ZUP
     helpers do
       def current_user
         token = headers["X-App-Token"] || params[:token]
-        @current_user ||= User.authorize(token)
+        @current_user ||= User.authorize(token) if token
       end
 
       def authenticate!
@@ -101,6 +101,7 @@ module ZUP
     mount Search::API
     mount Flows::API
     mount Cases::API
+    mount FeatureFlags::API
 
     namespace :settings do
       desc "Return the app settings"

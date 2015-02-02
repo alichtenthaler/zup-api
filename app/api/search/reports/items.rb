@@ -15,6 +15,8 @@ module Search::Reports::Items
       optional :address, type: String
       optional :position, type: Hash,
                desc: 'Position parameters for search'
+      optional :overdue, type: Boolean,
+               desc: 'Rerturn only overdue or not overdue reports'
       optional :sort, type: String,
                desc: 'The field to sort the items. Either created_at, updated_at, status, id, reports_status_id (for status ordering) or user_name'
       optional :order, type: String,
@@ -26,7 +28,7 @@ module Search::Reports::Items
       authenticate!
 
       search_params = safe_params.permit(
-        :begin_date, :end_date, :address, :query,
+        :begin_date, :end_date, :address, :query, :overdue,
         :position => [:latitude, :longitude, :distance]
       )
 
@@ -58,10 +60,12 @@ module Search::Reports::Items
       search_params[:sort] = safe_params[:sort]
       search_params[:order] = safe_params[:order]
 
-      reports = Reports::SearchItems.new(search_params).search
+      reports = Reports::SearchItems.new(current_user, search_params).search
 
       {
-        reports: Reports::Item::Entity.represent(reports, display_type: safe_params[:display_type])
+        reports: Reports::Item::Entity.represent(reports,
+                                                 display_type: safe_params[:display_type],
+                                                 user: current_user)
       }
     end
 
@@ -91,7 +95,8 @@ module Search::Reports::Items
       reports = paginate(reports)
 
       {
-        reports: Reports::Item::Entity.represent(reports)
+        reports: Reports::Item::Entity.represent(reports,
+                                                 user: current_user)
       }
     end
   end

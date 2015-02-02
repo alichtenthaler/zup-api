@@ -6,20 +6,15 @@ FactoryGirl.define do
   factory :group do
     name
     guest false
+    association :permission, factory: :group_permission
   end
 
   factory :group_for_admin, parent: :group do
-    manage_users 'true'
-    manage_inventory_categories 'true'
-    manage_inventory_items 'true'
-    manage_groups 'true'
-    manage_reports_categories 'true'
-    manage_reports 'true'
-    manage_flows 'true'
-    manage_inventory_formulas 'true'
+    association :permission, factory: :admin_permissions
   end
 
   factory :guest_group, parent: :group do
+    association :permission, factory: :group_permission
     guest true
   end
 end

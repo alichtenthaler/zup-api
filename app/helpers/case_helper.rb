@@ -3,11 +3,11 @@ module CaseHelper
     trigger_type        = nil
     trigger_values      = nil
     trigger_description = nil
-    triggers            = step.triggers
+    triggers            = step.my_triggers
     if triggers.present?
-      triggers.active.each do |trigger|
+      triggers.select{|t| t.active }.each do |trigger|
         case_step  = kase.case_steps.find_by(step_id: step.id)
-        conditions = trigger.trigger_conditions.active.map do |condition|
+        conditions = trigger.my_trigger_conditions.select{|t| t.active }.map do |condition|
           compare_trigger_condition?(condition, case_step.case_step_data_fields)
         end
         unless conditions.include? false
@@ -18,14 +18,14 @@ module CaseHelper
           if trigger.action_type == 'finish_flow'
             kase.update!(status: 'finished', resolution_state_id: trigger_values.first)
             all_steps      = kase.initial_flow.list_all_steps
-            step_index     = all_steps.index(case_step.step)
+            step_index     = all_steps.index(case_step.my_step)
             if other_case_steps = kase.case_steps.where(step_id: all_steps[step_index+1..-1])
               other_case_steps.delete_all
               kase.log!('removed_case_step', user: user)
             end
             kase.log!('finished', user: user)
           elsif trigger.action_type == 'disable_steps'
-            kase.update! disabled_steps: kase.disabled_steps.push(trigger_values).flatten.uniq
+            kase.update! disabled_steps: kase.disabled_steps.push(trigger_values).flatten.uniq.map(&:to_i)
           elsif trigger.action_type == 'transfer_flow'
             kase.log!('transfer_flow', new_flow_id: trigger_values.first, user: user)
           end
@@ -37,7 +37,7 @@ module CaseHelper
   end
 
   def compare_trigger_condition?(condition, data_fields)
-    field          = condition.field
+    field          = condition.my_field
     original_value = data_fields.find_by(field_id: field.id).try(:value)
     value          = convert_data(field.field_type, original_value, field)
     cond_values    = condition.values.map { |v| convert_data(field.field_type, v, field) }

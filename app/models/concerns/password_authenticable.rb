@@ -68,12 +68,15 @@ module PasswordAuthenticable
   end
 
   def presence_of_current_password
+    permissions = UserAbility.new(self)
+
     # If is an existent record
     # and the password attribute is present
     # and the current_password
     # or the informed one is inequal to current
     # and is not resetting the password
-    if !new_record? &&
+    if !permissions.can?(:manage, User) &&
+       !new_record? &&
        password.present? &&
        (
         current_password.blank? ||

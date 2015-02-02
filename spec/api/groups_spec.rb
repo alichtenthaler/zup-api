@@ -32,11 +32,11 @@ describe Groups::API do
 
       last_created_group = Group.last
       expect(last_created_group.name).to eq("Cool group")
-      expect(last_created_group.view_categories).to eq(false)
-      expect(last_created_group.view_sections).to eq(true)
-      expect(last_created_group.manage_inventory_categories).to eq(true)
-      expect(last_created_group.groups_can_edit).to match_array([1,2])
-      expect(last_created_group.groups_can_view).to match_array([99])
+      expect(last_created_group.permission.view_categories).to eq(false)
+      expect(last_created_group.permission.view_sections).to eq(true)
+      expect(last_created_group.permission.manage_inventory_categories).to eq(true)
+      expect(last_created_group.permission.groups_can_edit).to match_array([1,2])
+      expect(last_created_group.permission.groups_can_view).to match_array([99])
       expect(last_created_group.users).to include(user)
 
       expect(body).to include("message")
@@ -54,7 +54,7 @@ describe Groups::API do
 
       last_created_group = Group.last
       expect(last_created_group.name).to eq("Cool group")
-      expect(last_created_group.view_categories).to eq(false)
+      expect(last_created_group.permission.view_categories).to eq(false)
       expect(last_created_group.users).to be_empty
 
       expect(body).to include("message")
@@ -115,7 +115,10 @@ describe Groups::API do
       JSON.parse <<-JSON
         {
           "name": "An awesome name!",
-          "users": [#{other_user.id}]
+          "users": [#{other_user.id}],
+          "permissions": {
+            "manage_users": true
+          }
         }
       JSON
     end
@@ -130,6 +133,7 @@ describe Groups::API do
       expect(changed_group.name).to eq("An awesome name!")
       expect(changed_group.users).to include(other_user, user)
       expect(changed_group.users.count).to eq(2)
+      expect(changed_group.permission.manage_users).to be_truthy
     end
   end
 
@@ -258,14 +262,14 @@ describe Groups::API do
       end
 
       it "updates the group permission" do
-        expect(group.manage_users).to eq(false)
+        expect(group.permission.manage_users).to eq(false)
         put "/groups/#{group.id}/permissions", valid_params, auth(user)
         expect(response.status).to eq(200)
         body = parsed_body
 
         expect(body).to include("group")
         group.reload
-        expect(group.manage_users).to eq(true)
+        expect(group.permission.manage_users).to eq(true)
         expect(body['group']['permissions']).to_not be_empty
       end
     end
@@ -281,8 +285,8 @@ describe Groups::API do
       end
 
       it "updates the group permission" do
-        expect(group.inventory_categories_can_view).to eq([])
-        expect(group.inventory_categories_can_edit).to eq([])
+        expect(group.permission.inventory_categories_can_view).to eq([])
+        expect(group.permission.inventory_categories_can_edit).to eq([])
 
         put "/groups/#{group.id}/permissions", valid_params, auth(user)
         expect(response.status).to eq(200)
@@ -290,8 +294,8 @@ describe Groups::API do
 
         expect(body).to include("group")
         group.reload
-        expect(group.inventory_categories_can_view).to eq([1,2,3,4])
-        expect(group.inventory_categories_can_edit).to eq([1,3,5,6])
+        expect(group.permission.inventory_categories_can_view).to eq([1,2,3,4])
+        expect(group.permission.inventory_categories_can_edit).to eq([1,3,5,6])
 
         expect(body['group']['permissions']).to_not be_empty
       end

@@ -14,7 +14,7 @@ module Flows::Steps::Triggers
         authenticate!
         validate_permission!(:update, Trigger)
 
-        Step.find(safe_params[:step_id]).triggers.update_order!(safe_params[:ids])
+        Step.find(safe_params[:step_id]).triggers.update_order!(safe_params[:ids], current_user)
         { message: I18n.t(:trigger_order_updated) }
       end
 

@@ -4,29 +4,36 @@ class UserAbility
   attr_accessor :user
 
   # TODO: Make this work with the Guest group.
-  def initialize(user = nil)
-    @user = user || User::Guest.new
+  def initialize(given_user = nil)
+    @user = (given_user or User::Guest.new)
     user_groups = user.groups
-
 
     if user.guest?
       can :view, Inventory::Category
-      can :view, Inventory::Report
+      can :view, Reports::Category
     else
       # TODO: Essa permissão precisava ser dada a um grupo "Público" no qual
       # todos os usuários cadastrados farão parte por padrão
       can :create, Reports::Item
 
+      if user_groups.with_permission(:panel_access)
+        can :access, "Panel"
+      end
+
+      if user_groups.with_permission(:create_reports_from_panel)
+        can :create_from_panel, Reports::Item
+      end
+
       if user_groups.with_permission(:manage_users)
         can :manage, User
       end
 
-      can :manage, User do |u|
-        user.id == u.id
-      end
-
       if user_groups.with_permission(:manage_groups)
         can :manage, Group
+      end
+
+      can :edit, User do |u|
+        u.id == user.id
       end
 
       if user_groups.with_permission(:manage_inventory_categories)
@@ -45,12 +52,36 @@ class UserAbility
         can :manage, Reports::Item
       end
 
+      if user_groups.with_permission(:manage_config)
+        can :manage, FeatureFlag
+      end
+
       if user_groups.with_permission(:manage_flows)
         can :manage, Flow
         can :manage, ResolutionState
         can :manage, Step
         can :manage, Field
         can :manage, Trigger
+      end
+
+      if user_groups.with_permission(:edit_inventory_items)
+        can :edit, Inventory::Item
+        can :view, Inventory::Item
+      end
+
+      if user_groups.with_permission(:delete_inventory_items)
+        can :destroy, Inventory::Item
+        can :view, Inventory::Item
+      end
+
+      if user_groups.with_permission(:edit_reports)
+        can :edit, Reports::Item
+        can :view, Reports::Item
+      end
+
+      if user_groups.with_permission(:delete_reports)
+        can :destroy, Reports::Item
+        can :view, Reports::Item
       end
 
       can :show, Step do |step|
@@ -65,12 +96,12 @@ class UserAbility
         # if user has any one these options should be understood that he can see Case
         can_see = false
         user_groups.each do |group|
-          permissions = group.permissions
-          next if permissions.blank?
-          can_execute_step      = permissions['can_execute_step'].present?
-          can_view_step         = permissions['can_view_step'].present?
-          can_execute_all_steps = permissions['flow_can_execute_all_steps'].present?
-          can_view_all_steps    = permissions['flow_can_view_all_steps'].present?
+          permission = group.permission
+          next if permission.blank?
+          can_execute_step      = permission.can_execute_step.present?
+          can_view_step         = permission.can_view_step.present?
+          can_execute_all_steps = permission.flow_can_execute_all_steps.present?
+          can_view_all_steps    = permission.flow_can_view_all_steps.present?
           can_see = can_execute_step || can_view_step || can_execute_all_steps || can_view_all_steps
           break if can_see
         end
@@ -138,7 +169,8 @@ class UserAbility
       end
 
       can :view, Group do |group|
-        Group.included_in_permission?(user_groups, :groups_can_view, group.id)
+        Group.included_in_permission?(user_groups, :groups_can_view, group.id) || \
+          Group.included_in_permission?(user_groups, :groups_can_edit, group.id)
       end
 
       # Reports category permissions
@@ -147,7 +179,8 @@ class UserAbility
       end
 
       can :view, Reports::Category do |category|
-        Group.included_in_permission?(user_groups, :reports_categories_can_view, category.id)
+        Group.included_in_permission?(user_groups, :reports_categories_can_edit, category.id) || \
+          Group.included_in_permission?(user_groups, :reports_categories_can_view, category.id)
       end
 
       # Inventory category permissions
@@ -156,7 +189,8 @@ class UserAbility
       end
 
       can :view, Inventory::Category do |category|
-        Group.included_in_permission?(user_groups, :inventory_categories_can_view, category.id)
+        Group.included_in_permission?(user_groups, :inventory_categories_can_edit, category.id) || \
+          Group.included_in_permission?(user_groups, :inventory_categories_can_view, category.id)
       end
 
       # Reports items permissions
@@ -165,7 +199,8 @@ class UserAbility
       end
 
       can :view, Reports::Item do |report|
-        Group.included_in_permission?(user_groups, :reports_categories_can_view, report.reports_category_id)
+        Group.included_in_permission?(user_groups, :reports_categories_can_edit, report.reports_category_id) || \
+          Group.included_in_permission?(user_groups, :reports_categories_can_view, report.reports_category_id)
       end
 
       # Inventory items permissions
@@ -174,7 +209,8 @@ class UserAbility
       end
 
       can :view, Inventory::Item do |inventory_item|
-        Group.included_in_permission?(user_groups, :inventory_categories_can_view, inventory_item.inventory_category_id)
+        Group.included_in_permission?(user_groups, :inventory_categories_can_view, inventory_item.inventory_category_id) || \
+          Group.included_in_permission?(user_groups, :inventory_categories_can_view, inventory_item.inventory_category_id)
       end
 
       # Inventory sections permissions
@@ -183,7 +219,8 @@ class UserAbility
       end
 
       can :view, Inventory::Section do |inventory_section|
-        Group.included_in_permission?(user_groups, :inventory_sections_can_view, inventory_section.id)
+        Group.included_in_permission?(user_groups, :inventory_sections_can_view, inventory_section.id) || \
+          Group.included_in_permission?(user_groups, :inventory_sections_can_view, inventory_section.id)
       end
 
       # Inventory fields permissions
@@ -192,9 +229,21 @@ class UserAbility
       end
 
       can :view, Inventory::Field do |inventory_field|
-        Group.included_in_permission?(user_groups, :inventory_fields_can_view, inventory_field.id)
+        Group.included_in_permission?(user_groups, :inventory_fields_can_edit, inventory_field.id) || \
+          Group.included_in_permission?(user_groups, :inventory_fields_can_view, inventory_field.id)
       end
-
     end
+  end
+
+  def inventory_categories_visible
+    (Group.ids_for_permission(user.groups, :inventory_categories_can_view) + Group.ids_for_permission(user.groups, :inventory_categories_can_edit)).uniq
+  end
+
+  def reports_categories_visible
+    (Group.ids_for_permission(user.groups, :reports_categories_can_view) + Group.ids_for_permission(user.groups, :reports_categories_can_edit)).uniq
+  end
+
+  def inventory_fields_visible
+    (Group.ids_for_permission(user.groups, :inventory_fields_can_view) + Group.ids_for_permission(user.groups, :inventory_fields_can_view)).uniq
   end
 end

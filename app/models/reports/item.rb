@@ -10,12 +10,14 @@ class Reports::Item < Reports::Base
   belongs_to :category, foreign_key: 'reports_category_id', class_name: 'Reports::Category'
   belongs_to :user, include: [:groups]
   belongs_to :inventory_item, class_name: 'Inventory::Item'
+  belongs_to :reporter, class_name: 'User'
 
   has_many :inventory_categories, through: :category
   has_many :images, foreign_key: 'reports_item_id',
                     class_name: 'Reports::Image',
                     autosave: true
   has_many :statuses, through: :category
+  has_many :status_categories, through: :category
   has_many :status_history, foreign_key: 'reports_item_id',
                             class_name: 'Reports::ItemStatusHistory',
                             autosave: true
@@ -30,22 +32,17 @@ class Reports::Item < Reports::Base
 
   validates :description, length: { maximum: 800 }
 
-  def update_status(new_status)
-    set_status_history_update(new_status)
-    self.status = new_status
-  end
-
-  def update_status!(new_status)
-    update_status(new_status)
-    self.save!
-
-    if self.status_history.count > 1
-      UserMailer.delay.notify_report_status_update(self)
-    end
-  end
-
   def inventory_item_category_id
     self.inventory_item.try(:inventory_category_id)
+  end
+
+  # Returns the last public status if the status is the private one
+  def status_for_user
+    if status.private_for_category?(category)
+      status_history.public.last.try(:new_status)
+    else
+      status
+    end
   end
 
   # TODO: Maybe we should save this calculation
@@ -79,21 +76,26 @@ class Reports::Item < Reports::Base
 
   def images_structure
     structure = self.images.map do |image|
-      self.fetch_image_versions(image.image)
+      self.fetch_image_versions(image.image).merge(original: image.url)
     end
 
     structure
   end
 
+  def status_history_for_user
+    status_history.public
+  end
 
   class Entity < Grape::Entity
     expose :id
     expose :protocol
+    expose :overdue
 
     expose :address do |obj, _|
       obj.address || obj.inventory_item.location[:address]
     end
     expose :reference
+    expose :confidential
 
     expose :position do |obj, _|
       if obj.inventory_item.nil?
@@ -119,11 +121,11 @@ class Reports::Item < Reports::Base
     # With display_type equal to full
     with_options(if: { display_type: 'full' }) do
       expose :inventory_categories, using: Inventory::Category::Entity
-      expose :status, using: Reports::Status::Entity
+      expose :status_for_user, as: :status, using: Reports::Status::Entity
       expose :category, using: Reports::Category::Entity
       expose :inventory_item, using: Inventory::Item::Entity
       expose :feedback, using: Reports::Feedback::Entity
-      expose :status_history, using: Reports::ItemStatusHistory::Entity
+      expose :status_history_for_user, as: :status_history, using: Reports::ItemStatusHistory::Entity
     end
 
     # With display_type different to full
@@ -137,17 +139,21 @@ class Reports::Item < Reports::Base
     expose :inventory_item_category_id
     expose :created_at
     expose :updated_at
+
+    private
+
+    def protocol
+      user = options[:user]
+      permissions = UserAbility.new(user)
+
+      if permissions.can?(:access, "Panel") ||
+          permissions.can?(:edit, object) || user == object.user
+        object.protocol
+      end
+    end
   end
 
   private
-    def set_status_history_update(new_status)
-      if new_status.id != self.status.try(:id)
-        self.status_history.build(
-          previous_status: self.status,
-          new_status: new_status
-        )
-      end
-    end
 
     def send_email_to_user
       UserMailer.delay.notify_report_creation(self)
@@ -181,8 +187,8 @@ class Reports::Item < Reports::Base
     # before_save
     def set_initial_status
       if self.status.nil?
-        new_status = self.category.statuses.initial.first!
-        update_status(new_status)
+        new_status = self.category.status_categories.initial.first!.status
+        Reports::UpdateItemStatus.new(self).set_status(new_status)
       end
     end
 end

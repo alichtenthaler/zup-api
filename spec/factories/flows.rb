@@ -5,7 +5,7 @@ FactoryGirl.define do
     title 'title test'
     description 'description test'
     created_by { User.first || create(:user) }
-    resolution_states { [build(:resolution_state)] }
+    resolution_states { [create(:resolution_state, default: true)] }
     steps { [build(:step)] }
     initial false
     status 'active'

@@ -87,13 +87,14 @@ module Flows
 
           safe_params[:group_ids].each do |group_id|
             group = Group.find(group_id)
+
             if permission_types_array.include? permission_type
-              permissions = group.permissions[permission_type].present? ? eval(group.permissions[permission_type]) : []
-              group.permissions[permission_type] = permissions.push(safe_params[:id])
+              permissions = group.permission.send(permission_type)
+              group.permission.send("#{permission_type}=", permissions + [safe_params[:id].to_i])
             else
-              group.permissions[permission_type] = true
+              group.permission.send("#{permission_type}=", true)
             end
-            group.permissions_will_change!
+
             group.save!
           end
 
@@ -117,13 +118,11 @@ module Flows
           safe_params[:group_ids].each do |group_id|
             group = Group.find(group_id)
             if permission_types_array.include? permission_type
-              permissions = group.permissions[permission_type].present? ? eval(group.permissions[permission_type]) : []
-              permissions.delete(safe_params[:id])
-              group.permissions[permission_type] = permissions
+              permissions = group.permission.send(permission_type)
+              group.permission.send("#{permission_type}=", permissions - [safe_params[:id].to_i])
             else
-              group.permissions[permission_type] = false
+              group.permission.send("#{permission_type}=", true)
             end
-            group.permissions_will_change!
             group.save!
           end
 

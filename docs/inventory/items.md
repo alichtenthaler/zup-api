@@ -349,3 +349,20 @@ __Query string:__
 
     &limit=40
     &zoom=18                             O zoom reportado pelo Google Maps
+
+
+#### Exibindo o item na forma compacta
+
+Para exibir a listagem de itens sem a informação de `data`, basta passar o seguinte parâmetro: `display_type` como `basic` na requisição
+
+__Query string:__
+
+    ?display_type=basic
+
+## 'Lock' na edição do item de inventário
+
+Para travar a edição do item de inventário, você deve fazer um request para o seguinte endpoint:
+
+`PATCH /inventory/categories/:category_id/items/:id/update_access`
+
+Após 1 minuto, o item será destravado automaticamente se não for mais recebido esse `heartbeat`, dessa forma, faça o request com uma frequência menor que 60 segundos.

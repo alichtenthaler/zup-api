@@ -166,10 +166,13 @@ describe Search::Reports::Items::API do
       end
       let!(:wrong_items) do
         new_status = create(:status)
-        items = create_list(:reports_item, 3)
+        category.status_categories.create!(status: new_status)
+
+        items = create_list(:reports_item, 3, category: category)
         items.each do |item|
-          item.update_status!(new_status)
+          Reports::UpdateItemStatus.new(item).update_status!(new_status)
         end
+
         items
       end
       let(:valid_params) do
@@ -210,6 +213,27 @@ describe Search::Reports::Items::API do
 
         get "/search/reports/items", valid_params, auth(user)
         expect(parsed_body['reports'].first['id']).to eq(correct_item.id)
+      end
+    end
+
+    context "by overdue" do
+      let(:items) do
+        create_list(:reports_item, 3, category: category)
+      end
+      let(:valid_params) do
+        JSON.parse <<-JSON
+          {
+            "overdue": true
+          }
+        JSON
+      end
+
+      it "returns the correct items with the correct address" do
+        correct_item = items.sample
+        correct_item.update(overdue: true)
+
+        get "/search/reports/items", valid_params, auth(user)
+        expect(parsed_body['reports'].map { |r| r['id'] }).to eq([correct_item.id])
       end
     end
 

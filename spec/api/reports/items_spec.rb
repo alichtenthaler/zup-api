@@ -34,7 +34,6 @@ describe Reports::Items::API do
       expect(body['status']['color']).to_not be_nil
       expect(body['status']['final']).to_not be_nil
       expect(body['status']['initial']).to_not be_nil
-      expect(body['protocol']).to_not be_nil
 
       expect(body['images'][0]['high']).to_not be_empty
       expect(body['images'][0]['low']).to_not be_empty
@@ -60,7 +59,6 @@ describe Reports::Items::API do
       expect(body['status']['color']).to_not be_nil
       expect(body['status']['final']).to_not be_nil
       expect(body['status']['initial']).to_not be_nil
-      expect(body['protocol']).to_not be_nil
 
       # TODO: Fix these validations
       # expect(body['images'][0]['url']).to eq('/uploads/' + valid_params[:images][0].original_filename)
@@ -89,11 +87,56 @@ describe Reports::Items::API do
       expect(body['status']['final']).to_not be_nil
       expect(body['status']['initial']).to_not be_nil
       expect(body['category']).to_not be_nil
-      expect(body['protocol']).to_not be_nil
       expect(body['images'][0]['high']).to_not be_empty
       expect(body['images'][0]['low']).to_not be_empty
       expect(body['images'][1]['high']).to_not be_empty
       expect(body['images'][1]['low']).to_not be_empty
+    end
+
+    it "accepts passing an user_id as argument" do
+      other_user = create(:user)
+      valid_params[:user_id] = other_user.id
+
+      post "/reports/#{category.id}/items", valid_params, auth(user)
+      expect(response.status).to eq(201)
+      expect(category.reports.last.user).to eq(other_user)
+      expect(category.reports.last.reporter).to eq(user)
+    end
+
+    it "creates a confidential report" do
+      valid_params[:confidential] = true
+
+      post "/reports/#{category.id}/items", valid_params, auth(user)
+      expect(response.status).to eq(201)
+      expect(category.reports.last.confidential).to be_truthy
+    end
+
+    context "from panel" do
+      subject do
+        post "/reports/#{category.id}/items", valid_params, auth(user)
+      end
+
+      context "user has permission to create from panel" do
+        it "allows creation of the report" do
+          valid_params[:from_panel] = true
+          subject
+
+          expect(response.status).to eq(201)
+        end
+      end
+
+      context "user doesn't have permission to create from panel" do
+        before do
+          GroupPermission.where(group_id: user.groups.pluck(:id)).update_all(create_reports_from_panel: false, manage_reports: false)
+        end
+
+        it "disallows creation of the report" do
+          valid_params[:from_panel] = true
+          subject
+
+          expect(response.status).to_not eq(201)
+        end
+      end
     end
   end
 
@@ -117,7 +160,6 @@ describe Reports::Items::API do
       expect(body['status']['color']).to_not be_nil
       expect(body['status']['final']).to_not be_nil
       expect(body['status']['initial']).to_not be_nil
-      expect(body['protocol']).to_not be_nil
     end
 
     it 'is able to change the images' do
@@ -139,14 +181,43 @@ describe Reports::Items::API do
       expect(existent_item.reload.images.last.url).to eq(old_image_url2)
     end
 
-    it "is able to update the status passing status_id" do
-      valid_params['status_id'] = category.statuses.final.first.id
+    context "updating the status" do
+      it "is able to update the status passing status_id" do
+        status = category.statuses.final.first
+        valid_params['status_id'] = status.id
 
-      expect(existent_item.id).to_not eq(valid_params[:status_id])
-      put "/reports/#{category.id.to_s}/items/#{existent_item.id}", valid_params, auth(user)
-      expect(response.status).to eq(200)
-      body = parsed_body['report']
-      expect(body['status_id']).to eq(valid_params[:status_id])
+        expect(existent_item.id).to_not eq(status.id)
+        put "/reports/#{category.id.to_s}/items/#{existent_item.id}", valid_params, auth(user)
+        expect(response.status).to eq(200)
+        body = parsed_body['report']
+        expect(body['status']['id']).to eq(status.id)
+      end
+
+      context "when the status is private" do
+        let(:status) { create(:status) }
+
+        before do
+          Reports::StatusCategory.create(
+            category: category,
+            status: status,
+            private: true
+          )
+
+          allow(UserMailer).to receive(:notify_report_status_update).and_return(nil)
+        end
+
+        it "doesn't notify the user" do
+          valid_params['status_id'] = \
+            category.status_categories.private.first.status.id
+
+          expect(existent_item.reports_status_id).to_not eq(status.id)
+          put "/reports/#{category.id.to_s}/items/#{existent_item.id}", valid_params, auth(user)
+          expect(response.status).to eq(200)
+          body = parsed_body['report']
+          expect(body['status']['id']).to eq(status.id)
+          expect(UserMailer).to_not have_received(:notify_report_status_update)
+        end
+      end
     end
 
     it "is able to update the report category" do
@@ -159,7 +230,43 @@ describe Reports::Items::API do
       put "/reports/#{category.id.to_s}/items/#{existent_item.id}", valid_params, auth(user)
       expect(parsed_body['report']['category']['id']).to eq(new_category.id)
     end
+
+    it "changes the param to confidential" do
+      valid_params['confidential'] = true
+      put "/reports/#{category.id.to_s}/items/#{existent_item.id}", valid_params, auth(user)
+      expect(response.status).to eq(200)
+      body = parsed_body['report']
+      expect(body['confidential']).to be_truthy
+    end
   end
+
+  context 'PUT /reports/:category_id/items/:id/change_category' do
+    let(:item) { create(:reports_item_with_images, category: category) }
+    let(:other_category) { create(:reports_category_with_statuses) }
+    let(:other_status) do
+      other_category.statuses.first
+    end
+
+    context "valid category and status" do
+      let(:valid_params) do
+        JSON.parse <<-JSON
+          {
+            "new_category_id": #{other_category.id},
+            "new_status_id": #{other_status.id}
+          }
+        JSON
+      end
+
+      it "updates the category and status of the item correctly" do
+        put "/reports/#{item.category.id}/items/#{item.id}/change_category", valid_params, auth(user)
+        item.reload
+
+        expect(item.category).to eq(other_category)
+        expect(item.status).to eq(other_status)
+      end
+    end
+  end
+
 
   context 'GET /reports/items' do
     context "no filters" do
@@ -168,7 +275,7 @@ describe Reports::Items::API do
       end
 
       it "return all reports ordenated and paginated" do
-        get '/reports/items?page=2&per_page=15&sort=id&order=desc',
+        get '/reports/items?page=2&per_page=15&sort=id&order=asc',
             nil, auth(user)
         expect(response.status).to eq(200)
         body = parsed_body
@@ -410,9 +517,44 @@ describe Reports::Items::API do
         end
       end
     end
+
+    context "guest group" do
+      let(:other_category) { create(:reports_category_with_statuses) }
+      let!(:reports) do
+        create_list(
+          :reports_item_with_images, 2,
+          category: category, user: user
+        )
+      end
+      let!(:wrong_reports) do
+        create_list(
+          :reports_item_with_images, 3,
+          category: other_category
+        )
+      end
+
+      before do
+        Group.guest.each do |group|
+          group.permission.reports_categories_can_view = [category.id]
+          group.save!
+        end
+      end
+
+      it "only can see the category it has the permission" do
+        get "/reports/items"
+        expect(response.status).to eq(200)
+        body = parsed_body
+
+        expect(body['reports'].size).to eq(2)
+        expect(body['reports'].map do |i|
+          i['id']
+        end).to match_array(reports.map(&:id))
+      end
+    end
   end
 
   context 'GET /reports/items/:id' do
+    let(:user) { create(:user) }
     let(:item) { create(:reports_item_with_images, :with_feedback) }
 
     it "returns the report data" do
@@ -432,8 +574,53 @@ describe Reports::Items::API do
       expect(report['status']['final']).to_not be_nil
       expect(report['status']['initial']).to_not be_nil
       expect(report['category']).to_not be_nil
-      expect(report['protocol']).to_not be_nil
       expect(report['feedback']).to be_present
+    end
+
+    context "if the user that created is the same" do
+      let(:item) { create(:reports_item_with_images, :with_feedback, user: user) }
+
+      it "shows the protocol" do
+        get "/reports/items/#{item.id}", nil, auth(user)
+        expect(response.status).to eq(200)
+        report = parsed_body['report']
+
+        expect(report['protocol']).to_not be_blank
+      end
+    end
+
+    context "if the user didn't create the item" do
+      let(:item) { create(:reports_item_with_images) }
+
+      before do
+        user.groups = Group.guest
+        user.save!
+      end
+
+      it "doesn't show the protocol" do
+        get "/reports/items/#{item.id}", nil, auth(user)
+        expect(response.status).to eq(200)
+        report = parsed_body['report']
+
+        expect(report['protocol']).to be_blank
+      end
+    end
+
+    context "if the user has admin privileges" do
+      let(:item) { create(:reports_item_with_images) }
+
+      before do
+        user.groups.first.permission.update(panel_access: true)
+        user.save!
+      end
+
+      it "does show the protocol" do
+        get "/reports/items/#{item.id}", nil, auth(user)
+        expect(response.status).to eq(200)
+        report = parsed_body['report']
+
+        expect(report['protocol']).to_not be_blank
+      end
     end
   end
 
@@ -465,7 +652,6 @@ describe Reports::Items::API do
         expect(report['position']['latitude']).to_not be_nil
         expect(report['position']['latitude']).to_not be_nil
         expect(report['status_id']).to_not be_nil
-        expect(report['protocol']).to_not be_nil
       end
     end
 
@@ -549,7 +735,6 @@ describe Reports::Items::API do
         expect(report['position']['latitude']).to_not be_nil
         expect(report['position']['longitude']).to_not be_nil
         expect(report['status_id']).to_not be_nil
-        expect(report['protocol']).to_not be_nil
       end
     end
   end
@@ -575,7 +760,6 @@ describe Reports::Items::API do
         expect(report['position']['longitude']).to_not be_nil
         expect(report['status']['id']).to_not be_nil
         expect(report['category']['id']).to_not be_nil
-        expect(report['protocol']).to_not be_nil
       end
 
       expect(body['total_reports_by_user']).to eq(3)

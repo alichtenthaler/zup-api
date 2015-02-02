@@ -18,38 +18,75 @@ class Reports::GetStats
     stats = []
 
     categories.each do |category|
-      category_stats = {}
-      category_stats.merge!(
-        category_id: category.id,
-        name: category.title
-      )
-
-      statuses_stats = []
-      category.statuses.each do |status|
-        reports_items = status.reports_items.where(reports_category_id: category.id)
-
-        if begin_date || end_date
-          if begin_date && end_date
-            reports_items = reports_items.where(created_at: begin_date..end_date)
-          elsif begin_date
-            reports_items = reports_items.where("created_at >= ?", begin_date)
-          elsif end_date
-            reports_items = reports_items.where("created_at <= ?", end_date)
-          end
-        end
-
-        statuses_stats << {
-          status_id: status.id,
-          title: status.title,
-          count: reports_items.count,
-          color: status.color
-        }
-      end
-
-      category_stats[:statuses] = statuses_stats
-      stats << category_stats
+      stats << fetch_stats_from_category(category)
     end
 
     stats
   end
+
+  private
+
+  def fetch_stats_from_category(category)
+    category_stats = {}
+    category_stats.merge!(
+      category_id: category.id,
+      name: category.title
+    )
+
+    subcategories_ids = category.subcategories.pluck(:id) || []
+    subcategories_ids << category.id
+
+    # Get all statuses, from the categories
+    category_statuses = Reports::StatusCategory.joins(:category)
+                                               .where(
+                                                 reports_statuses_reports_categories: {
+                                                   reports_category_id: subcategories_ids,
+                                                   private: false
+                                                 }
+                                               ).map(&:status)
+
+    # Statuses
+    category_statuses = category_statuses.group_by do |s|
+      s.title
+    end
+
+    statuses_stats = []
+    category_statuses.each do |title, statuses|
+      statuses_stats << fetch_stats_from_statuses(statuses, category)
+    end
+
+    category_stats[:statuses] = statuses_stats
+    category_stats
+  end
+
+  def fetch_stats_from_statuses(statuses, category)
+    count = 0
+    statuses.each do |status|
+      reports_items = status.reports_items.where(reports_category_id: category.id)
+
+      if begin_date || end_date
+        reports_items = reports_items_filtered_by_date(reports_items, begin_date, end_date)
+      end
+
+      count += reports_items.count
+    end
+
+    {
+      status_id: statuses.first.id, # Deprecated
+      title: statuses.first.title,
+      count: count,
+      color: statuses.first.color
+    }
+  end
+
+  def reports_items_filtered_by_date(reports_items, begin_date, end_date)
+    if begin_date && end_date
+      reports_items.where(created_at: begin_date..end_date)
+    elsif begin_date
+      reports_items.where("created_at >= ?", begin_date)
+    elsif end_date
+      reports_items.where("created_at <= ?", end_date)
+    end
+  end
+
 end

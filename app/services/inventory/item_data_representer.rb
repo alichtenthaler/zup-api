@@ -1,17 +1,18 @@
 module Inventory
+  # TODO: Documentation on this
   class ItemDataRepresenter
     include ActiveModel::Validations
 
     attr_reader :item
 
-    def self.factory(item)
+    def self.factory(item, user = nil)
       instance_class = self.dup
 
       fields = item.category.fields
       fields.each do |field|
         instance_class.send(:attr_accessor, field.title)
 
-        inject_validations(field, instance_class)
+        inject_validations(field, instance_class, user)
       end
 
       instance_class.class_eval do
@@ -102,15 +103,21 @@ module Inventory
 
     def set_attribute_content(field, content)
       converted_content = convert_content_type(field, content)
-      send("#{field.title}=", converted_content)
+
+      if self.respond_to?("#{field.title}=")
+        send("#{field.title}=", converted_content)
+      end
     end
 
     # Inject validations on the duplicated class
-    def self.inject_validations(field, instance_class)
+    def self.inject_validations(field, instance_class, user)
       attribute = field.title
       validations = {}
+      permissions = UserAbility.new(user)
 
-      if field.required?
+      # If the user doesn't have permission edit this field, let's not
+      # validate it.
+      if field.required? && permissions.can?(:edit, field)
         validations[:presence] = true
       end
 

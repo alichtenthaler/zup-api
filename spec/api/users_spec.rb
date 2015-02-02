@@ -24,6 +24,24 @@ describe Users::API do
       response.status.should == 401
       parsed_body.should include("error")
     end
+
+    context "passing device token and type" do
+      let(:device_token) { SecureRandom.hex }
+      let(:device_type) { 'ios' }
+
+      before do
+        valid_params['device_token'] = device_token
+        valid_params['device_type'] = device_type
+      end
+
+      it "updates the user" do
+        post "/authenticate", valid_params
+        expect(response.status).to eq(201)
+        user.reload
+        expect(user.device_token).to eq(device_token)
+        expect(user.device_type).to eq(device_type)
+      end
+    end
   end
 
   context "DELETE /sign_out" do
@@ -82,6 +100,7 @@ describe Users::API do
   end
 
   context "POST /users" do
+    let!(:guest_group) { create(:guest_group) }
     let(:valid_params) do
       JSON.parse <<-JSON
         {
@@ -94,7 +113,9 @@ describe Users::API do
           "address": "Rua Abilio Soares, 140",
           "postal_code": "04005000",
           "district": "Paraiso",
-          "facebook_user_id": 12345678
+          "facebook_user_id": 12345678,
+          "device_token": "#{SecureRandom.hex}",
+          "device_type": "ios"
         }
       JSON
     end
@@ -102,7 +123,8 @@ describe Users::API do
     it "creates a user if every required param is ok" do
       post "/users", valid_params
       expect(response.status).to eq(201)
-      expect(User.last.email).to eq("johnk12@gmail.com")
+      last_user = User.last
+      expect(last_user.email).to eq("johnk12@gmail.com")
 
       body = parsed_body
       expect(body).to include("message")
@@ -111,6 +133,9 @@ describe Users::API do
       expect(body["user"]["encrypted_password"]).to be_nil
       expect(body["user"]["updated_at"]).to be_blank
       expect(body["user"]["facebook_user_id"]).to eq(12345678)
+      expect(body["user"]["device_token"]).to_not be_blank
+      expect(body["user"]["device_type"]).to_not be_blank
+      expect(last_user.groups).to include(guest_group)
     end
 
     it "returns error message if a required param is missing" do
@@ -122,6 +147,20 @@ describe Users::API do
       expect(body).to include("error")
       expect(body['error']).to include("email")
       expect(body['error']['email']).to include("não pode ficar em branco")
+    end
+
+    context "setting the groups" do
+      let(:groups) { create_list(:group, 3) }
+
+      it "sets the group" do
+        valid_params['groups_ids'] = groups.map(&:id)
+
+        post "/users", valid_params
+        expect(response.status).to eq(201)
+        last_user = User.last
+
+        expect(last_user.groups).to eq(groups)
+      end
     end
   end
 
@@ -196,6 +235,11 @@ describe Users::API do
     end
 
     context "changing password" do
+      before do
+        user.groups = Group.guest
+        user.save!
+      end
+
       let(:valid_params) do
         JSON.parse <<-JSON
           {
@@ -232,7 +276,7 @@ describe Users::API do
     end
 
     it "can't destroy user account if it doesn't have permission to" do
-      user.groups.first.update(manage_users: false)
+      user.groups.first.permission.update(manage_users: false)
       delete "/users/#{other_user.id}", nil, auth(user)
       expect(response.status).to eq(403)
     end

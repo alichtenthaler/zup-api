@@ -2,6 +2,7 @@ require File.expand_path('../boot', __FILE__)
 
 require 'rails/all'
 require 'yajl/json_gem'
+require 'sprockets/railtie'
 
 # Require the gems listed in Gemfile, including any gems
 # you've limited to :test, :development, or :production.
@@ -37,7 +38,7 @@ module ZupApi
 
     # Set Time.zone default to the specified zone and make Active Record auto-convert to this zone.
     # Run "rake -D time" for a list of tasks for finding time zone names. Default is UTC.
-    config.time_zone = 'Brasilia'
+    config.time_zone = ENV['RAILS_TIMEZONE'] || 'Brasilia'
 
     # The default locale is :en and all translations from config/locales/*.rb,yml are auto loaded.
     # config.i18n.load_path += Dir[Rails.root.join('my', 'locales', '*.{rb,yml}').to_s]
@@ -49,7 +50,7 @@ module ZupApi
     config.middleware.use Rack::Cors do
       allow do
         origins '*'
-        resource '*', :headers => :any, :methods => [:get, :post, :put, :delete], :expose => ['Link', 'Total']
+        resource '*', :headers => :any, :methods => [:get, :post, :put, :delete, :patch], :expose => ['Link', 'Total']
       end
     end
   end

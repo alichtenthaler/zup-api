@@ -28,7 +28,7 @@ describe Group do
     let(:groups) { create_list(:group, 10) }
 
     before :each do
-      group.manage_users = true
+      group.permission.manage_users = true
       group.save!
     end
 
@@ -37,44 +37,25 @@ describe Group do
     end
   end
 
-  describe "permissions" do
-    let(:group) { create(:group) }
+  describe ".that_includes_permission" do
+    let!(:group) { create(:group) }
+    let!(:other_group) { create(:group) }
 
-    it "key with array content are saved correctly" do
-      ids = [1, 2, 4, 5]
-      group.permissions = {
-        groups_can_view: ids
-      }
-      group.save!
-
-      expect(Group.last.groups_can_view.map(&:to_i)).to eq(ids)
+    before do
+      group.permission.update(
+        inventory_fields_can_edit: [2],
+        inventory_fields_can_view: [2]
+      )
     end
 
-    it "key with array content are saved correctly with explicit setter" do
-      ids = [1, 2, 4, 5]
-      group.groups_can_view = ids
-      group.save!
-
-      expect(Group.last.groups_can_view.map(&:to_i)).to eq(ids)
+    it "returns only the groups that has the id in permissions" do
+      groups = Group.that_includes_permission(:inventory_fields_can_edit, 2)
+      expect(groups).to eq([group])
     end
 
-    it "key with boolean content are saved correctly" do
-      group.permissions = {
-        view_categories: true
-      }
-
-      group.save!
-
-      expect(Group.last.view_categories).to eq(true)
-      expect(Group.last.view_categories.class).to eq(TrueClass)
-    end
-
-    it "key with boolean content are saved correctly with explicit setter" do
-      group.view_categories = true
-      group.save!
-
-      expect(Group.last.view_categories).to eq(true)
-      expect(Group.last.view_categories.class).to eq(TrueClass)
+    it "returns no group if none has the id" do
+      groups = Group.that_includes_permission(:inventory_fields_can_edit, 3)
+      expect(groups).to eq([])
     end
   end
 end

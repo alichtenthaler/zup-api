@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20140611154438) do
+ActiveRecord::Schema.define(version: 20150201230257) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -115,6 +115,13 @@ ActiveRecord::Schema.define(version: 20140611154438) do
   add_index "cases_log_entries", ["step_id"], :name => "index_cases_log_entries_on_step_id"
   add_index "cases_log_entries", ["user_id"], :name => "index_cases_log_entries_on_user_id"
 
+  create_table "feature_flags", force: true do |t|
+    t.string   "name"
+    t.integer  "status",     default: 0
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
   create_table "fields", force: true do |t|
     t.string   "title"
     t.string   "field_type"
@@ -150,6 +157,47 @@ ActiveRecord::Schema.define(version: 20140611154438) do
     t.integer  "last_version_id"
   end
 
+  create_table "group_permissions", force: true do |t|
+    t.integer  "group_id"
+    t.boolean  "manage_flows",                  default: false
+    t.boolean  "manage_users",                  default: false
+    t.boolean  "manage_inventory_categories",   default: false
+    t.boolean  "manage_inventory_items",        default: false
+    t.boolean  "manage_groups",                 default: false
+    t.boolean  "manage_reports_categories",     default: false
+    t.boolean  "manage_reports",                default: false
+    t.boolean  "manage_inventory_formulas",     default: false
+    t.boolean  "manage_config",                 default: false
+    t.boolean  "delete_inventory_items",        default: false
+    t.boolean  "delete_reports",                default: false
+    t.boolean  "edit_inventory_items",          default: false
+    t.boolean  "edit_reports",                  default: false
+    t.boolean  "view_categories",               default: false
+    t.boolean  "view_sections",                 default: false
+    t.boolean  "panel_access",                  default: false
+    t.boolean  "flow_can_delete_own_cases",     default: false
+    t.boolean  "flow_can_delete_all_cases",     default: false
+    t.integer  "groups_can_edit",               default: [],    array: true
+    t.integer  "groups_can_view",               default: [],    array: true
+    t.integer  "reports_categories_can_edit",   default: [],    array: true
+    t.integer  "reports_categories_can_view",   default: [],    array: true
+    t.integer  "inventory_categories_can_edit", default: [],    array: true
+    t.integer  "inventory_categories_can_view", default: [],    array: true
+    t.integer  "inventory_sections_can_view",   default: [],    array: true
+    t.integer  "inventory_sections_can_edit",   default: [],    array: true
+    t.integer  "inventory_fields_can_edit",     default: [],    array: true
+    t.integer  "inventory_fields_can_view",     default: [],    array: true
+    t.integer  "flow_can_view_all_steps",       default: [],    array: true
+    t.integer  "flow_can_execute_all_steps",    default: [],    array: true
+    t.integer  "can_view_step",                 default: [],    array: true
+    t.integer  "can_execute_step",              default: [],    array: true
+    t.datetime "created_at"
+    t.datetime "updated_at"
+    t.boolean  "create_reports_from_panel",     default: false
+  end
+
+  add_index "group_permissions", ["group_id"], :name => "index_group_permissions_on_group_id"
+
   create_table "groups", force: true do |t|
     t.string   "name"
     t.hstore   "permissions"
@@ -180,6 +228,9 @@ ActiveRecord::Schema.define(version: 20140611154438) do
     t.string   "pin"
     t.string   "plot_format"
     t.boolean  "require_item_status", default: false, null: false
+    t.boolean  "locked",              default: false
+    t.datetime "locked_at"
+    t.integer  "locker_id"
   end
 
   create_table "inventory_categories_reports_categories", id: false, force: true do |t|
@@ -203,6 +254,7 @@ ActiveRecord::Schema.define(version: 20140611154438) do
     t.integer  "maximum"
     t.integer  "minimum"
     t.string   "available_values",                                  array: true
+    t.boolean  "disabled",             default: false
   end
 
   add_index "inventory_fields", ["inventory_section_id"], :name => "index_inventory_fields_on_inventory_section_id"
@@ -255,6 +307,11 @@ ActiveRecord::Schema.define(version: 20140611154438) do
   add_index "inventory_item_data", ["inventory_field_id"], :name => "index_inventory_item_data_on_inventory_field_id"
   add_index "inventory_item_data", ["inventory_item_id"], :name => "index_inventory_item_data_on_inventory_item_id"
 
+  create_table "inventory_item_data_attachments", force: true do |t|
+    t.integer "inventory_item_data_id"
+    t.string  "attachment"
+  end
+
   create_table "inventory_item_data_images", force: true do |t|
     t.integer  "inventory_item_data_id"
     t.string   "image"
@@ -263,6 +320,14 @@ ActiveRecord::Schema.define(version: 20140611154438) do
   end
 
   add_index "inventory_item_data_images", ["inventory_item_data_id"], :name => "index_inventory_item_data_images_on_inventory_item_data_id"
+
+  create_table "inventory_item_histories", force: true do |t|
+    t.integer  "inventory_item_id"
+    t.integer  "user_id"
+    t.text     "content"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
 
   create_table "inventory_items", force: true do |t|
     t.integer  "inventory_category_id"
@@ -273,6 +338,10 @@ ActiveRecord::Schema.define(version: 20140611154438) do
     t.string   "title"
     t.string   "address"
     t.integer  "inventory_status_id"
+    t.boolean  "locked",                                                   default: false
+    t.datetime "locked_at"
+    t.integer  "locker_id"
+    t.integer  "sequence",                                                 default: 0
   end
 
   add_index "inventory_items", ["inventory_category_id"], :name => "index_inventory_items_on_inventory_category_id"
@@ -313,6 +382,21 @@ ActiveRecord::Schema.define(version: 20140611154438) do
     t.datetime "created_at"
     t.datetime "updated_at"
     t.string   "color"
+    t.integer  "parent_id"
+    t.boolean  "confidential",              default: false
+    t.boolean  "private_resolution_time",   default: false
+    t.boolean  "resolution_time_enabled",   default: true
+  end
+
+  add_index "reports_categories", ["parent_id"], :name => "index_reports_categories_on_parent_id"
+
+  create_table "reports_comments", force: true do |t|
+    t.integer  "reports_item_id"
+    t.integer  "visibility",      default: 0
+    t.integer  "author_id"
+    t.text     "message"
+    t.datetime "created_at"
+    t.datetime "updated_at"
   end
 
   create_table "reports_feedback_images", force: true do |t|
@@ -365,6 +449,9 @@ ActiveRecord::Schema.define(version: 20140611154438) do
     t.spatial  "position",            limit: {:srid=>0, :type=>"point"}
     t.integer  "protocol",            limit: 8
     t.string   "reference"
+    t.boolean  "confidential",                                           default: false
+    t.integer  "reporter_id"
+    t.boolean  "overdue",                                                default: false
   end
 
   add_index "reports_items", ["inventory_item_id"], :name => "index_reports_items_on_inventory_item_id"
@@ -383,13 +470,18 @@ ActiveRecord::Schema.define(version: 20140611154438) do
     t.datetime "created_at"
     t.datetime "updated_at"
     t.boolean  "active",              default: true
+    t.boolean  "private",             default: false
   end
 
   add_index "reports_statuses", ["reports_category_id"], :name => "index_reports_statuses_on_reports_category_id"
 
-  create_table "reports_statuses_reports_categories", id: false, force: true do |t|
+  create_table "reports_statuses_reports_categories", force: true do |t|
     t.integer "reports_status_id"
     t.integer "reports_category_id"
+    t.boolean "initial",             default: false
+    t.boolean "final",               default: false
+    t.boolean "private",             default: false
+    t.boolean "active",              default: true
   end
 
   add_index "reports_statuses_reports_categories", ["reports_category_id"], :name => "index_reports_statuses_item_id"
@@ -474,6 +566,8 @@ ActiveRecord::Schema.define(version: 20140611154438) do
     t.integer  "facebook_user_id"
     t.integer  "twitter_user_id"
     t.integer  "google_plus_user_id"
+    t.string   "device_token"
+    t.string   "device_type"
   end
 
   create_table "versions", force: true do |t|

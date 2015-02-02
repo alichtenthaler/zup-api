@@ -13,7 +13,7 @@ module Flows::Steps::Fields
       put do
         authenticate!
         validate_permission!(:update, Field)
-        Step.find(safe_params[:step_id]).fields.update_order!(safe_params[:ids])
+        Step.find(safe_params[:step_id]).fields.update_order!(safe_params[:ids], current_user)
         { message: I18n.t(:fields_order_updated) }
       end
 

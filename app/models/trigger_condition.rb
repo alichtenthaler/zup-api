@@ -21,6 +21,11 @@ class TriggerCondition < ActiveRecord::Base
     get_flow.try(:verify_if_need_create_version?) ? self.update!(active: false) : self.destroy!
   end
 
+  def my_field
+    return field if last_version.blank? or last_version > versions.count
+    @my_field ||= field.versions[last_version-2].try(:reify)
+  end
+
   protected
   def list_versions
     self.versions.map(&:reify) if self.versions.present?
@@ -28,7 +33,7 @@ class TriggerCondition < ActiveRecord::Base
 
   private
   def set_last_version
-    return if self.last_version_changed? or self.last_version_id_changed?
+    return if self.changes.blank? or self.last_version_changed? or self.last_version_id_changed?
     self.increment :last_version
   end
 
@@ -59,6 +64,7 @@ class TriggerCondition < ActiveRecord::Base
   class EntityVersion < Grape::Entity
     expose :id
     expose :field, using: Field::Entity
+    expose :my_field, using: Field::Entity
     expose :condition_type
     expose :values
     expose :last_version
@@ -70,6 +76,7 @@ class TriggerCondition < ActiveRecord::Base
   class Entity < Grape::Entity
     expose :id
     expose :field, using: Field::Entity
+    expose :my_field, using: Field::Entity
     expose :condition_type
     expose :values
     expose :last_version

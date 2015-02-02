@@ -21,12 +21,19 @@ module Search::Inventory::Items
                desc: 'Limit the period of modification date, accepts `begin` and `end`'
       optional :fields, type: Hash,
                desc: 'Filter by fields content'
+      optional :sort, type: String,
+               desc: 'Values: title, inventory_category_id, created_at, updated_at, id'
+      optional :order, type: String,
+               desc: 'Values: asc, desc'
+      optional :display_type, type: String,
+               desc: 'Display type of the listing'
     end
     get "inventory/items" do
       authenticate!
 
       search_params = safe_params.permit(
-        :address, :title, :query,
+        :address, :title, :query, :sort,
+        :order,
         created_at: [:begin, :end],
         updated_at: [:begin, :end]
       )
@@ -52,11 +59,11 @@ module Search::Inventory::Items
         end
       end
 
-      items = Inventory::SearchItems.new(search_params).search
+      items = Inventory::SearchItems.new(current_user, search_params).search
       items = paginate(items)
 
       {
-        items: Inventory::Item::Entity.represent(items)
+        items: Inventory::Item::Entity.represent(items, display_type: params[:display_type])
       }
     end
   end

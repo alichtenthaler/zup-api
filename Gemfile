@@ -2,6 +2,7 @@ ruby '2.0.0'
 
 source 'https://rubygems.org'
 
+gem 'dotenv-rails', groups: [:development, :test]
 gem 'rails', '4.0.1'
 gem 'pg'
 gem 'rgeo', '0.3.20'
@@ -9,17 +10,17 @@ gem 'activerecord-postgis-adapter'
 gem 'bcrypt-ruby', '~> 3.1.2'
 gem 'grape', '~> 0.7.0'
 gem 'grape-entity', '~> 0.4.2'
-gem 'grape-swagger'
-gem 'grape-swagger-rails', github: 'BrandyMint/grape-swagger-rails'
+gem 'grape-swagger', '~> 0.7.2'
+gem 'grape-swagger-rails', '~> 0.0.10', github: 'BrandyMint/grape-swagger-rails', ref: '121765deb29f1e2ab3e37c68ca7ff226c003eb13'
 gem 'cancan'
-gem 'sentry-raven', :git => 'https://github.com/getsentry/raven-ruby.git'
+gem 'sentry-raven', :git => 'https://github.com/getsentry/raven-ruby.git', ref: '3563a6b08bfde1d1b603b40cc092c0a75a2ab032'
 gem 'textacular', '~> 3.0', require: 'textacular/rails'
 gem 'omniauth'
 gem 'omniauth-twitter'
 gem 'omniauth-facebook'
 gem 'omniauth-google-oauth2'
 gem 'armor'
-gem 'carrierwave', :git => 'https://github.com/carrierwaveuploader/carrierwave.git'
+gem 'carrierwave', '~> 0.9.0', git: 'https://github.com/carrierwaveuploader/carrierwave.git', ref: '17399e692d3b29ec7c2e609308c6e2ec7c622694'
 gem 'fog', '~> 1.3.1'
 gem 'rack-cors', :require => 'rack/cors'
 gem 'squeel'
@@ -29,14 +30,14 @@ gem 'mini_magick'
 gem 'newrelic_rpm'
 gem 'newrelic-grape'
 gem 'settingslogic'
-gem 'rack-perftools_profiler', :require => 'rack/perftools_profiler'
 gem 'sidekiq'
-# if you require 'sinatra' you get the DSL extended to Object
 gem 'sinatra', '>= 1.3.0', :require => nil
 gem 'yajl-ruby'
 gem 'garner'
 gem 'brcpfcnpj'
 gem 'paper_trail'
+gem 'whenever', require: false
+gem 'pushmeup'
 
 group :production do
   gem 'rails_12factor'
@@ -46,18 +47,17 @@ group :production do
   gem 'coffee-rails', '~> 4.0.0'
   gem 'jquery-rails'
   gem 'turbolinks'
-  gem 'factory_girl_rails', require: false
+end
+
+group :development, :test, :production do
+  gem 'factory_girl_rails', '~> 4.3.0', require: false
   gem 'ffaker', require: false
   gem 'cpf_faker', require: false
 end
 
 group :development, :test do
   gem 'rspec-rails', '~> 3.0.0.beta'
-  gem 'ffaker'
-  gem 'cpf_faker'
   gem 'database_cleaner'
-  gem 'factory_girl_rails'
-  gem 'perftools.rb', require: false
   gem 'awesome_print'
   gem 'shoulda-matchers'
   gem 'pry', '0.9.12.2'

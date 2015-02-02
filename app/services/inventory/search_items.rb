@@ -2,9 +2,9 @@ class Inventory::SearchItems
   attr_reader :fields, :categories, :position_params,
               :limit, :sort, :order, :address, :statuses,
               :created_at, :updated_at, :title, :users,
-              :query
+              :query, :user
 
-  def initialize(opts = {})
+  def initialize(user, opts = {})
     @position_params = opts[:position]
     @categories = opts[:categories] || []
     @users = opts[:users] || []
@@ -15,18 +15,27 @@ class Inventory::SearchItems
     @created_at = opts[:created_at]
     @updated_at = opts[:updated_at]
     @sort = opts[:sort]
-    @order = opts[:order]
+    @order = opts[:order] || 'desc'
     @fields = opts[:fields] || {}
     @query = opts[:query]
+    @user = user
   end
 
   def search
     scope = Inventory::Item.includes(:data)
+    permissions = UserAbility.new(user)
 
+    sort = self.sort
     if sort &&
         sort.in?('title', 'inventory_category_id', 'created_at', 'updated_at', 'id') &&
         order.downcase.in?('desc', 'asc')
-      scope = scope.order("#{sort.to_sym} #{order.to_sym}")
+
+      if sort == 'title'
+        scope = scope.order("title #{order}, sequence #{order}")
+      else
+        scope = scope.order("#{sort} #{order.to_sym}")
+      end
+
     end
 
     if query
@@ -38,7 +47,21 @@ class Inventory::SearchItems
     end
 
     if categories.any?
-      scope = scope.where(inventory_category_id: categories.map(&:id))
+      categories_ids = categories.map(&:id)
+    end
+
+    if !permissions.can?(:manage, Inventory::Category)
+      categories_user_can_see = permissions.inventory_categories_visible
+
+      if categories_ids && categories_ids.any?
+        categories_ids = categories_user_can_see & categories_ids
+      else
+        categories_ids = categories_user_can_see
+      end
+
+      scope = scope.where(inventory_category_id: categories_ids)
+    elsif categories_ids && categories_ids.any?
+      scope = scope.where(inventory_category_id: categories_ids)
     end
 
     if statuses.any?
@@ -155,10 +178,10 @@ class Inventory::SearchItems
         case operation
         when "lesser_than"
           content = ActiveRecord::Base.sanitize(content)
-          statement += "(inventory_item_data.inventory_field_id = #{field_id} AND CAST(inventory_item_data.content[1] AS integer) < CAST(#{content} AS integer))"
+          statement += "(inventory_item_data.inventory_field_id = #{field_id} AND CAST(inventory_item_data.content[1] AS float) < CAST(#{content} AS float))"
         when "greater_than"
           content = ActiveRecord::Base.sanitize(content)
-          statement += "(inventory_item_data.inventory_field_id = #{field_id} AND CAST(inventory_item_data.content[1] AS integer) > CAST(#{content} AS integer))"
+          statement += "(inventory_item_data.inventory_field_id = #{field_id} AND CAST(inventory_item_data.content[1] AS float) > CAST(#{content} AS float))"
         when "equal_to"
           content = ActiveRecord::Base.sanitize(content)
           statement += "(inventory_item_data.inventory_field_id = #{field_id} AND inventory_item_data.content[1] = #{content})"
@@ -169,10 +192,14 @@ class Inventory::SearchItems
           content = ActiveRecord::Base.sanitize(content)
           statement += "(inventory_item_data.inventory_field_id = #{field_id} AND inventory_item_data.content[1] != #{content})"
         when "includes"
+          content = content.inject([]) { |s, (k, v)| s << v }
+
           content = "{#{content.join(",")}}"
           content = ActiveRecord::Base.sanitize(content)
           statement += "(inventory_item_data.inventory_field_id = #{field_id} AND inventory_item_data.content @> #{content}::text[])"
         when "excludes"
+          content = content.inject([]) { |s, (k, v)| s << v }
+
           content = "{#{content.join(",")}}"
           content = ActiveRecord::Base.sanitize(content)
           statement += "(inventory_item_data.inventory_field_id = #{field_id} AND NOT(inventory_item_data.content @> #{content}::text[]))"

@@ -319,7 +319,7 @@ describe Flows::Steps::API do
 
           it { expect(response.status).to be_a_success_request }
           it { expect(response.body).to be_a_success_message_with(I18n.t(:permissions_updated)) }
-          it { expect(user.groups.first.reload.permissions[valid_params[:permission_type]]).to eql "[\"#{step.id}\"]" }
+          it { expect(user.groups.first.reload.permission.send(valid_params[:permission_type])).to eql [step.id] }
         end
       end
     end
@@ -359,7 +359,7 @@ describe Flows::Steps::API do
 
           it { expect(response.status).to be_a_success_request }
           it { expect(response.body).to be_a_success_message_with(I18n.t(:permissions_updated)) }
-          it { expect(user.groups.first.reload.permissions[valid_params[:permission_type]]).to eql "[]" }
+          it { expect(user.groups.first.reload.permission.send(valid_params[:permission_type])).to eql([]) }
         end
       end
     end

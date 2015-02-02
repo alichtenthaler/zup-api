@@ -89,6 +89,8 @@ describe Inventory::CreateItemFromCategoryForm do
             end
           end
 
+          user.groups.first.permission.update!(inventory_fields_can_edit: [field.id])
+
           item_params
         end
 
