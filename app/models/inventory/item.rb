@@ -105,6 +105,7 @@ class Inventory::Item < Inventory::Base
       # TODO: Find a way to select the data with
       # location fields, automatically.
       self.data.each do |data|
+        next unless data.field.present?
         next unless data.field.location
 
         if data.field.title == "latitude"

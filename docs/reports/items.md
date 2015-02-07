@@ -480,7 +480,7 @@ __URI__ `POST /reports/:category_id/items`
 
 ## Migrando um relato de categoria
 
-Para alterar um relado de categoria, basta utilizar o seguinte endpoint:
+Para alterar um relato de categoria, basta utilizar o seguinte endpoint:
 
 __URI__ `PUT /reports/:category_id/items/:id/change_category`
 

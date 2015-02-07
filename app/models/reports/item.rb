@@ -15,14 +15,21 @@ class Reports::Item < Reports::Base
   has_many :inventory_categories, through: :category
   has_many :images, foreign_key: 'reports_item_id',
                     class_name: 'Reports::Image',
+                    dependent: :destroy,
                     autosave: true
   has_many :statuses, through: :category
   has_many :status_categories, through: :category
   has_many :status_history, foreign_key: 'reports_item_id',
                             class_name: 'Reports::ItemStatusHistory',
+                            dependent: :destroy,
                             autosave: true
   has_one :feedback, class_name: 'Reports::Feedback',
-                     foreign_key: :reports_item_id
+                     foreign_key: :reports_item_id,
+                     dependent: :destroy
+  has_many :comments, class_name: 'Reports::Comment',
+                     foreign_key: :reports_item_id,
+                     counter_cache: :comments_count,
+                     dependent: :destroy
 
   before_save :set_initial_status
   before_validation :get_position_from_inventory_item
@@ -96,6 +103,7 @@ class Reports::Item < Reports::Base
     end
     expose :reference
     expose :confidential
+    expose :comments_count
 
     expose :position do |obj, _|
       if obj.inventory_item.nil?
@@ -126,6 +134,7 @@ class Reports::Item < Reports::Base
       expose :inventory_item, using: Inventory::Item::Entity
       expose :feedback, using: Reports::Feedback::Entity
       expose :status_history_for_user, as: :status_history, using: Reports::ItemStatusHistory::Entity
+      expose :comments, using: Reports::Comment::Entity
     end
 
     # With display_type different to full
@@ -150,6 +159,10 @@ class Reports::Item < Reports::Base
           permissions.can?(:edit, object) || user == object.user
         object.protocol
       end
+    end
+
+    def comments
+      Reports::GetCommentsForUser.new(object, options[:user]).comments
     end
   end
 

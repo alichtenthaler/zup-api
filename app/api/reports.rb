@@ -6,6 +6,7 @@ module Reports
       mount Reports::Stats::API
       mount Reports::Feedbacks::API
       mount Reports::Statuses::API
+      mount Reports::Comments::API
     end
   end
 end

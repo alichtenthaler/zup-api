@@ -21,7 +21,7 @@ class Inventory::CreateFormForCategory
             found_section = category.sections.find(section["id"])
 
             if section["destroy"]
-              found_section.destroy and found_section = nil
+              found_section.disable! and found_section = nil
             else
               found_section.update(
                 title: section["title"],

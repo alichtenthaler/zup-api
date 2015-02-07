@@ -61,6 +61,8 @@ GEM
     api-pagination (2.1.1)
     arel (4.0.2)
     armor (0.0.2)
+    atomic_arrays (1.1.0)
+      activerecord (>= 4.0)
     awesome_print (1.2.0)
     axiom-types (0.1.1)
       descendants_tracker (~> 0.0.4)
@@ -74,7 +76,6 @@ GEM
     cancan (1.6.10)
     celluloid (0.15.2)
       timers (~> 1.1.0)
-    chronic (0.10.2)
     clipboard (1.0.5)
     coderay (1.0.9)
     coercible (1.0.0)
@@ -276,6 +277,8 @@ GEM
       rspec-mocks (= 3.0.0.beta1)
     rspec-support (3.0.0.beta1)
     ruby-hmac (0.4.0)
+    rufus-scheduler (3.0.9)
+      tzinfo
     sass (3.2.13)
     sass-rails (4.0.1)
       railties (>= 4.0.0, < 5.0)
@@ -290,6 +293,10 @@ GEM
       json
       redis (>= 3.0.6)
       redis-namespace (>= 1.3.1)
+    sidekiq-cron (0.2.0)
+      rufus-scheduler (>= 2.0.24)
+      sidekiq (>= 2.17.3)
+      tilt (< 2.0.0)
     sinatra (1.4.5)
       rack (~> 1.4)
       rack-protection (~> 1.4)
@@ -334,8 +341,6 @@ GEM
       coercible (~> 1.0)
       descendants_tracker (~> 0.0, >= 0.0.3)
       equalizer (~> 0.0, >= 0.0.9)
-    whenever (0.9.4)
-      chronic (>= 0.6.3)
     will_paginate (3.0.7)
     yajl-ruby (1.2.1)
 
@@ -346,6 +351,7 @@ DEPENDENCIES
   activerecord-postgis-adapter
   api-pagination (= 2.1.1)
   armor
+  atomic_arrays
   awesome_print
   bcrypt-ruby (~> 3.1.2)
   brcpfcnpj
@@ -387,12 +393,12 @@ DEPENDENCIES
   settingslogic
   shoulda-matchers
   sidekiq
+  sidekiq-cron
   sinatra (>= 1.3.0)
   squeel
   textacular (~> 3.0)
   turbolinks
   uglifier (>= 1.3.0)
   unicorn
-  whenever
   will_paginate
   yajl-ruby

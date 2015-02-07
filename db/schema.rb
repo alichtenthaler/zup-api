@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20150201230257) do
+ActiveRecord::Schema.define(version: 20150206171519) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -321,14 +321,6 @@ ActiveRecord::Schema.define(version: 20150201230257) do
 
   add_index "inventory_item_data_images", ["inventory_item_data_id"], :name => "index_inventory_item_data_images_on_inventory_item_data_id"
 
-  create_table "inventory_item_histories", force: true do |t|
-    t.integer  "inventory_item_id"
-    t.integer  "user_id"
-    t.text     "content"
-    t.datetime "created_at"
-    t.datetime "updated_at"
-  end
-
   create_table "inventory_items", force: true do |t|
     t.integer  "inventory_category_id"
     t.integer  "user_id"
@@ -357,6 +349,7 @@ ActiveRecord::Schema.define(version: 20150201230257) do
     t.integer  "position"
     t.boolean  "required",                              null: false
     t.boolean  "location",              default: false, null: false
+    t.boolean  "disabled",              default: false
   end
 
   add_index "inventory_sections", ["inventory_category_id"], :name => "index_inventory_sections_on_inventory_category_id"
@@ -452,6 +445,7 @@ ActiveRecord::Schema.define(version: 20150201230257) do
     t.boolean  "confidential",                                           default: false
     t.integer  "reporter_id"
     t.boolean  "overdue",                                                default: false
+    t.integer  "comments_count",                                         default: 0
   end
 
   add_index "reports_items", ["inventory_item_id"], :name => "index_reports_items_on_inventory_item_id"
@@ -563,11 +557,11 @@ ActiveRecord::Schema.define(version: 20150201230257) do
     t.datetime "password_resetted_at"
     t.datetime "created_at"
     t.datetime "updated_at"
+    t.string   "device_token"
+    t.string   "device_type"
     t.integer  "facebook_user_id"
     t.integer  "twitter_user_id"
     t.integer  "google_plus_user_id"
-    t.string   "device_token"
-    t.string   "device_type"
   end
 
   create_table "versions", force: true do |t|

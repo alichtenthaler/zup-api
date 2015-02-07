@@ -120,11 +120,11 @@ class Inventory::SearchItems
       end_date = created_at[:end]
 
       if begin_date && end_date
-        scope = scope.where(created_at: begin_date..end_date)
+        scope = scope.where(inventory_items: { created_at: begin_date..end_date })
       elsif begin_date
-        scope = scope.where("created_at >= ?", begin_date)
+        scope = scope.where("inventory_items.created_at >= ?", begin_date)
       elsif end_date
-        scope = scope.where("created_at <= ?", end_date)
+        scope = scope.where("inventory_items.created_at <= ?", end_date)
       end
     end
 

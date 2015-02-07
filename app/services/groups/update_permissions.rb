@@ -1,20 +1,20 @@
 module Groups
   class UpdatePermissions
 
-    def self.update(groups, object, permission_name)
+    def self.update(groups_ids, object, permission_name)
 
-      if groups && groups.any?
-        # Remove permission of groups
+      if groups_ids && groups_ids.any?
+        # Remove permission of groups_ids
         Group.that_includes_permission(permission_name, object.id).each do |group|
+          next if groups_ids.include?(group.id)
+
           group = Group.find(group.id)
-          group.permission.send("#{permission_name}=", group.permission.send(permission_name) - [object.id])
-          group.save!
+          group.permission.atomic_remove(permission_name, object.id)
         end
 
-        groups.each do |group_id|
+        groups_ids.each do |group_id|
           group = Group.find(group_id)
-          group.permission.send("#{permission_name}=", (group.permission.send(permission_name) + [object.id]).uniq)
-          group.save!
+          group.permission.atomic_append(permission_name, object.id)
         end
       end
 

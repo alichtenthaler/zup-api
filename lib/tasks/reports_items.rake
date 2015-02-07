@@ -1,14 +1,5 @@
 namespace :reports do
   task set_overdue: :environment do
-    items = Reports::StatusControl.reports_with_possible_overdue
-
-    items.find_in_batches do |group|
-      group = Reports::Item.where(id: group.map(&:id))
-
-      group.each do |item|
-        overdue = Reports::StatusControl.new(item).overdue?
-        item.update(overdue: overdue) if item.overdue != overdue
-      end
-    end
+    SetReportsOverdue.new.perform
   end
 end

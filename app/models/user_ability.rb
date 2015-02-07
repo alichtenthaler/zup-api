@@ -239,6 +239,10 @@ class UserAbility
     (Group.ids_for_permission(user.groups, :inventory_categories_can_view) + Group.ids_for_permission(user.groups, :inventory_categories_can_edit)).uniq
   end
 
+  def inventory_sections_visible
+    (Group.ids_for_permission(user.groups, :inventory_sections_can_view) + Group.ids_for_permission(user.groups, :inventory_sections_can_edit)).uniq
+  end
+
   def reports_categories_visible
     (Group.ids_for_permission(user.groups, :reports_categories_can_view) + Group.ids_for_permission(user.groups, :reports_categories_can_edit)).uniq
   end

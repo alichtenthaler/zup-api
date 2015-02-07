@@ -10,18 +10,38 @@ class Inventory::Section < Inventory::Base
 
   before_validation :set_default_attributes
 
-  def enabled_fields
-    fields.enabled
+  def disable!
+    update!(disabled: true)
+
+    # Disable all children fields
+    fields.each do |field|
+      field.disable! unless field.disabled?
+    end
   end
 
   class Entity < Grape::Entity
     expose :id
     expose :title
+    expose :disabled
     expose :required
     expose :location
     expose :inventory_category_id
     expose :position
-    expose :enabled_fields, as: :fields, using: Inventory::Field::Entity
+    expose :fields
+
+    def fields
+      if options[:user]
+        user_permissions = UserAbility.new(options[:user])
+
+        if user_permissions.can?(:manage, object.category)
+          fields = object.fields
+        else
+          fields = object.fields.enabled.where(id: user_permissions.inventory_fields_visible)
+        end
+
+        Inventory::Field::Entity.represent(fields)
+      end
+    end
   end
 
   private

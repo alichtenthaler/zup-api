@@ -73,7 +73,7 @@ module ZUP
 
       def validate_permission!(action, model)
         if current_user
-          permissions = UserAbility.new(current_user)
+          permissions = user_permissions
 
           unless permissions.can?(action, model)
             table_name = if model.respond_to?(:table_name)
@@ -87,6 +87,10 @@ module ZUP
             error!(I18n.t(:permission_denied, action: action, table_name: table), 403)
           end
         end
+      end
+
+      def user_permissions
+        @user_permissions ||= UserAbility.new(current_user)
       end
 
       def safe_params

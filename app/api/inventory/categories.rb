@@ -26,6 +26,7 @@ module Inventory::Categories
         {
           categories: Inventory::Category::Entity.represent(
             paginate(categories),
+            user: current_user,
             display_type: 'full'
           )
         }
@@ -71,15 +72,18 @@ module Inventory::Categories
           creator.create!
         end
 
-        groups_can_view = safe_params[:groups_can_view]
-        groups_can_edit = safe_params[:groups_can_edit]
+        permissions = safe_params[:permissions]
+        if permissions
+          groups_can_view = permissions[:groups_can_view]
+          groups_can_edit = permissions[:groups_can_edit]
+        end
 
         Groups::UpdatePermissions.update(groups_can_view, category, :inventory_categories_can_view)
         Groups::UpdatePermissions.update(groups_can_edit, category, :inventory_categories_can_edit)
 
         {
           message: "Category created with success",
-          category: Inventory::Category::Entity.represent(category)
+          category: Inventory::Category::Entity.represent(category, user: current_user)
         }
       end
 
@@ -92,7 +96,13 @@ module Inventory::Categories
         category = Inventory::Category.find(safe_params[:id])
         validate_permission!(:view, category)
 
-        { category: Inventory::Category::Entity.represent(category, display_type: safe_params[:display_type]) }
+        {
+          category: Inventory::Category::Entity.represent(
+            category,
+            display_type: safe_params[:display_type],
+            user: current_user
+          )
+        }
       end
 
       desc "Destroy category"
@@ -157,15 +167,19 @@ module Inventory::Categories
           end
         end
 
-        groups_can_view = safe_params[:groups_can_view]
-        groups_can_edit = safe_params[:groups_can_edit]
+        permissions = safe_params[:permissions]
+
+        if permissions
+          groups_can_view = permissions[:groups_can_view]
+          groups_can_edit = permissions[:groups_can_edit]
+        end
 
         Groups::UpdatePermissions.update(groups_can_view, category, :inventory_categories_can_view)
         Groups::UpdatePermissions.update(groups_can_edit, category, :inventory_categories_can_edit)
 
         {
           message: "Category updated successfully",
-          category: Inventory::Category::Entity.represent(category)
+          category: Inventory::Category::Entity.represent(category, user: current_user)
         }
       end
 

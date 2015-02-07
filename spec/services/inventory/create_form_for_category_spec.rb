@@ -71,7 +71,7 @@ describe Inventory::CreateFormForCategory do
         described_class.new(category, form_params).create!
 
         section = Inventory::Section.find_by(id: section.id)
-        expect(section).to eq(nil)
+        expect(section).to be_disabled
       end
     end
 

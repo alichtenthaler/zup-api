@@ -76,7 +76,7 @@ class Inventory::Category < Inventory::Base
     expose :require_item_status
     expose :color
     expose :original_icon
-    expose :sections, using: Inventory::Section::Entity
+    expose :sections
     expose :locked
     expose :locker, using: User::Entity
     expose :permissions
@@ -87,6 +87,22 @@ class Inventory::Category < Inventory::Base
 
     expose :created_at
     expose :updated_at, if: { display_type: 'backend' }
+
+    def sections
+      # If user is given, only select sections he has
+      # permission to view.
+      if options[:user]
+        user_permissions = UserAbility.new(options[:user])
+
+        if user_permissions.can?(:manage, object)
+          sections = object.sections
+        else
+          sections = object.sections.where(id: user_permissions.inventory_sections_visible)
+        end
+
+        Inventory::Section::Entity.represent(sections, user: options[:user])
+      end
+    end
   end
 
   protected
@@ -150,6 +166,7 @@ class Inventory::Category < Inventory::Base
 
     def set_default_values
       self.require_item_status = false if require_item_status.nil?
+
       true
     end
 end

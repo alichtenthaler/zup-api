@@ -43,7 +43,9 @@ describe Inventory::Categories::API do
     context "permissions" do
       let(:group) { create(:group) }
       it "updates the permissions groups_can_view" do
-        valid_params['groups_can_view'] = [group.id]
+        valid_params['permissions'] = {
+          'groups_can_view' => [group.id]
+        }
         expect(group.permission.inventory_categories_can_view).to be_empty
 
         post "/inventory/categories", valid_params, auth(user)
@@ -125,7 +127,9 @@ describe Inventory::Categories::API do
       let(:group) { create(:group) }
 
       it "updates the permissions groups_can_view" do
-        valid_params['groups_can_view'] = [group.id]
+        valid_params['permissions'] = {
+          'groups_can_view' => [group.id]
+        }
         expect(group.permission.inventory_categories_can_view).to be_empty
 
         put "/inventory/categories/#{category.id}", valid_params, auth(user)

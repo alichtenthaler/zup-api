@@ -288,12 +288,13 @@ describe Reports::Items::API do
         ).to match_array(reports[15..19].map(&:id))
       end
 
-      it "returns inventory_categories on listing" do
+      it "returns inventory_categories and comments on listing" do
         get '/reports/items', { display_type: 'full' }, auth(user)
         expect(response.status).to eq(200)
         body = parsed_body
 
         expect(body['reports'].first['inventory_categories']).to_not be_nil
+        expect(body['reports'].first['comments']).to_not be_nil
       end
     end
 
