@@ -196,7 +196,7 @@ module Inventory::Categories
           creator = Inventory::CreateFormForCategory.new(category, safe_params)
           creator.create!
 
-          form = Inventory::RenderCategoryFormData.new(category).render
+          form = Inventory::RenderCategoryFormData.new(category, current_user).render
 
           {
             message: "Form updated successfully!",
@@ -217,7 +217,7 @@ module Inventory::Categories
         category = Inventory::Category.find(safe_params[:id])
         validate_permission!(:edit, category)
 
-        Inventory::RenderCategoryFormData.new(category).render
+        Inventory::RenderCategoryFormData.new(category, current_user).render
       end
 
       desc "Update the access to the inventory category, locking it"

@@ -1,11 +1,14 @@
 class Inventory::RenderCategoryFormData
-  attr_reader :category
+  attr_reader :category, :user
 
-  def initialize(category)
+  def initialize(category, user)
     @category = category
+    @user = user
   end
 
   def render
-    { 'sections' => Inventory::Section::Entity.represent(category.sections) }
+    {
+      sections: Inventory::Section::Entity.represent(category.sections, user: user)
+    }
   end
 end
