@@ -37,6 +37,16 @@ describe Reports::StatusControl do
         end
       end
     end
+
+    context "category doesn't have a resolution time set" do
+      before do
+        category.update(resolution_time: nil)
+      end
+
+      it "returns false" do
+        expect(subject.overdue?).to be_falsy
+      end
+    end
   end
 end
 

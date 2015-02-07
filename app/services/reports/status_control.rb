@@ -29,7 +29,12 @@ module Reports
       initial_status = item.status_history.first
 
       resolution_time = category.resolution_time
-      (initial_status.created_at + resolution_time.seconds) <= Time.now
+
+      if resolution_time
+        (initial_status.created_at + resolution_time.seconds) <= Time.now
+      else
+        false
+      end
     end
   end
 end
