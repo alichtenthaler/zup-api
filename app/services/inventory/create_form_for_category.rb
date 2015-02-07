@@ -74,14 +74,12 @@ class Inventory::CreateFormForCategory
           # Remove permission of groups
           Group.that_includes_permission(:inventory_fields_can_view, field.id).each do |group|
             group = Group.find(group.id)
-            group.permission.inventory_fields_can_view = group.permission.inventory_fields_can_view - [field.id]
-            group.save!
+            group.permission.atomic_remove(:inventory_fields_can_view, field.id)
           end
 
           groups_can_view.each do |group_id|
             group = Group.find(group_id)
-            group.permission.inventory_fields_can_view = (group.permission.inventory_fields_can_view + [field.id]).uniq
-            group.save!
+            group.permission.atomic_append(:inventory_fields_can_view, field.id)
           end
         end
 
@@ -89,14 +87,12 @@ class Inventory::CreateFormForCategory
           # Remove permission of groups
           Group.that_includes_permission(:inventory_fields_can_edit, field.id).each do |group|
             group = Group.find(group.id)
-            group.permission.inventory_fields_can_view = group.permission.inventory_fields_can_view - [field.id]
-            group.save!
+            group.permission.atomic_remove(:inventory_fields_can_view, field.id)
           end
 
           groups_can_edit.each do |group_id|
             group = Group.find(group_id)
-            group.permission.inventory_fields_can_edit = (group.permission.inventory_fields_can_edit + [field.id]).uniq
-            group.save!
+            group.permission.atomic_append(:inventory_fields_can_edit, field.id)
           end
         end
       end
@@ -113,28 +109,24 @@ class Inventory::CreateFormForCategory
           # Remove permission of groups
           Group.that_includes_permission(:inventory_sections_can_view, section.id).each do |group|
             group = Group.find(group.id)
-            group.permission.inventory_sections_can_view = group.permission.inventory_sections_can_view - [section.id]
-            group.save!
+            group.permission.atomic_remove(:inventory_sections_can_view, section.id)
           end
 
           groups_can_view.each do |group_id|
             group = Group.find(group_id)
-            group.permission.inventory_sections_can_view = group.permission.inventory_sections_can_view + [section.id]
-            group.save!
+            group.permission.atomic_append(:inventory_sections_can_view, section.id)
           end
         end
 
         if groups_can_edit
           # Remove permission of groups
           Group.that_includes_permission(:inventory_sections_can_edit, section.id).each do |group|
-            group.permission.inventory_sections_can_edit = group.permission.inventory_sections_can_edit - [section.id]
-            group.save!
+            group.permission.atomic_remove(:inventory_sections_can_edit, section.id)
           end
 
           groups_can_edit.each do |group_id|
             group = Group.find(group_id)
-            group.permission.inventory_sections_can_edit = group.permission.inventory_sections_can_edit + [section.id]
-            group.save!
+            group.permission.atomic_append(:inventory_sections_can_edit, section.id)
           end
         end
       end
