@@ -91,6 +91,40 @@ describe Inventory::Categories::API do
       expect(response.status).to eq(404)
       expect(parsed_body).to include("error")
     end
+
+    context "user only has permissions to see some fields of the category" do
+      let(:group) do
+        create(:group)
+      end
+      let(:user) do
+        create(:user, groups: [group])
+      end
+      let(:field) do
+        category.fields.first
+      end
+
+      before do
+        group.permission.update(
+          inventory_categories_can_view: [category.id],
+          inventory_sections_can_edit: [field.section.id],
+          inventory_fields_can_edit: [field.id]
+        )
+      end
+
+      it "returns only some fields from the category" do
+        get "/inventory/categories/#{category.id}", valid_params, auth(user)
+        expect(response.status).to eq(200)
+        body = parsed_body["category"]
+
+        expect(body['sections'].size).to eq(1)
+        section = body['sections'].first
+        expect(section['id']).to eq(field.section.id)
+
+        expect(section['fields'].size).to eq(1)
+        returned_field = section['fields'].first
+        expect(returned_field['id']).to eq(field.id)
+      end
+    end
   end
 
   context "PUT /inventory/categories/:id" do

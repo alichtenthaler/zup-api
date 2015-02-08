@@ -99,8 +99,13 @@ class Reports::Item < Reports::Base
     expose :overdue
 
     expose :address do |obj, _|
-      obj.address || obj.inventory_item.location[:address]
+      if obj.address
+        obj.address
+      elsif obj.inventory_item.present?
+        obj.inventory_item.location[:address]
+      end
     end
+
     expose :reference
     expose :confidential
     expose :comments_count

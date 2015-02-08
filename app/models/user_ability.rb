@@ -248,6 +248,6 @@ class UserAbility
   end
 
   def inventory_fields_visible
-    (Group.ids_for_permission(user.groups, :inventory_fields_can_view) + Group.ids_for_permission(user.groups, :inventory_fields_can_view)).uniq
+    (Group.ids_for_permission(user.groups, :inventory_fields_can_view) + Group.ids_for_permission(user.groups, :inventory_fields_can_edit)).uniq
   end
 end

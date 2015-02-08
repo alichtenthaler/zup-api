@@ -94,7 +94,7 @@ class Inventory::Category < Inventory::Base
       if options[:user]
         user_permissions = UserAbility.new(options[:user])
 
-        if user_permissions.can?(:manage, Inventory::Category) || user_permissions.can?(:edit, object)
+        if user_permissions.can?(:manage, Inventory::Item) || user_permissions.can?(:edit, object)
           sections = object.sections
         else
           sections = object.sections.where(id: user_permissions.inventory_sections_visible)

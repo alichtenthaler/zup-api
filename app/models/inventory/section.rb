@@ -50,7 +50,7 @@ class Inventory::Section < Inventory::Base
       if options[:user]
         user_permissions = UserAbility.new(options[:user])
 
-        if user_permissions.can?(:manage, Inventory::Category) || user_permissions.can?(:edit, object.category)
+        if user_permissions.can?(:manage, Inventory::Item) || user_permissions.can?(:edit, object.category)
           fields = object.fields
         else
           fields = object.fields.enabled.where(id: user_permissions.inventory_fields_visible)

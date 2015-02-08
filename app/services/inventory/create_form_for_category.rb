@@ -87,7 +87,7 @@ class Inventory::CreateFormForCategory
           # Remove permission of groups
           Group.that_includes_permission(:inventory_fields_can_edit, field.id).each do |group|
             group = Group.find(group.id)
-            group.permission.atomic_remove(:inventory_fields_can_view, field.id)
+            group.permission.atomic_remove(:inventory_fields_can_edit, field.id)
           end
 
           groups_can_edit.each do |group_id|
