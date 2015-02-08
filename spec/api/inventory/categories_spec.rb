@@ -339,6 +339,10 @@ describe Inventory::Categories::API do
       body = parsed_body
       expect(body).to include("sections")
       expect(body["sections"].map { |d| d["title"]}).to eq(category.sections.map(&:title))
+
+      # Section needs to has its permissions
+      section = body["sections"].first
+      expect(section["permissions"]).to_not be_nil
     end
   end
 

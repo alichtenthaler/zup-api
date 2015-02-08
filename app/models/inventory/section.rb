@@ -19,6 +19,22 @@ class Inventory::Section < Inventory::Base
     end
   end
 
+  # Group permissions
+  def permissions
+    {
+      groups_can_view: groups_can_view,
+      groups_can_edit: groups_can_edit
+    }
+  end
+
+  def groups_can_view
+    Group.that_includes_permission(:inventory_sections_can_view, self.id).map(&:id)
+  end
+
+  def groups_can_edit
+    Group.that_includes_permission(:inventory_sections_can_edit, self.id).map(&:id)
+  end
+
   class Entity < Grape::Entity
     expose :id
     expose :title
@@ -28,6 +44,7 @@ class Inventory::Section < Inventory::Base
     expose :inventory_category_id
     expose :position
     expose :fields
+    expose :permissions
 
     def fields
       if options[:user]
