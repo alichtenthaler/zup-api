@@ -107,29 +107,6 @@ Exemplo de resposta:
 Para alteração de senha, você precisa informar o atributo `current_password`
 com a senha atual do usuário.
 
-## Autenticação
-
-O Usuário deve ser autenticado no sistema para poder realizar algumas requisições, utilize o endpoint de autenticação:
-Esse token deverá ser enviado no HEADER da requisição da seguinte maneira: `X-App-Token: token`
-
-`POST /authenticate`
-
-Exemplo de requisição:
-
-    {
-      "email": "user@gmail.com",
-      "password": "registeredpassword"
-    }
-
-Exemplo de resposta:
-
-    {
-      "user": ...,
-      "token": "d8068c68c63c8e74310e9dc680063a3f"
-    }
-
-Com o token retornado, você pode autenticar suas requisições passando o parâmetro `token` com a chave de acesso retornado por esse endpoint.
-
 ## Recuperação de senha
 
 Você pode solicitar o envio de e-mail de recuperação de senha através desse endpoint.

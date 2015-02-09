@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v1.0.0-p1
+
+* [FIX] Corrige `sidekiq-cron` integração
+* [FIX] Corrige bug onde usuários com permissão de gerenciar
+categorias de inventário podiam listar todas as categorias de relato
+
 ## v1.0.0
 
 Essa é a primeira versão do ZUP, estamos iniciando o versionamento neste release.

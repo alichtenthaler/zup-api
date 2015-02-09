@@ -109,7 +109,7 @@ module Reports::Categories
         categories_scope = Reports::Category.active.main
         permissions = UserAbility.new(current_user)
 
-        unless permissions.can?(:manage, Inventory::Category)
+        unless permissions.can?(:manage, Reports::Category)
           categories_scope = categories_scope.where(id: permissions.reports_categories_visible)
         end
 

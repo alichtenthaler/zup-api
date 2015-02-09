@@ -1,6 +1,25 @@
+# Relatos
+
 ## Criando um item de relato
 
 __URI__ `POST /reports/:category_id/items`
+
+### Parâmetros de entrada
+
+| Nome              | Tipo    | Obrigatório | Descrição                                                                       |
+|-------------------|---------|-------------|---------------------------------------------------------------------------------|
+| category_id       | Integer | Sim         | O id da categoria de relato                                                     |
+| inventory_item_id | Integer | Não         | O id do item de inventário                                                      |
+| latitude          | String  | Não         | Latitude do relato. Irá usar do inventário se não for preenchido.               |
+| longitude         | String  | Não         | Longitude do relato. Irá usar do inventário se não for preenchido.              |
+| description       | String  | Não         | Descrição do relato                                                             |
+| address           | String  | Não         | Endereço completo do relato                                                     |
+| reference         | String  | Não         | Referência do endereço                                                          |
+| images            | Array   | Não         | Um array de imagens, encodadas em base64, para esse relato.                     |
+| status_id         | Integer | Não         | O status do relato, irá utilizar o status inicial padrão da categoria de relato |
+| user_id           | Integer | Não         | Para associar um usuário com o relato                                           |
+| confidential      | Boolean | Não         | Se o relato é confidencial (não é visível para os munícipes)                    |
+| from_panel        | Boolean | Não         |                                                                                 |
 
 Exemplo de requisição:
 
@@ -137,6 +156,22 @@ Para especificar o usuário na criação do relato, utilize-se do parâmetro `us
 ## Alterando um relato
 
 __URI__ `PUT /reports/:category_id/items/:id`
+
+### Parâmetros de entrada
+
+| Nome              | Tipo    | Obrigatório | Descrição                                                                       |
+|-------------------|---------|-------------|---------------------------------------------------------------------------------|
+| category_id       | Integer | Sim         | O id da categoria de relato                                                     |
+| inventory_item_id | Integer | Não         | O id do item de inventário                                                      |
+| latitude          | String  | Não         | Latitude do relato. Irá usar do inventário se não for preenchido.               |
+| longitude         | String  | Não         | Longitude do relato. Irá usar do inventário se não for preenchido.              |
+| description       | String  | Não         | Descrição do relato                                                             |
+| address           | String  | Não         | Endereço completo do relato                                                     |
+| reference         | String  | Não         | Referência do endereço                                                          |
+| images            | Array   | Não         | Um array de imagens, encodadas em base64, para esse relato.                     |
+| status_id         | Integer | Não         | O status do relato, irá utilizar o status inicial padrão da categoria de relato |
+| user_id           | Integer | Não         | Para associar um usuário com o relato                                           |
+| confidential      | Boolean | Não         | Se o relato é confidencial (não é visível para os munícipes)                    |
 
 Exemplo de requisição:
 
@@ -466,6 +501,26 @@ __Query string:__
 
     &limit=40
     &zoom=18                             O zoom reportado pelo Google Maps
+
+### Listando relatos de uma categoria de relato
+
+Para listar os relatos de uma categoria de relato, utilizar o seguinte endpoint:
+
+```
+GET /reports/{category_id}/items
+```
+
+O retorno é o mesmo dos outros endpoints de listagem.
+
+### Listando relatos de um usuário em específico
+
+Para listar os relatos de um usuário em específico, você deve utilizar o seguinte endpoint:
+
+```
+GET /users/{user_id}/items
+```
+
+O retorno é o mesmo dos outros endpoints de listagem.
 
 ### Criando um relato sigiloso
 
