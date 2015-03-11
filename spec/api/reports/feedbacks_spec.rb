@@ -1,4 +1,4 @@
-require 'spec_helper'
+require 'rails_helper'
 
 describe Reports::Feedbacks::API do
   let(:user) { create(:user) }

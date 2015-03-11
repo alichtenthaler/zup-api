@@ -21,32 +21,34 @@ module Flows::Steps
 
       desc 'Create a Step'
       params do
-        requires :title,              type: String,  desc: 'Title of resolution state'
-        optional :step_type,          type: String,  desc: 'Type of step (form or flow)'
-        optional :child_flow_id,      type: Integer, desc: 'Child Flow id'
-        optional :child_flow_version, type: Integer, desc: 'Child Flow Version'
+        requires :title,                type: String,  desc: 'Title of resolution state'
+        optional :conduction_mode_open, type: Boolean, desc: 'Condution mode is Open, true for "open" or false for "selective" (default is true)'
+        optional :step_type,            type: String,  desc: 'Type of step (form or flow)'
+        optional :child_flow_id,        type: Integer, desc: 'Child Flow id'
+        optional :child_flow_version,   type: Integer, desc: 'Child Flow Version'
       end
       post do
         authenticate!
         validate_permission!(:create, Step)
 
-        parameters = safe_params.permit(:title, :step_type, :child_flow_id, :child_flow_version).merge(user: current_user)
+        parameters = safe_params.permit(:title, :conduction_mode_open, :step_type, :child_flow_id, :child_flow_version).merge(user: current_user)
         step       = Flow.find(safe_params[:flow_id]).steps.create!(parameters)
         { message: I18n.t(:step_created), step: Step::Entity.represent(step, display_type: 'full') }
       end
 
       desc 'Update a Step'
       params do
-        requires :title,              type: String,  desc: 'Title of resolution state'
-        optional :step_type,          type: String,  desc: 'Type of step (form or flow)'
-        optional :child_flow_id,      type: Integer, desc: 'Child Flow id'
-        optional :child_flow_version, type: Integer, desc: 'Child Flow Version'
+        requires :title,                type: String,  desc: 'Title of resolution state'
+        optional :conduction_mode_open, type: Boolean, desc: 'Condution mode is Open, true for "open" or false for "selective" (default is true)'
+        optional :step_type,            type: String,  desc: 'Type of step (form or flow)'
+        optional :child_flow_id,        type: Integer, desc: 'Child Flow id'
+        optional :child_flow_version,   type: Integer, desc: 'Child Flow Version'
       end
       put ':id' do
         authenticate!
         validate_permission!(:update, Step)
 
-        parameters = safe_params.permit(:title, :step_type, :child_flow_id, :child_flow_version).merge(user: current_user)
+        parameters = safe_params.permit(:title, :conduction_mode_open, :step_type, :child_flow_id, :child_flow_version).merge(user: current_user)
         step       = Flow.find(safe_params[:flow_id]).steps.find(safe_params[:id])
         { message: I18n.t(:step_updated) } if step.update!(parameters)
       end

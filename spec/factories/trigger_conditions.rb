@@ -1,10 +1,9 @@
-# Read about factories at https://github.com/thoughtbot/factory_girl
-
 FactoryGirl.define do
   factory :trigger_condition do
-    field { Field.last || build(:field) }
+    field { Field.last }
     condition_type "=="
     values [1]
-    trigger nil
+    trigger { Trigger.last }
+    user { User.first }
   end
 end

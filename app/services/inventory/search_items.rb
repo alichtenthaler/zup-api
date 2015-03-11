@@ -2,7 +2,7 @@ class Inventory::SearchItems
   attr_reader :fields, :categories, :position_params,
               :limit, :sort, :order, :address, :statuses,
               :created_at, :updated_at, :title, :users,
-              :query, :user
+              :query, :user, :clusterize, :zoom
 
   def initialize(user, opts = {})
     @position_params = opts[:position]
@@ -19,6 +19,8 @@ class Inventory::SearchItems
     @fields = opts[:fields] || {}
     @query = opts[:query]
     @user = user
+    @clusterize = opts[:clusterize]
+    @zoom = opts[:zoom]
   end
 
   def search
@@ -116,8 +118,8 @@ class Inventory::SearchItems
     end
 
     if created_at && (created_at[:begin] || created_at[:end])
-      begin_date = created_at[:begin]
-      end_date = created_at[:end]
+      begin_date = DateTime.parse(created_at[:begin])
+      end_date = DateTime.parse(created_at[:end])
 
       if begin_date && end_date
         scope = scope.where(inventory_items: { created_at: begin_date..end_date })
@@ -146,67 +148,13 @@ class Inventory::SearchItems
     end
 
     if fields.any?
-      scope = scope.where(build_fields_statement)
+      scope = Inventory::SearchItemsByFields.new(scope, fields).scope_with_filters
     end
 
-    scope
-  end
-
-  private
-  def build_fields_statement
-    statement = ""
-
-    fields.each do |field_id, filters|
-      # Filters could be a hash like this:
-      # filters = {
-      #   lesser_than: 30,
-      #   greater_than: 40,
-      #   equal_to: 40,
-      #   like: "old",
-      #   different: "different than this",
-      #   includes: ["test", "this", "tomorrow"],
-      #   excludes: ["test", "this", "tomorrow"]
-      # }
-
-      filters.each do |operation, content|
-        operation = operation.to_s
-
-        statement += " AND " unless statement.empty?
-
-        field_id = ActiveRecord::Base.sanitize(field_id.to_i)
-
-        case operation
-        when "lesser_than"
-          content = ActiveRecord::Base.sanitize(content)
-          statement += "(inventory_item_data.inventory_field_id = #{field_id} AND CAST(inventory_item_data.content[1] AS float) < CAST(#{content} AS float))"
-        when "greater_than"
-          content = ActiveRecord::Base.sanitize(content)
-          statement += "(inventory_item_data.inventory_field_id = #{field_id} AND CAST(inventory_item_data.content[1] AS float) > CAST(#{content} AS float))"
-        when "equal_to"
-          content = ActiveRecord::Base.sanitize(content)
-          statement += "(inventory_item_data.inventory_field_id = #{field_id} AND inventory_item_data.content[1] = #{content})"
-        when "like"
-          content = ActiveRecord::Base.sanitize("%#{content}%")
-          statement += "(inventory_item_data.inventory_field_id = #{field_id} AND inventory_item_data.content[1] LIKE #{content})"
-        when "different"
-          content = ActiveRecord::Base.sanitize(content)
-          statement += "(inventory_item_data.inventory_field_id = #{field_id} AND inventory_item_data.content[1] != #{content})"
-        when "includes"
-          content = content.inject([]) { |s, (k, v)| s << v }
-
-          content = "{#{content.join(",")}}"
-          content = ActiveRecord::Base.sanitize(content)
-          statement += "(inventory_item_data.inventory_field_id = #{field_id} AND inventory_item_data.content @> #{content}::text[])"
-        when "excludes"
-          content = content.inject([]) { |s, (k, v)| s << v }
-
-          content = "{#{content.join(",")}}"
-          content = ActiveRecord::Base.sanitize(content)
-          statement += "(inventory_item_data.inventory_field_id = #{field_id} AND NOT(inventory_item_data.content @> #{content}::text[]))"
-        end
-      end
+    if position_params && clusterize
+      Inventory::ClusterizeItems.new(scope, zoom).results
+    else
+      scope
     end
-
-    statement
   end
 end

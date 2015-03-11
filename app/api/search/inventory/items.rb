@@ -27,13 +27,17 @@ module Search::Inventory::Items
                desc: 'Values: asc, desc'
       optional :display_type, type: String,
                desc: 'Display type of the listing'
+      optional :clusterize, type: String,
+               desc: 'Should clusterize the results or not'
+      optional :zoom, type: String,
+               desc: 'The zoom level for the map'
     end
     get "inventory/items" do
       authenticate!
 
       search_params = safe_params.permit(
         :address, :title, :query, :sort,
-        :order,
+        :order, :clusterize, :zoom,
         created_at: [:begin, :end],
         updated_at: [:begin, :end]
       )
@@ -59,12 +63,22 @@ module Search::Inventory::Items
         end
       end
 
-      items = Inventory::SearchItems.new(current_user, search_params).search
-      items = paginate(items)
+      results = Inventory::SearchItems.new(current_user, search_params).search
 
-      {
-        items: Inventory::Item::Entity.represent(items, display_type: params[:display_type])
-      }
+      if safe_params[:clusterize]
+        header('Total', results[:total])
+
+        {
+          items: Inventory::Item::Entity.represent(results[:items], display_type: params[:display_type]),
+          clusters: Inventory::Cluster::Entity.represent(results[:clusters])
+        }
+      else
+        results = paginate(results)
+
+        {
+          items: Inventory::Item::Entity.represent(results, display_type: params[:display_type])
+        }
+      end
     end
   end
 end

@@ -1,4 +1,4 @@
-require 'spec_helper'
+require 'rails_helper'
 
 describe Reports::Categories::API do
   let(:user) { create(:user) }

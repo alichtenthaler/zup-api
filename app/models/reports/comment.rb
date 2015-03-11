@@ -5,12 +5,12 @@ class Reports::Comment < Reports::Base
     INTERNAL = 2
   ]
 
-  belongs_to :item, foreign_key: 'reports_item_id', class_name: 'Reports::Item'
+  belongs_to :item, foreign_key: 'reports_item_id', class_name: 'Reports::Item', inverse_of: :comments
   belongs_to :author, class_name: 'User'
 
   validates :message, presence: true
   validates :visibility, presence: true, inclusion: { in: VISIBILITY }
-  validates :item, presence: true
+  validates_associated :item
 
   before_validation :set_default_values
 

@@ -153,6 +153,8 @@ module Users
 
         optional :device_token, type: String, desc: "The device token if registration is from mobile"
         optional :device_type, type: String, desc: "Could be `ios` or `android`"
+
+        optional :email_notifications, type: Boolean, desc: "If the user wants email notification or not"
       end
       post do
         user = User.new(
@@ -162,7 +164,7 @@ module Users
             :address_additional, :postal_code, :district,
             :facebook_user_id, :twitter_user_id,
             :google_plus_user_id, :groups_ids,
-            :device_token, :device_type
+            :device_token, :device_type, :email_notifications
           )
         )
 
@@ -207,6 +209,8 @@ module Users
 
         optional :device_token, type: String, desc: "The device token if registration is from mobile"
         optional :device_type, type: String, desc: "Could be ios or android"
+
+        optional :email_notifications, type: Boolean, desc: "If the user wants email notification or not"
       end
       put ':id' do
         authenticate!
@@ -217,7 +221,7 @@ module Users
           :email, :current_password, :password,
           :password_confirmation, :name, :phone, :document, :address,
           :address_additional, :postal_code, :district,
-          :device_token, :device_type
+          :device_token, :device_type, :email_notifications
         )
 
         user.update!(user_params)
@@ -231,6 +235,20 @@ module Users
         validate_permission!(:delete, user)
         user.destroy
         { message: "Conta deletada com sucesso." }
+      end
+
+      desc "Unsubscribe user from emails"
+      params do
+        requires :token, type: String, desc: ""
+      end
+      get 'unsubscribe/:token' do
+        result = User.unsubscribe(params[:token])
+
+        if result
+          { message: "Você não receberá mais atualizações no seu e-mail!" }
+        else
+          { message: "Usuário não encontrado" }
+        end
       end
     end
   end

@@ -35,9 +35,10 @@ class Reports::Item < Reports::Base
   before_validation :get_position_from_inventory_item
 
   after_create :generate_protocol
-  after_create :send_email_to_user, if: :user
 
   validates :description, length: { maximum: 800 }
+
+  accepts_nested_attributes_for :comments
 
   def inventory_item_category_id
     self.inventory_item.try(:inventory_category_id)
@@ -161,6 +162,7 @@ class Reports::Item < Reports::Base
       permissions = UserAbility.new(user)
 
       if permissions.can?(:access, "Panel") ||
+          permissions.can?(:manage, Reports::Category) ||
           permissions.can?(:edit, object) || user == object.user
         object.protocol
       end
@@ -172,10 +174,6 @@ class Reports::Item < Reports::Base
   end
 
   private
-
-    def send_email_to_user
-      UserMailer.delay.notify_report_creation(self)
-    end
 
     def generate_protocol
       if self.protocol.blank?

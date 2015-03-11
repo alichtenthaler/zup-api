@@ -56,6 +56,32 @@ Status: 200
 Content-Type: application/json
 ```
 
+###### FieldObject
+| Nome                  | Tipo       | Descrição                                                                                          |
+|-----------------------|------------|----------------------------------------------------------------------------------------------------|
+| id                    | Interger   | ID do objeto.                                                                                      |
+| list_versions         | Array      | Array contento todas as versões do objeto.                                                         |
+| created_at            | DateTime   | Data e horário da criação do objeto.                                                               |
+| updated_at            | DateTime   | Data e horário da última atualização do objeto.                                                    |
+| title                 | String     | Título do Objeto.                                                                                  |
+| previous_field        | Object     | Exibir campo anterior.                                                                             |
+| active                | Boolean    | Se o objeto esta ativo.                                                                            |
+| field_type            | String     | Tipo do Campo (vide tipos de campos no Cadastro)                                                   |
+| origin_field_id       | Integer    | ID do Campo de origen (somente se field_type for previous_field)                                   |
+| category_inventory_id | Integer    | ID do Item de Inventário (somente se o field_type for category_inventory)                          |
+| category_report_id    | Integer    | ID do Item de Relato (somente se o field_type for category_report)                                 |
+| filter                | Array      | Filtros para inclusão, ex.: "jpg,png" (somente se o field_type for image ou attachment)            |
+| requirements          | Hash       | Requerimentos (presença, mínimo/máximo)                                                            |
+| values                | Hash       | Values (para os tipo select, checkbox e radio), ex: {key:value, key:value}                         |
+| version_id            | Interger   | ID da Versão do objeto.                                                                            |
+
+###### Requirements
+| Nome      | Tipo    | Descrição                                                                     |
+|-----------|---------|-------------------------------------------------------------------------------|
+| presence  | Boolean | Se o campo é obrigatório                                                      |
+| minimum   | Integer | Valor mínimo para o campo ou tamanho no caso de campo texto                   |
+| maximum   | Integer | Valor máximo para o campo ou tamanho no caso de campo texto                   |
+
 ```json
 {
   "fields": [
@@ -206,23 +232,30 @@ Status: 201
 Content-Type: application/json
 ```
 
+| Nome         | Tipo   | Descrição                               |
+|--------------|--------|-----------------------------------------|
+| field        | Object | Campo (vide FieldObject no get /fields) |
+
 ```json
 {
   "field": {
     "list_versions": null,
-    "last_version_id": null,
-    "last_version": 1,
-    "updated_at": "2014-05-17T13:40:18.039-03:00",
-    "created_at": "2014-05-17T13:40:18.039-03:00",
+    "previous_field": null,
+    "created_at": "2015-03-03T13:30:29.082-03:00",
+    "updated_at": "2015-03-03T13:30:29.082-03:00",
+    "version_id": null,
     "active": true,
+    "values": null,
     "id": 1,
-    "title": "age",
-    "field_type": "integer",
+    "title": "Campo 1",
+    "field_type": "text",
     "filter": null,
-    "origin_field": null,
+    "origin_field_id": null,
     "category_inventory": null,
     "category_report": null,
-    "requirements": null
+    "requirements": {
+      "presence": "true"
+    }
   },
   "message": "Campo criado com sucesso"
 }

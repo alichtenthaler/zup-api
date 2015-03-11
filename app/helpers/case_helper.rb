@@ -1,13 +1,33 @@
 module CaseHelper
-  def run_triggers(step, kase, user)
-    trigger_type        = nil
-    trigger_values      = nil
-    trigger_description = nil
-    triggers            = step.my_triggers
-    if triggers.present?
-      triggers.select{|t| t.active }.each do |trigger|
+  def fields_params
+    return [] if safe_params[:fields].blank?
+    safe_params[:fields].map { |field| {field_id: field['id'].to_i, value: field['value'].to_s} }
+  end
+
+  def split_param(key)
+    safe_params[key] and safe_params[key].split(',').map(&:to_i)
+  end
+
+  def filter_params
+    parameters = {}
+    parameters[:initial_flow_id]      = split_param(:initial_flow_id)
+    parameters[:initial_flow_version] = split_param(:initial_flow_version)
+    parameters[:responsible_user_id]  = split_param(:responsible_user_id)
+    parameters[:responsible_group_id] = split_param(:responsible_group_id)
+    parameters[:created_by_id]        = split_param(:created_by_id)
+    parameters[:updated_by_id]        = split_param(:updated_by_id)
+    parameters[:step_id]              = split_param(:step_id)
+    parameters
+  end
+
+  def run_triggers(step, kase)
+    trigger_type, trigger_values, trigger_description = nil
+    triggers = step.try(:my_triggers, {active: true})
+
+    if triggers.present? and fields_params.present?
+      triggers.each do |trigger|
         case_step  = kase.case_steps.find_by(step_id: step.id)
-        conditions = trigger.my_trigger_conditions.select{|t| t.active }.map do |condition|
+        conditions = trigger.my_trigger_conditions(active: true).map do |condition|
           compare_trigger_condition?(condition, case_step.case_step_data_fields)
         end
         unless conditions.include? false
@@ -17,17 +37,17 @@ module CaseHelper
           trigger_description = trigger.description
           if trigger.action_type == 'finish_flow'
             kase.update!(status: 'finished', resolution_state_id: trigger_values.first)
-            all_steps      = kase.initial_flow.list_all_steps
-            step_index     = all_steps.index(case_step.my_step)
-            if other_case_steps = kase.case_steps.where(step_id: all_steps[step_index+1..-1])
+            all_steps  = kase.initial_flow.list_all_steps
+            next_step_index = all_steps.index(case_step.my_step).try(:next)
+            if other_case_steps = kase.case_steps.where(step_id: all_steps[next_step_index..-1])
               other_case_steps.delete_all
-              kase.log!('removed_case_step', user: user)
+              kase.log!('removed_case_step', user: current_user)
             end
-            kase.log!('finished', user: user)
+            kase.log!('finished', user: current_user)
           elsif trigger.action_type == 'disable_steps'
             kase.update! disabled_steps: kase.disabled_steps.push(trigger_values).flatten.uniq.map(&:to_i)
           elsif trigger.action_type == 'transfer_flow'
-            kase.log!('transfer_flow', new_flow_id: trigger_values.first, user: user)
+            kase.log!('transfer_flow', new_flow_id: trigger_values.first, user: current_user)
           end
           break
         end
@@ -57,16 +77,16 @@ module CaseHelper
     end
   end
 
-  def convert_data(type, value, elem=nil)
+  def convert_data(type, value, elem = nil)
     return value if value.blank?
     data_value = value.is_a?(String) ? value.squish! : value
 
     case type
     when 'string', 'text'
       data_value = data_value.to_s
-    when 'integer', 'year', 'month', 'day', 'hour', 'minute', 'second'
+    when 'integer', 'year', 'month', 'day', 'hour', 'minute', 'second', 'years', 'months', 'days', 'hours', 'minutes', 'seconds'
       data_value = data_value.to_i
-    when 'decimal', 'meter', 'centimeter', 'kilometer'
+    when 'decimal', 'meter', 'centimeter', 'kilometer', 'decimals', 'meters', 'centimeters', 'kilometers'
       data_value = data_value.to_f
     when 'angle'
       data_value = data_value.to_f
@@ -78,16 +98,32 @@ module CaseHelper
       data_value = data_value.to_datetime
     when 'email'
       data_value = data_value.downcase
-    when 'checkbox'
-      data_value = data_value.is_a?(String) ? eval(data_value) : data_value
-    when 'category_inventory', 'category_report'
-      data_value = data_value.is_a?(String) ? eval(data_value) : data_value
+    when 'checkbox', 'select'
+      data_value = convert_field_data(data_value)
+    when 'image'
+      data_value = convert_field_data(data_value)
+      elem.value = ''
+      elem.update_case_step_data_images data_value
+    when 'attachment'
+      data_value = convert_field_data(data_value)
+      elem.value = ''
+      elem.update_case_step_data_attachments data_value
+    when 'previous_field'
+      #nothing to do
+    when 'category_inventory'
+      @items_with_update = elem.field.category_inventory.items.where(id: eval(data_value))
+      data_value = @items_with_update.map(&:id)
     when 'category_inventory_field'
       inventory_field = Inventory::Field.find(elem.origin_field_id)
       data_value      = convert_data(inventory_field.kind, data_value)
-    when 'image', 'attachment', 'previous_field'
+    when 'category_report'
       #nothing to do
     end
     data_value
+  end
+
+  def convert_field_data(field)
+    return field unless field.is_a? String
+    field =~ /^\[.*\]$/ || field =~ /^\{.*\}$/ ? eval(field) : field
   end
 end

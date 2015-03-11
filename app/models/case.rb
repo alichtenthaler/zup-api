@@ -1,27 +1,27 @@
 class Case < ActiveRecord::Base
   has_many   :cases_log_entries
   has_many   :case_steps
-  belongs_to :initial_flow, class_name: 'Flow', foreign_key: :initial_flow_id
-  belongs_to :created_by,   class_name: 'User', foreign_key: :created_by_id
-  belongs_to :updated_by,   class_name: 'User', foreign_key: :updated_by_id
+  belongs_to :initial_flow,     class_name: 'Flow',            foreign_key: :initial_flow_id
+  belongs_to :created_by,       class_name: 'User',            foreign_key: :created_by_id
+  belongs_to :updated_by,       class_name: 'User',            foreign_key: :updated_by_id
   belongs_to :resolution_state, class_name: 'ResolutionState', foreign_key: :resolution_state_id
-  belongs_to :original_case,    class_name: 'Case', foreign_key: :original_case_id
-  has_many   :children_cases,   class_name: 'Case', foreign_key: :original_case_id
+  belongs_to :original_case,    class_name: 'Case',            foreign_key: :original_case_id
+  has_many   :children_cases,   class_name: 'Case',            foreign_key: :original_case_id
 
   accepts_nested_attributes_for :case_steps
 
-  scope :active,        -> { where(status: ['active', 'pending', 'transfer']) }
-  scope :not_inactive,  -> { where('status != ?', 'inactive') }
+  scope :active,        -> { where(status: %w{active pending transfer not_satisfied}) }
+  scope :not_inactive,  -> { where.not(status: 'inactive') }
   scope :inactive,      -> { where(status: 'inactive') }
-  scope :not_inactive_and_transfered, -> { where('status != ? AND status != ?', 'inactive', 'transfer') }
+  scope :not_inactive_and_transfered, -> { where.not(status: 'inactive', status: 'transfer') }
 
   validates :created_by_id, :initial_flow_id, presence: true
-  validates :status, inclusion: {in: %w{active pending finished inactive transfer}}
+  validates :status, inclusion: {in: %w{active pending finished inactive transfer not_satisfied}}
   validate  :not_change_initial_flow, on: :update
 
-  def log!(action, options={})
-    basic = {flow: self.initial_flow, flow_version: self.initial_flow.last_version,
-             step: self.case_steps.try(:last).try(:step), user: self.created_by, action: action}
+  def log!(action, options = {})
+    basic = {flow: initial_flow, flow_version: flow_version, user: created_by,
+             step: case_steps.last.try(:my_step), action: action}
     self.cases_log_entries.create! options.merge(basic)
   end
 
@@ -34,36 +34,44 @@ class Case < ActiveRecord::Base
   end
 
   def next_step
-    actual_step = self.case_steps.present? ? self.case_steps.last : nil
+    actual_step = case_steps.try(:last)
     return actual_step.step if actual_step.present? and actual_step.case_step_data_fields.blank?
-    self.initial_flow.get_new_step_to_case(actual_step.try(:step))
+    my_initial_flow.get_new_step_to_case(actual_step.try(:my_step), disabled_steps)
+  end
+
+  def steps_not_fulfilled
+    my_initial_flow.list_all_steps(my_initial_flow, disabled_steps).reject do |step|
+      step.my_case_steps(case_id: id).first.try(:executed?) or step.required_fields.blank?
+    end.map(&:id)
   end
 
   private
+  def my_initial_flow
+    Version.reify(flow_version)
+  end
+
   def not_change_initial_flow
-    errors.add(:initial_flow, :changed) if self.initial_flow_id_changed?
+    initial_flow_id_changed? and errors.add(:initial_flow, :changed)
   end
 
   def total_steps
-    self.initial_flow.list_all_steps.count
+    initial_flow.list_all_steps.size
   end
 
   def next_step_id
     next_step.try(:id)
   end
 
-  def children_case_ids
-    self.children_cases.map(&:id)
+  def children_case_id
+    children_cases.pluck(:id).first
   end
 
   def get_responsible_user
-    case_step = self.case_steps.last
-    case_step.present? ? case_step.responsible_user : responsible_user
+    case_steps.last.try(:responsible_user) || responsible_user
   end
 
   def get_responsible_group
-    case_step = self.case_steps.last
-    case_step.present? ? case_step.responsible_group : responsible_group
+    case_steps.last.try(:responsible_group) || responsible_group
   end
 
   class Entity < Grape::Entity
@@ -148,12 +156,13 @@ class Case < ActiveRecord::Base
     expose :total_steps
     expose :disabled_steps
     expose :original_case_id
-    expose :children_case_ids
+    expose :children_case_id
     expose :case_step_ids do |instance, options| case_step_ids(instance, options) end
     expose :next_step_id
     expose :responsible_user_id
     expose :responsible_group_id
     expose :status
+    expose :steps_not_fulfilled
     expose :completed do |instance, options| instance.status == 'finished' end
     with_options(if: {display_type: 'full'}) do
       expose :created_by,            using: User::Entity

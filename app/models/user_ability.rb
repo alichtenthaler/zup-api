@@ -38,6 +38,7 @@ class UserAbility
 
       if user_groups.with_permission(:manage_inventory_categories)
         can :manage, Inventory::Category
+        can :manage, Inventory::Field
       end
 
       if user_groups.with_permission(:manage_inventory_items)
@@ -112,19 +113,16 @@ class UserAbility
         kase.responsible_user_id == user.id or user_groups.map(&:id).include? kase.responsible_group_id
       end
 
-      if user_groups.with_permission(:flow_can_delete_all_cases)
-        can :delete, Case
-        can :restore, Case
+      can :delete, Case do |kase|
+        flow_can_delete_all_cases = Group.included_in_permission?(user_groups, :flow_can_delete_all_cases, kase.initial_flow_id)
+        flow_can_delete_own_cases = Group.included_in_permission?(user_groups, :flow_can_delete_own_cases, kase.initial_flow_id)
+        flow_can_delete_all_cases or (flow_can_delete_own_cases and (kase.responsible_user_id == user.id or user_groups.map(&:id).include? kase.responsible_group_id))
       end
 
-      if user_groups.with_permission(:flow_can_delete_own_cases)
-        can :delete, Case do |kase|
-          kase.responsible_user_id == user.id or user_groups.map(&:id).include? kase.responsible_group_id
-        end
-
-        can :restore, Case do |kase|
-          kase.responsible_user_id == user.id or user_groups.map(&:id).include? kase.responsible_group_id
-        end
+      can :restore, Case do |kase|
+        flow_can_delete_all_cases = Group.included_in_permission?(user_groups, :flow_can_delete_all_cases, kase.initial_flow_id)
+        flow_can_delete_own_cases = Group.included_in_permission?(user_groups, :flow_can_delete_own_cases, kase.initial_flow_id)
+        flow_can_delete_all_cases or (flow_can_delete_own_cases and (kase.responsible_user_id == user.id or user_groups.map(&:id).include? kase.responsible_group_id))
       end
 
       can :create, CaseStep do |case_step|
@@ -165,6 +163,10 @@ class UserAbility
 
       # Specific groups permissions
       can :edit, Group do |group|
+        Group.included_in_permission?(user_groups, :groups_can_edit, group.id)
+      end
+
+      can :destroy, Group do |group|
         Group.included_in_permission?(user_groups, :groups_can_edit, group.id)
       end
 
@@ -249,5 +251,9 @@ class UserAbility
 
   def inventory_fields_visible
     (Group.ids_for_permission(user.groups, :inventory_fields_can_view) + Group.ids_for_permission(user.groups, :inventory_fields_can_edit)).uniq
+  end
+
+  def groups_visible
+    (Group.ids_for_permission(user.groups, :groups_can_view) + Group.ids_for_permission(user.groups, :groups_can_edit)).uniq
   end
 end

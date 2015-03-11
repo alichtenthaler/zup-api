@@ -67,6 +67,17 @@ module Reports::Items
         report.update_images(params[:images]) if params[:images]
         report.save!
 
+        if params[:inventory_item_id]
+          Inventory::CreateHistoryEntry.new(report.inventory_item, current_user)
+                                       .create('report',
+                                               'Criou uma solicitação para este item de inventário.',
+                                               report)
+        end
+
+        if report.user
+          Reports::NotifyUser.new(report).notify_report_creation!
+        end
+
         { report: Reports::Item::Entity.represent(report, display_type: 'full', user: current_user) }
       end
     end
@@ -130,7 +141,7 @@ module Reports::Items
 
         if params[:status_id]
           new_status = category.statuses.find(params[:status_id])
-          Reports::UpdateItemStatus.new(report).update_status!(new_status)
+          Reports::UpdateItemStatus.new(report, current_user).update_status!(new_status)
         end
 
 
@@ -161,7 +172,7 @@ module Reports::Items
       new_status = new_category.statuses.find(safe_params[:new_status_id])
 
       # Move to new category and status
-      service = Reports::ChangeItemCategory.new(item, new_category, new_status)
+      service = Reports::ChangeItemCategory.new(item, new_category, new_status, current_user)
       service.process!
 
       {
@@ -187,9 +198,9 @@ module Reports::Items
                desc: "Report category to filter for"
       optional :user_id, type: Integer,
                desc: "User id to filter for"
-      optional :begin_date, type: Date,
+      optional :begin_date, type: DateTime,
                desc: "The minimum date to filter"
-      optional :end_date, type: Date,
+      optional :end_date, type: DateTime,
                desc: "The maximum date to filter"
       optional :statuses,
                desc: "Statuses id to filter, you can
@@ -202,6 +213,8 @@ module Reports::Items
                desc: 'The field to sort the items. Either created_at, updated_at, id, reports_status_id or user_name'
       optional :order, type: String,
                desc: 'Either ASC or DESC.'
+      optional :clusterize, type: String,
+               desc: 'Should clusterize the results or not'
     end
     get 'items' do
       if safe_params[:category_id]
@@ -249,7 +262,8 @@ module Reports::Items
         order: safe_params[:order],
         paginator: method(:paginate),
         page: safe_params[:page],
-        per_page: safe_params[:per_page]
+        per_page: safe_params[:per_page],
+        clusterize: safe_params[:clusterize]
       )
 
       reports = reports.search

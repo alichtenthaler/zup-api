@@ -1,4 +1,4 @@
-require 'spec_helper'
+require 'rails_helper'
 
 describe AccessKey do
   let(:access_key) { create(:access_key) }

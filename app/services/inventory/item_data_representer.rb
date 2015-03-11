@@ -1,10 +1,13 @@
 module Inventory
   # TODO: Documentation on this
+  # And also make an unit test, please
   class ItemDataRepresenter
     include ActiveModel::Validations
 
-    attr_reader :item
+    attr_reader :item, :user
 
+    # Factory creates a new class with
+    # specific validations for this item
     def self.factory(item, user = nil)
       instance_class = self.dup
 
@@ -12,7 +15,9 @@ module Inventory
       fields.each do |field|
         instance_class.send(:attr_accessor, field.title)
 
-        inject_validations(field, instance_class, user)
+        if field.enabled?
+          inject_validations(field, instance_class, user)
+        end
       end
 
       instance_class.class_eval do
@@ -21,12 +26,15 @@ module Inventory
         end
       end
 
-      instance_class.new(item, fields)
+      instance_class.new(item, fields, user)
     end
 
-    def initialize(item, fields)
+    # Instance methods
+    def initialize(item, fields, user = nil)
+      @changes = {} # Store all attributes changes
       @_fields_cache = {}
       @item = item
+      @user = user
 
       fields.each do |field|
         @_fields_cache[field.id] = field
@@ -42,7 +50,7 @@ module Inventory
         field_id = field_id.to_i
         field = @_fields_cache[field_id]
 
-        if field
+        if field && field.enabled?
           set_attribute_content(field, content)
         else
           raise "Inventory field with id #{field_id} doesn't exists!"
@@ -57,11 +65,24 @@ module Inventory
         @_fields_cache.each do |_, field|
           new_content = send("#{field.title}")
 
-          item_data = current_data.select { |i| i.field == field }.first
+          item_data = current_data.select { |i| i.field.id == field.id }.first
 
           if item_data
+            if field.kind != 'images' && new_content != item_data.content
+              @changes[field] = {
+                old: item_data.content,
+                new: new_content
+              }
+            end
+
             item_data.content = new_content
           else
+            if field.kind != 'images'
+              @changes[field] = {
+                new: new_content
+              }
+            end
+
             item.data.build(field: field, content: new_content)
           end
         end
@@ -69,6 +90,32 @@ module Inventory
         true
       else
         false
+      end
+    end
+
+    def save!
+      item.save!
+    end
+
+    def changes
+      @changes
+    end
+
+    def create_history_entry
+      fields = changes.keys
+
+      if fields.any?
+        Inventory::CreateHistoryEntry.new(item, user)
+                                    .create('fields', 'Atualizou os campos', fields)
+      end
+
+      created_images = item.images.select do |image|
+        image.id_changed?
+      end
+
+      if created_images.any?
+        Inventory::CreateHistoryEntry.new(item, user)
+                                     .create('images', 'Adicionou novas imagens', created_images)
       end
     end
 
@@ -95,7 +142,11 @@ module Inventory
       convertor = convertors[field.content_type]
 
       if convertor
-        convertor.call(content)
+        unless content.blank?
+          convertor.call(content)
+        else
+          nil
+        end
       else
         content
       end
@@ -126,10 +177,18 @@ module Inventory
           validations[:numericality] = {
             less_than_or_equal_to: field.maximum
           }
+
+          unless field.required?
+            validations[:numericality][:allow_nil] = true
+          end
         else
           validations[:length] = {
             maximum: field.maximum
           }
+
+          unless field.required?
+            validations[:length][:allow_nil] = true
+          end
         end
       end
 
@@ -139,11 +198,20 @@ module Inventory
           validations[:numericality].merge!({
             greater_than_or_equal_to: field.minimum
           })
+
+          unless field.required?
+            validations[:numericality][:allow_nil] = true
+          end
         else
           validations[:length] ||= {}
           validations[:length].merge!({
             minimum: field.minimum
           })
+
+
+          unless field.required?
+            validations[:length][:allow_nil] = true
+          end
         end
       end
 

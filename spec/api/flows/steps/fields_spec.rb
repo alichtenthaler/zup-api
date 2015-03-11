@@ -1,8 +1,8 @@
-require 'spec_helper'
+require 'rails_helper'
 
 describe Flows::Steps::Fields::API do
-  let(:user)       { create(:user) }
-  let(:guest_user) { create(:guest_user) }
+  let!(:user)       { create(:user) }
+  let!(:guest_user) { create(:guest_user) }
 
   describe 'on create' do
     let!(:flow) do
@@ -93,8 +93,8 @@ describe Flows::Steps::Fields::API do
               expect(field.requirements).to eql(expect_requirements)
             end
 
-            it 'should order number be 2' do
-              expect(field.order_number).to eql(2)
+            it 'should update fields_versions on step' do
+              expect(step.reload.fields_versions).to eql({field.id.to_s => nil, step.fields.first.id.to_s => nil})
             end
           end
         end
@@ -154,8 +154,8 @@ describe Flows::Steps::Fields::API do
             it { expect(response.status).to be_a_success_request }
             it { expect(response.body).to be_a_success_message_with(I18n.t(:field_updated)) }
 
-            it 'should order number be 1' do
-              expect(field.order_number).to eql(1)
+            it 'should update fields_versions on step' do
+              expect(step.reload.fields_versions).to eql({field.id.to_s => nil})
             end
           end
         end
@@ -269,12 +269,8 @@ describe Flows::Steps::Fields::API do
           it { expect(response.status).to be_a_success_request }
           it { expect(response.body).to be_a_success_message_with(I18n.t(:fields_order_updated)) }
 
-          it 'should first field with order number be 2' do
-            expect(field.reload.order_number).to eql(2)
-          end
-
-          it 'should second field with order number be 1' do
-            expect(other_field.reload.order_number).to eql(1)
+          it 'should has fields_versions on step' do
+            expect(step.reload.fields_versions).to eql({field.id.to_s => nil, other_field.id.to_s => nil})
           end
         end
       end

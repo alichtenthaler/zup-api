@@ -64,7 +64,7 @@ module PasswordAuthenticable
   end
 
   def should_require_password_fields?
-    new_record?
+    new_record? && !from_webhook
   end
 
   def presence_of_current_password

@@ -2,11 +2,12 @@ require "spec_helper"
 
 describe Inventory::UpdateStatusWithFormulas do
   let!(:item) { create(:inventory_item) }
+  let(:user) { create(:user) }
   let!(:formula) do
     create(:inventory_formula, category: item.category)
   end
 
-  subject { described_class.new(item) }
+  subject { described_class.new(item, user) }
 
   it "updates the item with formulas" do
     expect(item.status).to_not eq(formula.status)
@@ -30,5 +31,15 @@ describe Inventory::UpdateStatusWithFormulas do
     created_alert = formula.alerts.last
     expect(created_alert.affected_items).to include(item)
     expect(created_alert.sent?).to be_falsy
+  end
+
+  it "creates a history entry" do
+    subject.check_and_update!
+    expect(item.histories).to_not be_empty
+
+    entry = item.histories.last
+    expect(entry.kind).to eq('status')
+    expect(entry.user).to eq(user)
+    expect(entry.objects).to eq([formula])
   end
 end

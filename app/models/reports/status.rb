@@ -66,6 +66,7 @@ class Reports::Status < Reports::Base
       self.final = false if self.final.nil?
       self.active = true if self.active.nil?
       self.private = false if self.private.nil?
+
       true
     end
 end

@@ -1,4 +1,4 @@
-require 'spec_helper'
+require 'rails_helper'
 
 describe Reports::Items::API do
   let(:user) { create(:user) }
@@ -298,32 +298,6 @@ describe Reports::Items::API do
       end
     end
 
-    context "multiple inventory_item_id" do
-      let!(:inventory_item) { create(:inventory_item) }
-      let!(:reports) do
-        create_list(:reports_item_with_images, 3, category: category)
-      end
-      let!(:reports_with_inventory_id) do
-        create_list(:reports_item_with_images, 5,
-                       category: category,
-                       inventory_item_id: inventory_item.id)
-      end
-
-      it "returns only one report by inventory_item_id" do
-        get '/reports/items', nil, auth(user)
-        expect(response.status).to eq(200)
-        body = parsed_body
-
-        expect(body['reports'].size).to eq(4)
-
-        reports_ids = body['reports'].map do |r|
-          r['id']
-        end
-        expect(reports_ids).to include(*reports.map(&:id))
-        expect((reports_ids - reports.map(&:id)).size).to eq(1)
-      end
-    end
-
     context "user filter" do
       let!(:reports) do
         create_list(
@@ -394,7 +368,7 @@ describe Reports::Items::API do
     context "date filter" do
       let!(:reports) do
         reports = create_list(
-          :reports_item_with_images, 5,
+          :reports_item_with_images, 3,
         )
 
         reports.each do |report|
@@ -403,7 +377,7 @@ describe Reports::Items::API do
       end
       let!(:wrong_reports) do
         create_list(
-          :reports_item_with_images, 10
+          :reports_item_with_images, 2
         )
       end
       let(:valid_params) do
@@ -434,8 +408,39 @@ describe Reports::Items::API do
         expect(response.status).to eq(200)
         body = parsed_body
 
-        expect(body['reports'].size).to eq(5)
+        expect(body['reports'].size).to eq(3)
         expect(body['reports'].map { |r| r['id'] }).to match_array(reports.map(&:id))
+      end
+
+      context "return the right report even in a different timezone" do
+        let(:valid_params) do
+          JSON.parse <<-JSON
+            {
+              "begin_date": "2015-01-25T00:00:00-08:00",
+              "end_date": "2015-01-25T23:59:59-08:00"
+            }
+          JSON
+        end
+
+        before do
+          reports.each do |report|
+            report.update(
+              created_at: DateTime.new(2015, 1, 26).beginning_of_day.change(offset: '-0300')
+            )
+          end
+        end
+
+        it "returns all reports in the date range" do
+          get '/reports/items', valid_params, auth(user)
+          expect(response.status).to eq(200)
+          body = parsed_body
+
+          expect(body['reports'].size).to eq(reports.length)
+          response_ids = body['reports'].map { |r| r['id'] }
+          wrong_reports.each do |wrong_report|
+            expect(wrong_report.id.in?(response_ids)).to eq(false)
+          end
+        end
       end
     end
 

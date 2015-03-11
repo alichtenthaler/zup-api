@@ -71,6 +71,7 @@ class Reports::Category < Reports::Base
         report_status.initial = status_params['initial']
         report_status.final = status_params['final']
         report_status.active = status_params['active']
+        report_status.private = status_params['private']
       end
 
       [report_status, status_params]

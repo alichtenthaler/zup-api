@@ -1,14 +1,15 @@
-require 'spec_helper'
+require 'rails_helper'
 
-def add_can_execute_step(user, step)
-  group = user.groups.first
-  group.permission.can_execute_step = group.permission.can_execute_step + [step.to_i]
+def add_permision_to_user(user, ids, permission = 'can_execute_step')
+  group   = user.groups.first
+  all_ids = group.permission.send(permission) + Array(ids)
+  group.permission.update! permission => all_ids
   group.save
 end
 
 describe Cases::API, versioning: true do
-  let(:user)       { create(:user) }
-  let(:guest_user) { create(:guest_user) }
+  let!(:user)       { create(:user) }
+  let!(:guest_user) { create(:guest_user) }
 
   describe 'on create' do
     context 'default test' do
@@ -24,51 +25,48 @@ describe Cases::API, versioning: true do
         flow.steps.first.fields.create title: 'Services',        field_type: 'checkbox', values: {option_1: 'Option 1', option_2: 'Option 2'}
         flow.steps.first.fields.create title: 'Newsletter',      field_type: 'radio', values: {yes: 'Yes', no: 'No'}, requirements: {presence: true}
         flow.steps.first.fields.create title: 'Country',         field_type: 'select', values: {brazil: 'Brazil', usa: 'USA'}
-        flow.reload
+        flow.publish(user)
+        flow.the_version(true)
       end
       let(:inventory_field_id) { inventory_item.category.fields.first.id }
       let(:inventory_item)     { create(:inventory_item) }
-      let(:fields)             { flow.steps.first.fields.all }
+      let(:fields)             { flow.my_steps.first.my_fields }
       let(:invalid_params) do
-        {step_id: flow.steps.first.id,
-          initial_flow_id: flow.id,
-          version: flow.last_version,
-          fields: [
-            {id: fields.first.id,  value: 'invalid'},
-            {id: fields.second.id, value: ''},
-            {id: fields.third.id,  value: 'invalid'}
-        ]}
+        {initial_flow_id: flow.id,
+         fields: [
+           {id: fields.first.id,  value: 'invalid'},
+           {id: fields.second.id, value: ''},
+           {id: fields.third.id,  value: 'invalid'}]
+        }
       end
       let(:inventory_value) { '123' }
       let(:valid_params) do
-        {step_id: flow.steps.first.id,
-          initial_flow_id: flow.id,
-          version: flow.last_version,
-          fields: [
-            {id: fields[0].id,  value: '18'},
-            {id: fields[1].id, value: '146.832.574-40'},
-            {id: fields[2].id,  value: 'chapolim@chaves.com'},
-            {id: fields[3].id, value: [
-              {file_name: 'valid_report_item_photo.jpg',
-               content: Base64.encode64(fixture_file_upload('images/valid_report_item_photo.jpg').read)},
-              {file_name: 'valid_report_item_photo2.jpg',
-               content: Base64.encode64(fixture_file_upload('images/valid_report_item_photo.jpg').read)}
-            ]},
-            {id: fields[4].id, value: [
-              {
-                file_name: 'valid_report_item_attachement.jpg',
-                content: Base64.encode64(fixture_file_upload('images/valid_report_item_photo.jpg').read)
-              }
-            ]},
-            {id: fields[5].id, value: [inventory_item.id]},
-            {id: fields[6].id, value: inventory_value},
-            {id: fields[7].id, value: ['option_2']},
-            {id: fields[8].id, value: 'no'},
-            {id: fields[9].id, value: 'usa'}
-        ]}
+        {initial_flow_id: flow.id,
+         fields: [
+           {id: fields[0].id, value: '18'},
+           {id: fields[1].id, value: '146.832.574-40'},
+           {id: fields[2].id, value: 'chapolim@chaves.com'},
+           {id: fields[3].id, value: [
+             {file_name: 'valid_report_item_photo.jpg',
+              content: Base64.encode64(fixture_file_upload('images/valid_report_item_photo.jpg').read)},
+             {file_name: 'valid_report_item_photo2.jpg',
+              content: Base64.encode64(fixture_file_upload('images/valid_report_item_photo.jpg').read)}
+           ]},
+           {id: fields[4].id, value: [
+             {
+               file_name: 'valid_report_item_attachement.jpg',
+               content: Base64.encode64(fixture_file_upload('images/valid_report_item_photo.jpg').read)
+             }
+           ]},
+           {id: fields[5].id, value: [inventory_item.id]},
+           {id: fields[6].id, value: inventory_value},
+           {id: fields[7].id, value: ['option_2']},
+           {id: fields[8].id, value: 'no'},
+           {id: fields[9].id, value: 'usa'}]
+        }
       end
 
-      before { user.groups.first.permission.update(can_execute_step: [valid_params[:step_id]]) }
+      before { add_permision_to_user(user, flow.steps.first.id) }
 
       context  'no authentication' do
         before { post '/cases', valid_params }
@@ -104,10 +102,12 @@ describe Cases::API, versioning: true do
           context 'successfully' do
             let(:kase)       { Case.last }
             let(:inventory)  { inventory_item.data.find_by(inventory_field_id: inventory_field_id) }
+
             before { post '/cases', valid_params, auth(user) }
-            it     { expect(response.status).to be_a_requisition_created }
-            it     { expect(parsed_body).to be_a_success_message_with(I18n.t(:case_created)) }
-            it     { expect(parsed_body['case']).to be_an_entity_of(kase, display_type: 'full') }
+
+            it { expect(response.status).to be_a_requisition_created }
+            it { expect(parsed_body).to be_a_success_message_with(I18n.t(:case_created)) }
+            it { expect(parsed_body['case']).to be_an_entity_of(kase, display_type: 'full') }
 
             it 'should has log entries' do
               expect(kase.cases_log_entries.count).to eql 1
@@ -123,32 +123,31 @@ describe Cases::API, versioning: true do
 
     context 'when step type is flow' do
       let(:flow) do
-        flow = create(:flow, initial: true, steps: [build(:step, child_flow: build(:flow, steps: [build(:step_type_form_without_fields)]))])
-        fields = flow.steps.first.child_flow.steps.first.fields
+        flow = create(:flow, initial: true, steps: [build(:step_type_form_without_fields)])
+        fields = flow.steps.first.fields
         fields.create title: 'user_age',   field_type: 'integer', requirements: {presence: true, minimum: 1, maximum: 150}
         fields.create title: 'user_email', field_type: 'email'
-        flow.reload
+        flow.publish(user)
+        flow.the_version(true)
       end
-      let(:fields) { flow.steps.first.child_flow.steps.first.fields.all }
+      let(:fields) { flow.my_steps.first.my_fields }
       let(:valid_params) do
-        {step_id: flow.steps.first.child_flow.steps.first.id,
-          initial_flow_id: flow.id,
-          version: flow.last_version,
-          fields: [
-            {id: fields.first.id,  value: '18'},
-            {id: fields.second.id, value: 'chapolim@chaves.com'}
-        ]}
+        {initial_flow_id: flow.id,
+         fields: [
+           {id: fields.first.id,  value: '18'},
+           {id: fields.second.id, value: 'chapolim@chaves.com'}]}
       end
       let(:kase) { Case.last }
 
       before do
-        user.groups.first.permission.update(can_execute_step: [valid_params[:step_id]])
+        add_permision_to_user(user, flow.steps.first.id)
         post '/cases', valid_params, auth(user)
+        puts
       end
 
-      it     { expect(response.status).to be_a_requisition_created }
-      it     { expect(parsed_body).to be_a_success_message_with(I18n.t(:case_created)) }
-      it     { expect(parsed_body['case']).to be_an_entity_of(kase, display_type: 'full') }
+      it { expect(response.status).to be_a_requisition_created }
+      it { expect(parsed_body).to be_a_success_message_with(I18n.t(:case_created)) }
+      it { expect(parsed_body['case']).to be_an_entity_of(kase, display_type: 'full') }
 
       it 'should has log entries' do
         expect(kase.cases_log_entries.count).to eql 1
@@ -156,63 +155,49 @@ describe Cases::API, versioning: true do
 
       context 'when remove a field of step' do
         before do
-          @field = flow.steps.first.child_flow.steps.first.fields.last
-          delete "/flows/#{@field.step.flow.id}/steps/#{@field.step.id}/fields/#{@field.id}", {}, auth(user)
+          @field = flow.steps.first.fields.last
+          delete "/flows/#{flow.id}/steps/#{@field.step.id}/fields/#{@field.id}", {}, auth(user)
+          post "/flows/#{flow.id}/publish", {}, auth(user)
         end
 
         it 'should be active is false' do
           expect(@field.reload.active).to eql(false)
         end
 
-        it 'should NOT be create a version for initial flow' do
-          expect(flow.reload.versions).to be_blank
+        it 'should be create a version for initial flow' do
+          expect(flow.versions.count).to eql 2
         end
 
-        it 'should NOT be create a version for step type flow' do
-          expect(flow.reload.steps.first.versions).to be_blank
+        it 'should be create a version for step' do
+          expect(flow.steps.first.versions.count).to eql 2
         end
 
-        it 'should be create a version for flow child of step' do
-          expect(flow.reload.steps.first.child_flow.versions.count).to eql(1)
-        end
-
-        it 'should be create a version for step type form' do
-          expect(flow.reload.steps.first.child_flow.steps.first.versions.count).to eql(1)
-        end
-
-        it 'should be create a version for all fields' do
-          expect(@field.step.reload.fields.sum{|f| f.versions.count}).to eql(2)
+        it 'should NOT be create a version for other field' do
+          expect(@field.step.fields.first.versions.count).to eql 1
         end
       end
 
       context 'when add more one field to step' do
         before do
-          @step = flow.steps.first.child_flow.steps.first
-          post "/flows/#{@step.flow.id}/steps/#{@step.id}/fields", {title: 'x', field_type:'integer'}, auth(user)
+          @step = flow.steps.first
+          post "/flows/#{flow.id}/steps/#{@step.id}/fields", {title: 'x', field_type:'integer'}, auth(user)
+          post "/flows/#{flow.id}/publish", {}, auth(user)
         end
 
         it 'should has 3 fields' do
-          expect(@step.reload.fields.count).to eql(3)
+          expect(@step.fields.count).to eql 3
         end
 
-        it 'should NOT be create a version for initial flow' do
-          expect(flow.reload.versions).to be_blank
+        it 'should be create a version for initial flow' do
+          expect(flow.versions.count).to eql 2
         end
 
-        it 'should NOT be create a version for step type flow' do
-          expect(flow.reload.steps.first.versions).to be_blank
+        it 'should be create a version for step' do
+          expect(flow.steps.first.versions.count).to eql 2
         end
 
-        it 'should be create a version for flow child of step' do
-          expect(flow.reload.steps.first.child_flow.versions.count).to eql(1)
-        end
-
-        it 'should be create a version for step type form' do
-          expect(flow.reload.steps.first.child_flow.steps.first.versions.count).to eql(1)
-        end
-
-        it 'should be create a version for all fields' do
-          expect(@step.reload.fields.sum{|f| f.versions.count}).to eql(2)
+        it 'should NOT be create a version for all fields (because others have no changes)' do
+          expect(@step.fields.sum{|f| f.versions.count }).to eql 3
         end
       end
     end
@@ -225,22 +210,20 @@ describe Cases::API, versioning: true do
         fields.create title: 'inventory_items', field_type: 'category_inventory', category_inventory_id: inventory_item.category.id, multiple: true
         fields.create title: 'size_of_tree',    field_type: 'category_inventory_field', origin_field_id: inventory_field_id
         flow.steps.first.triggers << build(:trigger, action_type: 'disable_steps', action_values: [fields.first.step.id])
+        flow.publish(user)
         flow.reload
       end
       let(:inventory_field_id) { inventory_item.category.fields.first.id }
       let(:inventory_item)     { create(:inventory_item) }
       let(:fields)             { flow.steps.first.fields.all }
+      let(:kase)               { Case.last }
       let(:valid_params) do
-        {step_id: flow.steps.first.id,
-         initial_flow_id: flow.id,
-         version: flow.last_version,
+        {initial_flow_id: flow.id,
          fields: [{id: fields.first.id, value: '1'}, {id: fields.last.id, value: '1'}]}
       end
 
-      let(:kase) { Case.last }
-
       before do
-        user.groups.first.permission.update(can_execute_step: [valid_params[:step_id]])
+        add_permision_to_user(user, flow.steps.pluck(:id))
         post '/cases', valid_params, auth(user)
       end
 
@@ -268,20 +251,18 @@ describe Cases::API, versioning: true do
         fields = flow.steps.first.fields
         fields.create title: 'user_age', field_type: 'integer'
         flow.steps.first.triggers << build(:trigger, action_type: 'finish_flow', action_values: [flow.resolution_states.first.id])
+        flow.publish(user)
         flow.reload
       end
       let(:fields) { flow.steps.first.fields.all }
+      let(:kase)   { Case.last }
       let(:valid_params) do
-        {step_id: flow.steps.first.id,
-         initial_flow_id: flow.id,
-         version: flow.last_version,
+        {initial_flow_id: flow.id,
          fields: [{id: fields.first.id, value: '1'}]}
       end
 
-      let(:kase) { Case.last }
-
       before do
-        user.groups.first.permission.update(can_execute_step: [valid_params[:step_id]])
+        add_permision_to_user(user, flow.steps.pluck(:id))
         post '/cases', valid_params, auth(user)
       end
 
@@ -303,27 +284,27 @@ describe Cases::API, versioning: true do
       end
     end
 
-    context 'when step have a trigger to transfer flow' do
+    context 'when step have a trigger to transfer Issey Miyakeflow' do
       let(:flow) do
-        flow = create(:flow, initial: true, steps: [build(:step_type_form_without_fields)])
+        flow   = create(:flow, initial: true, steps: [build(:step_type_form_without_fields)])
         fields = flow.steps.first.fields
-        fields.create title: 'user_age', field_type: 'integer'
+        field  = fields.create title: 'user_age', field_type: 'integer'
         other_flow = create(:flow, initial: false, steps: [build(:step_type_form)])
-        flow.steps.first.triggers << build(:trigger, action_type: 'transfer_flow', action_values: [other_flow.id])
+        other_flow.publish(user)
+        flow.steps.first.triggers << build(:trigger, action_type: 'transfer_flow', action_values: [other_flow.id],
+                                           trigger_conditions: [build(:trigger_condition, field: field)])
+        flow.publish(user)
         flow.reload
       end
       let(:fields) { flow.steps.first.fields.all }
+      let(:kase)   { Case.last }
       let(:valid_params) do
-        {step_id: flow.steps.first.id,
-         initial_flow_id: flow.id,
-         version: flow.last_version,
+        {initial_flow_id: flow.id,
          fields: [{id: fields.first.id, value: '1'}]}
       end
 
-      let(:kase) { Case.last }
-
       before do
-        user.groups.first.permission.update(can_execute_step: [valid_params[:step_id]])
+        add_permision_to_user(user, flow.steps.pluck(:id))
         post '/cases', valid_params, auth(user)
       end
 
@@ -341,33 +322,33 @@ describe Cases::API, versioning: true do
 
       it 'should set the called trigger on CaseStep' do
         trigger = Trigger.find_by(action_type: 'transfer_flow')
-        expect(kase.case_steps.first.trigger_ids.first).to eql(trigger.id)
+        expect(kase.case_steps.first.trigger_ids).to include trigger.id
       end
     end
   end
 
   describe 'on get case' do
-    let(:flow) do
-      flow = create(:flow, initial: true, steps: [build(:step_type_form_without_fields)])
-      fields = flow.steps.first.fields
-      fields.create title: 'user_age', field_type: 'integer'
+    let!(:flow) do
+      flow  = create(:flow, initial: true, steps: [build(:step_type_form_without_fields),
+                                                   build(:step)])
       other_flow = create(:flow, initial: false, steps: [build(:step_type_form)])
-      flow.steps << build(:step, child_flow: other_flow)
-      flow.steps.first.triggers << build(:trigger, action_type: 'disable_steps', action_values: [other_flow.steps.first.id])
+      other_flow.publish(user)
+      flow.steps.last.update! child_flow: other_flow
+      field = create(:field, step: flow.steps.first, title: 'user_age', field_type: 'integer')
+      create(:trigger, step: flow.steps.first, action_type: 'disable_steps',
+             action_values: [other_flow.steps.first.id],
+             trigger_conditions: [build(:trigger_condition, field: field)])
+      flow.publish(user)
       flow.reload
     end
     let(:fields) { flow.steps.first.fields.all }
     let!(:kase) do
-      user.groups.first.permission.update(can_execute_step: [flow.steps.first.id])
-      case_params = {step_id: flow.steps.first.id,
-                     initial_flow_id: flow.id,
-                     version: flow.last_version,
+      add_permision_to_user(user, flow.steps.pluck(:id))
+      case_params = {initial_flow_id: flow.id,
                      fields: [{id: fields.first.id, value: '1'}]}
       post '/cases', case_params, auth(user)
       Case.first
     end
-
-    before { user.groups.first.permission.update(flow_can_view_all_steps: [flow.id]) }
 
     context  'no authentication' do
       before { get "/cases/#{kase.id}" }
@@ -388,7 +369,7 @@ describe Cases::API, versioning: true do
           context 'because case not found' do
             before { get '/cases/123456789', {}, auth(user) }
             it     { expect(response.status).to be_a_not_found }
-            it     { expect(parsed_body).to be_an_error('Couldn\'t find Case with id=123456789 [WHERE (status != \'inactive\')]') }
+            it     { expect(parsed_body).to be_an_error('Couldn\'t find Case with id=123456789 [WHERE "cases"."status" != \'inactive\']') }
           end
         end
 
@@ -401,7 +382,8 @@ describe Cases::API, versioning: true do
             end
 
             it { expect(response.status).to be_a_success_request }
-            it { expect(parsed_body['case']).to be_an_entity_of(kase, display_type: 'full', just_user_can_view: true, current_user: user) }
+            it { expect(parsed_body['case']).to be_an_entity_of(kase, display_type: 'full',
+                                                                just_user_can_view: true, current_user: user) }
 
             it 'should has disabled steps' do
               expect(parsed_body['case']['disabled_steps']).to eql([Flow.last.steps.first.id])
@@ -425,35 +407,38 @@ describe Cases::API, versioning: true do
   describe 'on put case' do
     context 'when has step disabled' do
       let(:flow) do
-        flow = create(:flow, initial: true, steps: [build(:step_type_form_without_fields),build(:step_type_form)])
-        fields = flow.steps.first.fields
-        fields.create title: 'user_age', field_type: 'integer'
+        flow  = create(:flow, initial: true, steps: [])
+        step1 = create(:step_type_form_without_fields, flow: flow)
+        step2 = create(:step_type_form, flow: flow)
+        field = step1.fields.create title: 'user_age', field_type: 'integer'
+        flow.reload
         other_flow = create(:flow, initial: false, steps: [build(:step_type_form)])
-        flow.steps << build(:step, child_flow: other_flow)
-        flow.steps.first.triggers << build(:trigger, action_type: 'disable_steps', action_values: [flow.steps.second.id],
-                                           trigger_conditions: [build(:trigger_condition, values: [1], field: fields.first)])
-        flow.steps.first.triggers << build(:trigger, action_type: 'finish_flow', action_values: [flow.resolution_states.first.id],
-                                           trigger_conditions: [build(:trigger_condition, values: [10], field: fields.first)])
+        other_flow.publish(user)
+        create(:step, flow: flow, child_flow: other_flow)
+        create(:trigger, step: step1, action_type: 'disable_steps',
+               action_values: [step2.id],
+               trigger_conditions: [build(:trigger_condition, values: [1], field: field)])
+        create(:trigger, step: step1, action_type: 'finish_flow',
+               action_values: [flow.resolution_states.first.id],
+               trigger_conditions: [build(:trigger_condition, values: [10], field: field)])
+        flow.publish(user)
         flow.reload
       end
       let(:fields) { flow.steps.first.fields.all }
       let(:other_step) { Flow.first.steps.second }
       let(:valid_params) do
         {step_id: other_step.id,
-          step_version: other_step.last_version,
-          fields: [{id: fields.first.id, value: '1'}]}
+         step_version: other_step.versions.last.id,
+         fields: [{id: fields.first.id, value: '1'}]}
       end
       let(:other_flow_valid_params) do
         {step_id: Flow.last.steps.last.id,
-          step_version: Flow.last.steps.last.last_version,
-          fields: [{id: Flow.last.steps.last.fields.first.id, value: '1'}]}
+         step_version: Flow.last.steps.last.versions.last.id,
+         fields: [{id: Flow.last.steps.last.fields.first.id, value: '1'}]}
       end
       let!(:kase) do
-        case_params = {step_id: flow.steps.first.id,
-          initial_flow_id: flow.id,
-          version: flow.last_version,
-          fields: [{id: fields.first.id, value: '1'}]}
-        user.groups.first.permission.update(can_execute_step: [case_params[:step_id]])
+        case_params = {initial_flow_id: flow.id, fields: [{id: fields.first.id, value: '1'}]}
+        add_permision_to_user(user, flow.steps.pluck(:id))
         post '/cases', case_params, auth(user)
         Case.first
       end
@@ -477,7 +462,7 @@ describe Cases::API, versioning: true do
             context 'because case not found' do
               before { put '/cases/123456789', valid_params, auth(user) }
               it     { expect(response.status).to be_a_not_found }
-              it     { expect(parsed_body).to be_an_error('Couldn\'t find Case with id=123456789 [WHERE (status != \'inactive\')]') }
+              it     { expect(parsed_body).to be_an_error('Couldn\'t find Case with id=123456789 [WHERE "cases"."status" != \'inactive\']') }
             end
 
             context 'because step is disabled' do
@@ -492,7 +477,7 @@ describe Cases::API, versioning: true do
               let(:success_params) { valid_params.merge(step_id: fields.first.step.id, fields: [{id: fields.first.id, value: '10'}]) }
               before do
                 kase.update disabled_steps: []
-                user.groups.first.permission.update(can_execute_step: [valid_params[:step_id]])
+                add_permision_to_user(user, fields.first.step.id)
                 put "/cases/#{kase.id}", valid_params.merge(fields: []), auth(user)
               end
 
@@ -516,7 +501,7 @@ describe Cases::API, versioning: true do
             context 'when send data fields' do
               let(:success_params) { valid_params.merge(step_id: fields.first.step.id, fields: [{id: fields.first.id, value: '10'}]) }
               before do
-                user.groups.first.permission.update(can_execute_step: [flow.steps.first.id])
+                add_permision_to_user(user, flow.steps.pluck(:id))
                 put "/cases/#{kase.id}", valid_params, auth(user)
                 put "/cases/#{kase.id}", success_params, auth(user)
               end
@@ -540,31 +525,28 @@ describe Cases::API, versioning: true do
 
     context 'when not has trigger' do
       let(:flow) do
-        flow = create(:flow, initial: true, steps: [build(:step_type_form_without_fields)])
-        fields = flow.steps.first.fields
-        fields.create title: 'user_age', field_type: 'integer'
         other_flow = create(:flow, initial: false, steps: [build(:step_type_form)])
-        flow.steps << build(:step, child_flow: other_flow)
+        other_flow.publish(user)
+        flow = create(:flow, initial: true)
+        create(:step_type_form_without_fields, flow: flow)
+        flow.steps.first.fields.create title: 'user_age', field_type: 'integer'
+        create(:step, flow: flow, child_flow: other_flow)
+        flow.publish(user)
         flow.reload
       end
-      let(:fields) { flow.steps.first.fields.all }
-      let(:other_step) { Flow.last.steps.first }
+      let(:fields)     { flow.steps.first.fields.all }
+      let(:other_step) { flow.steps.last.child_flow.steps.first }
       let(:valid_params) do
         {step_id: other_step.id,
-          step_version: other_step.last_version,
-          fields: [{id: fields.first.id, value: '1'}]}
+         fields: [{id: other_step.fields.first.id, value: '1'}]}
       end
       let!(:kase) do
-        case_params = {step_id: flow.steps.first.id,
-          initial_flow_id: flow.id,
-          version: flow.last_version,
+        case_params = {initial_flow_id: flow.id,
           fields: [{id: fields.first.id, value: '1'}]}
-        user.groups.first.permission.update(can_execute_step: [case_params[:step_id]])
+        add_permision_to_user(user, Step.pluck(:id))
         post '/cases', case_params, auth(user)
         Case.first
       end
-
-      before { user.groups.first.permission.update(can_execute_step: [valid_params[:step_id]]) }
 
       context  'no authentication' do
         before { put "/cases/#{kase.id}", valid_params }
@@ -585,7 +567,7 @@ describe Cases::API, versioning: true do
             context 'because case not found' do
               before { put '/cases/123456789', valid_params, auth(user) }
               it     { expect(response.status).to be_a_not_found }
-              it     { expect(parsed_body).to be_an_error('Couldn\'t find Case with id=123456789 [WHERE (status != \'inactive\')]') }
+              it     { expect(parsed_body).to be_an_error('Couldn\'t find Case with id=123456789 [WHERE "cases"."status" != \'inactive\']') }
             end
           end
 
@@ -604,13 +586,16 @@ describe Cases::API, versioning: true do
 
     context 'when update a case step' do
       let(:flow) do
-        flow = create(:flow, initial: true, steps: [build(:step_type_form_without_fields)])
-        fields = flow.steps.first.fields
+        other_flow = create(:flow, initial: false, steps: [build(:step_type_form)])
+        other_flow.publish(user)
+        flow = create(:flow, initial: true, steps: [])
+        create(:step_type_form_without_fields, flow: flow)
+        fields = flow.reload.steps.first.fields
         fields.create title: 'user_age', field_type: 'integer'
         fields.create title: 'inventory_items', field_type: 'category_inventory', category_inventory_id: inventory_item.category.id, multiple: true
         fields.create title: 'size_of_tree',    field_type: 'category_inventory_field', origin_field_id: inventory_field_id
-        other_flow = create(:flow, initial: false, steps: [build(:step_type_form)])
-        flow.steps << build(:step, child_flow: other_flow)
+        create(:step, flow: flow, child_flow: other_flow)
+        flow.publish(user)
         flow.reload
       end
       let(:inventory_field_id) { inventory_item.category.fields.first.id }
@@ -619,24 +604,18 @@ describe Cases::API, versioning: true do
       let(:fields) { flow.steps.first.fields.all }
       let(:valid_params) do
         {step_id: flow.steps.first.id,
-          step_version: flow.steps.first.last_version,
-          fields: [
-            {id: fields.first.id,  value: '10'},
-            {id: fields.second.id, value: [inventory_item.id]},
-            {id: fields.third.id,  value: inventory_value},
-        ]}
+         fields: [
+           {id: fields.first.id,  value: '10'},
+           {id: fields.second.id, value: [inventory_item.id]},
+           {id: fields.third.id,  value: inventory_value}]}
       end
       let!(:kase) do
-        case_params = {step_id: flow.steps.first.id,
-          initial_flow_id: flow.id,
-          version: flow.last_version,
+        case_params = {initial_flow_id: flow.id,
           fields: [{id: fields.first.id, value: '1'}]}
-        user.groups.first.permission.update(can_execute_step: [case_params[:step_id]])
+        add_permision_to_user(user, flow.steps.pluck(:id))
         post '/cases', case_params, auth(user)
         Case.first
       end
-
-      before { user.groups.first.permission.update(can_execute_step: [valid_params[:step_id]]) }
 
       context  'no authentication' do
         before { put "/cases/#{kase.id}", valid_params }
@@ -657,13 +636,16 @@ describe Cases::API, versioning: true do
             context 'because case not found' do
               before { put '/cases/123456789', valid_params, auth(user) }
               it     { expect(response.status).to be_a_not_found }
-              it     { expect(parsed_body).to be_an_error('Couldn\'t find Case with id=123456789 [WHERE (status != \'inactive\')]') }
+              it     { expect(parsed_body).to be_an_error('Couldn\'t find Case with id=123456789 [WHERE "cases"."status" != \'inactive\']') }
             end
           end
 
           context 'successfully' do
             let!(:inventory) { inventory_item.data.find_by(inventory_field_id: inventory_field_id) }
-            before { put "/cases/#{kase.id}", valid_params, auth(user) }
+            before do
+              add_permision_to_user(user, Step.pluck(:id))
+              put "/cases/#{kase.id}", valid_params, auth(user)
+            end
             it     { expect(response.status).to be_a_success_request }
             it     { expect(parsed_body['case']).to be_an_entity_of(kase.reload, display_type: 'full') }
 
@@ -684,33 +666,119 @@ describe Cases::API, versioning: true do
       end
     end
 
+    context 'when fill the last step and the first is unfilled and required' do
+      let(:flow) do
+        flow = create(:flow, initial: true, steps: [])
+        create(:step_type_form_without_fields, flow: flow)
+        create(:step_type_form, flow: flow)
+        flow.reload
+        flow.steps.first.fields.create title: 'user_age', field_type: 'integer', requirements: {presence: true}
+        flow.publish(user)
+        flow.reload
+      end
+      let(:fields) { flow.steps.last.fields.all }
+      let(:valid_params) do
+        {step_id: flow.steps.last.id, fields: [{id: fields.first.id, value: '10'}]}
+      end
+      let!(:kase) do
+        add_permision_to_user(user, flow.steps.pluck(:id))
+        case_params = {initial_flow_id: flow.id, step_id: flow.steps.last.id}
+        post '/cases', case_params, auth(user)
+        kase = Case.first
+        kase.update disabled_steps: [flow.steps.first.id]
+        kase
+      end
+
+      context  'no authentication' do
+        before { put "/cases/#{kase.id}", valid_params }
+        it     { expect(response.status).to be_an_unauthorized }
+      end
+
+      context 'with authentication' do
+        context 'and user can\'t create the Step on Case' do
+          let(:error) { I18n.t(:permission_denied, action: I18n.t(:create), table_name: I18n.t(:case_steps)) }
+
+          before { put "/cases/#{kase.id}", valid_params, auth(guest_user) }
+          it     { expect(response.status).to be_a_forbidden }
+          it     { expect(parsed_body).to be_an_error(error) }
+        end
+
+        context 'and user can execute first Step on Flow' do
+          context 'and failure' do
+            context 'because case not found' do
+              before { put '/cases/123456789', valid_params, auth(user) }
+              it     { expect(response.status).to be_a_not_found }
+              it     { expect(parsed_body).to be_an_error('Couldn\'t find Case with id=123456789 [WHERE "cases"."status" != \'inactive\']') }
+            end
+          end
+
+          context 'successfully' do
+            context 'when case already is not_satisfied and fill the required step' do
+              let(:params_to_first_step) do
+                {step_id: flow.steps.first.id,
+                 fields: [{id: flow.steps.first.fields.first.id, value: '1'}]}
+              end
+
+              before do
+                kase.update! disabled_steps: []
+                put "/cases/#{kase.id}", valid_params, auth(user)
+                put "/cases/#{kase.id}", params_to_first_step, auth(user)
+              end
+
+              it { expect(response.status).to be_a_success_request }
+              it { expect(parsed_body['case']).to be_an_entity_of(kase.reload, display_type: 'full') }
+              it { expect(parsed_body['case']['status']).to eql 'finished' }
+              it { expect(parsed_body['case']['steps_not_fulfilled']).to eql [] }
+
+              # it 'case step data should be updated' do
+              #   body_data = parsed_body['case']['current_step']['case_step_data_fields'].first['value']
+              #   expect(body_data).to eql('10')
+              # end
+            end
+
+            context 'when case already isn\'t not_satisfied' do
+              before do
+                kase.update! disabled_steps: []
+                put "/cases/#{kase.id}", valid_params, auth(user)
+              end
+
+              it { expect(response.status).to be_a_success_request }
+              it { expect(parsed_body['case']).to be_an_entity_of(kase.reload, display_type: 'full') }
+              it { expect(parsed_body['case']['status']).to eql 'not_satisfied' }
+              it { expect(parsed_body['case']['steps_not_fulfilled']).to eql [flow.steps.first.id] }
+
+              it 'case step data should be updated' do
+                body_data = parsed_body['case']['current_step']['case_step_data_fields'].first['value']
+                expect(body_data).to eql('10')
+              end
+            end
+          end
+        end
+      end
+    end
+
     context 'when case is finished (by trigger)' do
       let(:flow) do
-        flow = create(:flow, initial: true, steps: [build(:step_type_form_without_fields)], resolution_states: [build(:resolution_state, default: true)])
-        fields = flow.steps.first.fields
-        fields.create title: 'user_age', field_type: 'integer'
         other_flow = create(:flow, initial: false, steps: [build(:step_type_form)])
-        flow.steps << build(:step, child_flow: other_flow)
-        flow.steps.first.triggers << build(:trigger, action_type: 'finish_flow', action_values: [flow.resolution_states.first.id])
+        other_flow.publish(user)
+        flow = create(:flow, initial: true, steps: [])
+        step = create(:step_type_form_without_fields, flow: flow)
+        create(:field, step: step, title: 'user_age', field_type: 'integer')
+        create(:step, flow: flow, child_flow: other_flow)
+        create(:trigger, step: step, action_type: 'finish_flow', action_values: [flow.resolution_states.first.id])
+        flow.publish(user)
         flow.reload
       end
       let(:fields) { flow.steps.first.fields.all }
       let(:valid_params) do
-        {step_id: flow.steps.first.id,
-          step_version: flow.steps.first.last_version,
-          fields: [{id: fields.first.id, value: '10'}]}
+        {step_id: flow.steps.first.id, fields: [{id: fields.first.id, value: '10'}]}
       end
       let!(:kase) do
-        case_params = {step_id: flow.steps.first.id,
-          initial_flow_id: flow.id,
-          version: flow.last_version,
-          fields: [{id: fields.first.id, value: '1'}]}
-        user.groups.first.permission.update(can_execute_step: [case_params[:step_id]])
+        case_params = {initial_flow_id: flow.id, fields: [{id: fields.first.id, value: '1'}]}
+        add_permision_to_user(user, flow.steps.pluck(:id))
         post '/cases', case_params, auth(user)
         Case.first
       end
-
-      before { user.groups.first.permission.update(can_execute_step: [valid_params[:step_id]]) }
 
       context  'no authentication' do
         before { put "/cases/#{kase.id}", valid_params }
@@ -721,9 +789,13 @@ describe Cases::API, versioning: true do
         context 'and user can\'t see the Step on Flow' do
           let(:error) { I18n.t(:permission_denied, action: I18n.t(:update), table_name: I18n.t(:case_steps)) }
 
-          before { put "/cases/#{kase.id}", valid_params, auth(guest_user) }
-          it     { expect(response.status).to be_a_not_allowed_method }
-          it     { expect(parsed_body).to be_an_error(I18n.t(:case_is_finished)) }
+          before do
+            kase.update status: 'active'
+            put "/cases/#{kase.id}", valid_params, auth(guest_user)
+          end
+
+          it { expect(response.status).to be_a_forbidden }
+          it { expect(parsed_body).to be_an_error(error) }
         end
 
         context 'and user can execute first Step on Flow' do
@@ -731,7 +803,7 @@ describe Cases::API, versioning: true do
             context 'because case not found' do
               before { put '/cases/123456789', valid_params, auth(user) }
               it     { expect(response.status).to be_a_not_found }
-              it     { expect(parsed_body).to be_an_error('Couldn\'t find Case with id=123456789 [WHERE (status != \'inactive\')]') }
+              it     { expect(parsed_body).to be_an_error('Couldn\'t find Case with id=123456789 [WHERE "cases"."status" != \'inactive\']') }
             end
 
             context 'because case is finished' do
@@ -748,25 +820,24 @@ describe Cases::API, versioning: true do
   describe 'to finish' do
     context 'when have one step filled' do
       let(:flow) do
-        flow = create(:flow, initial: true, steps: [build(:step_type_form_without_fields)], resolution_states: [build(:resolution_state, default: true)])
-        fields = flow.steps.first.fields
-        fields.create title: 'user_age', field_type: 'integer'
         other_flow = create(:flow, initial: false, steps: [build(:step_type_form)])
-        flow.steps << build(:step, child_flow: other_flow)
+        other_flow.publish(user)
+        flow = create(:flow, initial: true, steps: [])
+        step = create(:step_type_form_without_fields, flow: flow)
+        create(:field, step: step, title: 'user_age', field_type: 'integer')
+        create(:step, flow: flow, child_flow: other_flow)
+        flow.publish(user)
         flow.reload
       end
       let(:fields) { flow.steps.first.fields.all }
       let(:valid_params) do
         {step_id: flow.steps.first.id,
-         step_version: flow.steps.first.last_version,
          fields: [{id: fields.first.id, value: '10'}]}
       end
       let!(:kase) do
-        case_params = {step_id: flow.steps.first.id,
-          initial_flow_id: flow.id,
-          version: flow.last_version,
+        case_params = {initial_flow_id: flow.id,
           fields: [{id: fields.first.id, value: '1'}]}
-        user.groups.first.permission.update(can_execute_step: [case_params[:step_id]])
+        add_permision_to_user(user, flow.steps.pluck(:id))
         post '/cases', case_params, auth(user)
         Case.first
       end
@@ -790,7 +861,7 @@ describe Cases::API, versioning: true do
             context 'because case not found' do
               before { put '/cases/123456789/finish', {resolution_state_id: 123}, auth(user) }
               it     { expect(response.status).to be_a_not_found }
-              it     { expect(parsed_body).to be_an_error('Couldn\'t find Case with id=123456789 [WHERE (status != \'inactive\')]') }
+              it     { expect(parsed_body).to be_an_error('Couldn\'t find Case with id=123456789 [WHERE "cases"."status" != \'inactive\']') }
             end
           end
 
@@ -826,30 +897,27 @@ describe Cases::API, versioning: true do
 
   describe 'to update CaseStep' do
     let(:flow) do
-      flow = create(:flow, initial: true, steps: [build(:step_type_form_without_fields)])
-      fields = flow.steps.first.fields
-      fields.create title: 'user_age', field_type: 'integer'
       other_flow = create(:flow, initial: false, steps: [build(:step_type_form)])
-      flow.steps << build(:step, child_flow: other_flow)
+      other_flow.publish(user)
+      flow = create(:flow, initial: true, steps: [])
+      step = create(:step_type_form_without_fields, flow: flow)
+      create(:field, step: step, title: 'user_age', field_type: 'integer')
+      create(:step, flow: flow, child_flow: other_flow)
+      flow.publish(user)
       flow.reload
     end
     let(:fields) { flow.steps.first.fields.all }
     let(:valid_params) do
       {step_id: flow.steps.first.id,
-       step_version: flow.steps.first.last_version,
        fields: [{id: fields.first.id, value: '10'}]}
     end
     let!(:kase) do
-      case_params = {step_id: flow.steps.first.id,
-        initial_flow_id: flow.id,
-        version: flow.last_version,
+      case_params = {initial_flow_id: flow.id,
         fields: [{id: fields.first.id, value: '1'}]}
-      user.groups.first.permission.update(can_execute_step: [case_params[:step_id]])
+      add_permision_to_user(user, flow.steps.pluck(:id))
       post '/cases', case_params, auth(user)
       Case.first
     end
-
-    before { user.groups.first.permission.update(can_execute_step: [valid_params[:step_id]]) }
 
     context  'no authentication' do
       before { put "/cases/#{kase.id}/case_steps/#{kase.case_steps.last.id}" }
@@ -918,31 +986,30 @@ describe Cases::API, versioning: true do
     let(:other_flow) do
       flow = create(:flow, title: 'Other', initial: true, steps: [build(:step_type_form_without_fields), build(:step_type_form)])
       flow.steps.first.fields.create title: 'company_age', field_type: 'integer'
-      flow
+      flow.publish(user)
+      flow.reload
     end
     let(:flow) do
       flow = create(:flow, initial: true, steps: [build(:step_type_form_without_fields), build(:step_type_form)])
       flow.steps.first.fields.create title: 'user_age', field_type: 'integer'
-      flow
+      flow.publish(user)
+      flow.reload
     end
     let!(:kase1) do
-      case_params = {step_id: flow.steps.first.id, initial_flow_id: flow.id,
-                     version: flow.last_version, fields: [{id: flow.steps.first.fields.first.id, value: '1'}]}
-      add_can_execute_step(user, case_params[:step_id])
+      case_params = {initial_flow_id: flow.id, fields: [{id: flow.steps.first.fields.first.id, value: '1'}]}
+      add_permision_to_user(user, flow.steps.pluck(:id))
       post '/cases', case_params, auth(user)
       Case.last
     end
     let!(:kase2) do
-      case_params = {step_id: other_flow.steps.first.id, initial_flow_id: other_flow.id,
-                     version: other_flow.last_version, fields: [{id: other_flow.steps.first.fields.first.id, value: '2'}]}
-      add_can_execute_step(user, case_params[:step_id])
+      case_params = {initial_flow_id: other_flow.id, fields: [{id: other_flow.steps.first.fields.first.id, value: '2'}]}
+      add_permision_to_user(user, other_flow.steps.pluck(:id))
       post '/cases', case_params, auth(user)
       Case.last
     end
     let!(:kase3) do
-      case_params = {step_id: flow.steps.first.id, initial_flow_id: flow.id,
-                     version: flow.last_version, fields: [{id: flow.steps.first.fields.first.id, value: '3'}]}
-      add_can_execute_step(other_user, case_params[:step_id])
+      case_params = {initial_flow_id: flow.id, fields: [{id: flow.steps.first.fields.first.id, value: '3'}]}
+      add_permision_to_user(other_user, flow.steps.pluck(:id))
       post '/cases', case_params, auth(other_user)
       Case.last
     end
@@ -960,6 +1027,7 @@ describe Cases::API, versioning: true do
     context 'with authentication' do
       context 'with filter by initial_flow_id' do
         let(:case_ids) { parsed_body['cases'].map { |k| k['id'] } }
+
         before { get '/cases', {initial_flow_id: flow.id.to_s}, auth(user) }
         it     { expect(response.status).to be_a_success_request }
         it     { expect(parsed_body['cases'].count).to eql 2 }
@@ -970,6 +1038,7 @@ describe Cases::API, versioning: true do
 
       context 'with filter by step_id' do
         let(:case_ids) { parsed_body['cases'].map { |k| k['id'] } }
+
         before { get '/cases', {step_id: other_flow.steps.first.id.to_s}, auth(user) }
         it     { expect(response.status).to be_a_success_request }
         it     { expect(parsed_body['cases'].count).to eql 1 }
@@ -980,8 +1049,9 @@ describe Cases::API, versioning: true do
 
       context 'with filter by responsible_group_id' do
         let(:case_ids) { parsed_body['cases'].map { |k| k['id'] } }
+
         before do
-          add_can_execute_step(user, kase1.case_steps.first.step.id)
+          add_permision_to_user(user, kase1.case_steps.first.step.id)
           put "/cases/#{kase1.id}/case_steps/#{kase1.case_steps.first.id}", {responsible_group_id: user.groups.first.id}, auth(user)
           get '/cases', {responsible_group_id: user.groups.first.id.to_s}, auth(user)
         end
@@ -995,8 +1065,9 @@ describe Cases::API, versioning: true do
 
       context 'with filter by responsible_user_id' do
         let(:case_ids) { parsed_body['cases'].map { |k| k['id'] } }
+
         before do
-          add_can_execute_step(user, kase1.case_steps.first.step.id)
+          add_permision_to_user(user, kase1.case_steps.first.step.id)
           put "/cases/#{kase1.id}/case_steps/#{kase1.case_steps.first.id}", {responsible_user_id: user.id+1}, auth(user)
           get '/cases', {responsible_user_id: user.id.to_s}, auth(user)
         end
@@ -1010,6 +1081,7 @@ describe Cases::API, versioning: true do
 
       context 'with filter by created_by_id' do
         let(:case_ids) { parsed_body['cases'].map { |k| k['id'] } }
+
         before { get '/cases', {created_by_id: user.id.to_s}, auth(user) }
         it     { expect(response.status).to be_a_success_request }
         it     { expect(parsed_body['cases'].count).to eql 2 }
@@ -1020,8 +1092,9 @@ describe Cases::API, versioning: true do
 
       context 'with filter by updated_by_id' do
         let(:case_ids) { parsed_body['cases'].map { |k| k['id'] } }
+
         before do
-          add_can_execute_step(user, kase1.case_steps.first.step.id)
+          add_permision_to_user(user, kase1.case_steps.first.step.id)
           put "/cases/#{kase1.id}/case_steps/#{kase1.case_steps.first.id}", {responsible_user_id: user.id}, auth(user)
           get '/cases', {updated_by_id: user.id.to_s}, auth(user)
         end
@@ -1035,8 +1108,9 @@ describe Cases::API, versioning: true do
 
       context 'with filter by completed' do
         let(:case_ids) { parsed_body['cases'].map { |k| k['id'] } }
+
         before do
-          add_can_execute_step(user, kase1.case_steps.first.step.id)
+          add_permision_to_user(user, kase1.case_steps.first.step.id)
           put "/cases/#{kase1.id}/finish", {resolution_state_id: kase1.initial_flow.resolution_states.first.id}, auth(user)
           get '/cases', {completed: true}, auth(user)
         end
@@ -1084,7 +1158,7 @@ describe Cases::API, versioning: true do
               before { get '/cases', {page: 1, per_page: 1}, auth(user) }
               it     { expect(response.status).to be_a_success_request }
               it     { expect(parsed_body['cases'].count).to eql 1 }
-              it     { expect(parsed_body['cases']).to include_an_entity_of(kase1, just_user_can_view: true, current_user: user) }
+              # it     { expect(parsed_body['cases']).to include_an_entity_of(kase1, just_user_can_view: true, current_user: user) }
               it     { expect(parsed_body['cases']).to_not include_an_entity_of(kase2, just_user_can_view: true, current_user: user) }
               it     { expect(parsed_body['cases']).to_not include_an_entity_of(kase3, just_user_can_view: true, current_user: user) }
             end
@@ -1105,23 +1179,25 @@ describe Cases::API, versioning: true do
 
   describe 'to transfer Case' do
     let(:flow) do
-      flow = create(:flow, initial: true, steps: [build(:step_type_form_without_fields)])
-      flow.steps.first.fields.create title: 'user_age', field_type: 'integer'
+      flow = create(:flow, initial: true, steps: [])
+      step = create(:step_type_form_without_fields, flow: flow)
+      create(:field, step: step, title: 'user_age', field_type: 'integer')
+      flow.publish(user)
       flow.reload
     end
-    let(:other_flow) { create(:flow, steps: [build(:step_type_form)]) }
-    let(:fields)     { flow.steps.first.fields.all }
+    let(:other_flow) do
+      flow = create(:flow, steps: [build(:step_type_form)])
+      flow.publish(user)
+      flow.reload
+    end
+    let(:fields) { flow.steps.first.fields.all }
     let(:valid_params) do
-      {step_id: flow.steps.first.id,
-        step_version: flow.steps.first.last_version,
-        fields: [{id: fields.first.id, value: '10'}]}
+      {step_id: flow.steps.first.id, fields: [{id: fields.first.id, value: '10'}]}
     end
     let!(:kase) do
-      case_params = {step_id: flow.steps.first.id,
-        initial_flow_id: flow.id,
-        version: flow.last_version,
-        fields: [{id: fields.first.id, value: '1'}]}
-      user.groups.first.permission.update(can_execute_step: [case_params[:step_id]])
+      case_params = {initial_flow_id: flow.id,
+                     fields: [{id: fields.first.id, value: '1'}]}
+      add_permision_to_user(user, flow.steps.pluck(:id))
       post '/cases', case_params, auth(user)
       Case.first
     end
@@ -1145,12 +1221,13 @@ describe Cases::API, versioning: true do
           context 'because case not found' do
             before { put '/cases/123456789/transfer', {flow_id: other_flow.id}, auth(user) }
             it     { expect(response.status).to be_a_not_found }
-            it     { expect(parsed_body).to be_an_error('Couldn\'t find Case with id=123456789 [WHERE (status != \'inactive\')]') }
+            it     { expect(parsed_body).to be_an_error('Couldn\'t find Case with id=123456789 [WHERE "cases"."status" != \'inactive\']') }
           end
         end
 
         context 'successfully' do
           let(:new_kase) { Case.find_by(original_case_id: kase.id) }
+
           before { put "/cases/#{kase.id}/transfer", {flow_id: other_flow.id}, auth(user) }
           it     { expect(response.status).to be_a_success_request }
           it     { expect(parsed_body).to be_a_success_message_with(I18n.t(:case_updated)) }
@@ -1179,21 +1256,21 @@ describe Cases::API, versioning: true do
 
   describe 'to inactive Case' do
     let(:flow) do
-      flow = create(:flow, initial: true, steps: [build(:step_type_form_without_fields)])
-      flow.steps.first.fields.create title: 'user_age', field_type: 'integer'
+      flow = create(:flow, initial: true, steps: [])
+      step = create(:step_type_form_without_fields, flow: flow)
+      create(:field, step: step, title: 'user_age', field_type: 'integer')
+      flow.publish(user)
       flow.reload
     end
     let!(:kase) do
-      case_params = {step_id: flow.steps.first.id,
-        initial_flow_id: flow.id,
-        version: flow.last_version,
-        fields: [{id: flow.steps.first.fields.first.id, value: '1'}]}
-      user.groups.first.permission.update(can_execute_step: [case_params[:step_id]])
+      case_params = {initial_flow_id: flow.id,
+                     fields: [{id: flow.steps.first.fields.first.id, value: '1'}]}
+      add_permision_to_user(user, flow.steps.pluck(:id))
       post '/cases', case_params, auth(user)
       Case.first
     end
 
-    before { user.groups.first.permission.update(flow_can_delete_own_cases: true) }
+    before { add_permision_to_user(user, flow.id, :flow_can_delete_own_cases) }
 
     context  'no authentication' do
       before { delete "/cases/#{kase.id}" }
@@ -1214,7 +1291,7 @@ describe Cases::API, versioning: true do
           context 'because case not found' do
             before { delete '/cases/123456789', {}, auth(user) }
             it     { expect(response.status).to be_a_not_found }
-            it     { expect(parsed_body).to be_an_error('Couldn\'t find Case with id=123456789 [WHERE "cases"."status" IN (\'active\', \'pending\', \'transfer\')]') }
+            it     { expect(parsed_body).to be_an_error('Couldn\'t find Case with id=123456789 [WHERE "cases"."status" IN (\'active\', \'pending\', \'transfer\', \'not_satisfied\')]') }
           end
         end
 
@@ -1237,17 +1314,17 @@ describe Cases::API, versioning: true do
 
   describe 'to restore Case' do
     let(:flow) do
-      flow = create(:flow, initial: true, steps: [build(:step_type_form_without_fields)])
-      flow.steps.first.fields.create title: 'user_age', field_type: 'integer'
+      flow = create(:flow, initial: true, steps: [])
+      step = create(:step_type_form_without_fields, flow: flow)
+      create(:field, step: step, title: 'user_age', field_type: 'integer')
+      flow.publish(user)
       flow.reload
     end
     let!(:kase) do
-      user.groups.first.permission.update(flow_can_delete_own_cases: true)
-      case_params = {step_id: flow.steps.first.id,
-        initial_flow_id: flow.id,
-        version: flow.last_version,
-        fields: [{id: flow.steps.first.fields.first.id, value: '1'}]}
-      user.groups.first.permission.update(can_execute_step: [case_params[:step_id]])
+      case_params = {initial_flow_id: flow.id,
+                     fields: [{id: flow.steps.first.fields.first.id, value: '1'}]}
+      add_permision_to_user(user, flow.id, :flow_can_delete_own_cases)
+      add_permision_to_user(user, flow.steps.pluck(:id))
       post '/cases', case_params, auth(user)
       kase = Case.first
       delete "/cases/#{kase.id}", {}, auth(user)
@@ -1296,16 +1373,16 @@ describe Cases::API, versioning: true do
 
   describe 'to get Case history' do
     let(:flow) do
-      flow = create(:flow, initial: true, steps: [build(:step_type_form_without_fields)])
-      flow.steps.first.fields.create title: 'user_age', field_type: 'integer'
+      flow = create(:flow, initial: true, steps: [])
+      step = create(:step_type_form_without_fields, flow: flow)
+      create(:field, step: step, title: 'user_age', field_type: 'integer')
+      flow.publish(user)
       flow.reload
     end
     let!(:kase) do
-      case_params = {step_id: flow.steps.first.id,
-        initial_flow_id: flow.id,
-        version: flow.last_version,
-        fields: [{id: flow.steps.first.fields.first.id, value: '1'}]}
-      user.groups.first.permission.update(can_execute_step: [case_params[:step_id]])
+      case_params = {initial_flow_id: flow.id,
+                     fields: [{id: flow.steps.first.fields.first.id, value: '1'}]}
+      add_permision_to_user(user, flow.steps.pluck(:id))
       post '/cases', case_params, auth(user)
       kase = Case.first
     end

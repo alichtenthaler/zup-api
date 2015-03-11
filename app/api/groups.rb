@@ -1,6 +1,8 @@
 module Groups
   class API < Grape::API
     resources :groups do
+      mount Groups::Permissions::API
+
       desc "List all groups"
       paginate per_page: 25
       params do
@@ -27,14 +29,25 @@ module Groups
           search_query = search_query.merge(users: { name: user_name })
         end
 
+        unless user_permissions.can?(:manage, Group)
+          search_query = search_query.merge(id: user_permissions.groups_visible)
+        end
+
         if search_query.empty?
-          groups = paginate(Group.all)
+          groups = paginate(Group.includes(:users).all)
         else
           # TODO: Fix the pagination for this query
           # it's an incompatibility between
           # will_paginate and textacular.
           groups = Group.includes(:users)
-                        .advanced_search(search_query, false)
+
+          if (visible_ids = search_query.delete(:id))
+            groups = groups.where(id: visible_ids)
+          end
+
+          if search_query.any?
+            groups = groups.advanced_search(search_query, false)
+          end
         end
 
         {
@@ -48,7 +61,7 @@ module Groups
       desc "Create a group"
       params do
         requires :name, type: String, desc: "Group's name"
-        requires :permissions, type: Hash, desc: "Group's permissions (add_users, view_categories, view_sections)"
+        optional :permissions, type: Hash, desc: "Group's permissions (add_users, view_categories, view_sections)"
         optional :description, type: String, desc: "Group's description"
         optional :users, type: Array, desc: "Array of users id to add to the user"
       end
@@ -66,8 +79,10 @@ module Groups
           group.users = users
         end
 
-        permission_params.each do |key, value|
-          permission_params[key] = value.map(&:to_i) if value.is_a?(Array)
+        if permission_params
+          permission_params.each do |key, value|
+            permission_params[key] = value.map(&:to_i) if value.is_a?(Array)
+          end
         end
 
         group.build_permission(permission_params)
@@ -81,7 +96,7 @@ module Groups
         optional :display_users, type: Boolean, desc: "Sets if should display all group users or not"
       end
       get ':id' do
-        group = Group.find_by(id: safe_params[:id])
+        group = Group.find_by!(id: safe_params[:id])
         validate_permission!(:view, group)
 
         if group
@@ -97,7 +112,9 @@ module Groups
       desc "Destroy group"
       delete ':id' do
         authenticate!
+
         group = Group.find_by(id: safe_params[:id])
+        validate_permission!(:destroy, group)
 
         if group && group.destroy
           { message: "Group destroyed sucessfully" }
@@ -116,7 +133,7 @@ module Groups
       put ":id" do
         authenticate!
         group = Group.find(safe_params[:id])
-        validate_permission!(:update, group)
+        validate_permission!(:edit, group)
 
         group.name = safe_params[:name] if safe_params[:name]
         group.description = safe_params[:description] if safe_params[:description]
@@ -127,10 +144,13 @@ module Groups
           group.users << users
         end
 
-        permission_params.each do |key, value|
-          permission_params[key] = value.map(&:to_i) if value.is_a?(Array)
+        unless permission_params.blank?
+          permission_params.each do |key, value|
+            permission_params[key] = value.map(&:to_i) if value.is_a?(Array)
+          end
+
+          group.permission.update(permission_params)
         end
-        group.build_permission(permission_params)
 
         if group.save
           { message: "Group updated succesfully", group: group }

@@ -38,10 +38,10 @@ module Flows::Steps::Triggers
 
       desc 'Update a Trigger'
       params do
-        requires :title,                         type: String, desc: 'Title of Trigger'
-        requires :trigger_conditions_attributes, type: Array,  desc: 'Conditions of Trigger'
-        requires :action_type,                   type: String, desc: 'Action type of Trigger'
-        requires :action_values,                 type: Array,  desc: 'Action values of Trigger'
+        optional :title,                         type: String, desc: 'Title of Trigger'
+        optional :trigger_conditions_attributes, type: Array,  desc: 'Conditions of Trigger'
+        optional :action_type,                   type: String, desc: 'Action type of Trigger'
+        optional :action_values,                 type: Array,  desc: 'Action values of Trigger'
         optional :description,                   type: String, desc: 'Description of Trigger'
       end
       put ':id' do

@@ -1,10 +1,11 @@
 module Reports
   class UpdateItemStatus
-    attr_reader :item, :category
+    attr_reader :item, :category, :user
 
-    def initialize(item)
+    def initialize(item, user = nil)
       @item = item
       @category = item.category
+      @user = user
     end
 
     def set_status(new_status)
@@ -18,13 +19,10 @@ module Reports
       set_status(new_status)
 
       item.save!
+      Reports::CreateHistoryEntry.new(item, user)
+                                 .create('status', 'Status foi alterado', new_status)
 
-      permissions = UserAbility.new(item.user)
-
-      if item.status_history.count > 1 &&
-        (permissions.can?(:manage, Reports::Item) || !new_status.private_for_category?(category))
-        UserMailer.delay.notify_report_status_update(item)
-      end
+      Reports::NotifyUser.new(item).notify_status_update!(new_status)
     end
 
     private

@@ -167,6 +167,7 @@ if ENV['WITH_FAKE_DATA'] == 'true'
   available_dates = [5.months.ago, 2.months.ago, 29.days.ago, 6.days.ago]
 
 ## Create reports items for categories
+  Reports::Item.skip_callback('create', :after, :send_email_to_user)
   30.times do
     available_dates.each do |date|
       2.times do

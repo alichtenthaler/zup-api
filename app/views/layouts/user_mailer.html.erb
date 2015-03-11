@@ -11,13 +11,13 @@
    <tr height="30"><td></td></tr>
    <tr>
     <td bgcolor="#E8EDF0" style="padding: 30px 40px 30px 40px;text-align: center;">
-     <img src="<%= ENV['MAIL_HEADER_URL'] || "http://#{ENV['API_DOMAIN']}/images/header.jpg" %>" width="436" height="40" />
+     <img src="<%= url_for_mailer('images/header.jpg') %>" width="436" height="40" />
     </td>
    </tr>
    <%= yield %>
    <tr>
      <td height="80" style="text-align: center;">
-       <a href="#" style="color: #FFF; font-size: 14px; font-weight: 600; font-family: 'Open Sans', Arial; text-decoration: none;">Não quero mais receber este resumo por email.</a>
+       <a href="<%= url_for_mailer("users/unsubscribe/#{@user.unsubscribe_email_token}") %>" style="color: #FFF; font-size: 14px; font-weight: 600; font-family: 'Open Sans', Arial; text-decoration: none;">Não quero mais receber este resumo por email.</a>
      </td>
    </tr>
   </table>

@@ -132,13 +132,18 @@ module Inventory::Items
 
             if !item.locked? || (item.locked? && item.locker == current_user)
               if safe_params[:data]
-                updater = Inventory::UpdateItemFromCategory.new(item, safe_params[:data], current_user)
+                updater = Inventory::UpdateItemData.new(item, safe_params[:data], current_user)
                 item = updater.update!
               end
 
               if safe_params[:inventory_status_id]
                 status = category.statuses.find(safe_params[:inventory_status_id])
                 item.reload.update!(status: status)
+
+                Inventory::CreateHistoryEntry.new(item, current_user)
+                                             .create('status',
+                                                     'Alterou o status do inventário.',
+                                                     status)
               end
 
               { message: "Inventory item updated successfully!" }

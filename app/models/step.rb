@@ -1,175 +1,154 @@
 class Step < ActiveRecord::Base
-  attr_accessor :user
-  has_paper_trail only: :last_version, on: :update
+  has_paper_trail only: :just_with_build!, on: :update
 
-  KEYS_TO_CREATE_VERSION = %w{step_type child_flow fields active}
+  PERMISSION_TYPES = %w{can_view_step can_execute_step}
 
+  belongs_to :user
   belongs_to :flow
   belongs_to :child_flow, class_name: 'Flow', foreign_key: :child_flow_id
   has_many   :triggers,   dependent: :destroy
   has_many   :fields,     dependent: :destroy
   has_many   :case_steps
 
-  default_scope { order(:order_number) }
+  default_scope -> { order(id: :asc) }
   scope :active, -> { where(active: true) }
 
   validates :title, length: {maximum: 100}, presence: true
   validates :step_type, presence: true
   validates :step_type, inclusion: {in: %w{form flow}}, allow_blank: true
-  validate  :cant_use_parent_flow_on_child_flow, if: lambda { step_type == 'flow' and child_flow.present? }
+  validate  :cant_use_parent_flow_on_child_flow, if: -> { step_type == 'flow' and child_flow.present? }
 
-  after_validation :set_child_flow_version, if: lambda { child_flow.present? }
-  after_validation :set_last_version, if: :need_create_version_by_keys?
-  before_create    :set_order_number
-  before_save      :set_updated_by_on_flow, unless: :need_create_version_by_keys?
-  after_save       :call_bump_on_initial_flow, if: :need_create_version_by_keys?
-  after_save       :update_last_version_id!, unless: :last_version_id_changed?
+  after_create   :add_step_on_flow
+  before_update  :set_draft, unless: :draft_changed?
+  before_update  :remove_step_on_flow, if: -> { active_changed? and not active }
+  before_destroy :remove_step_on_flow
 
-  def self.update_order!(ids, user=nil)
-    ids.each_with_index { |id, index| self.find(id).update!(order_number: index + 1) }
-    elem = self.find(ids.first)
-    return unless elem.get_flow.try(:verify_if_need_create_version?)
-    elem.update!(last_version: elem.last_version + 1, user: user)
-    elem.get_flow.try(:bump_version_cascade!, elem)
-  end
-
-  def bump_version_cascade!(elem)
-    self.update!(last_version: self.last_version + 1) if elem != self
-    self.triggers.each { |t| t.bump_version_cascade! elem }
-    self.fields.each { |i| i.update!(last_version: i.last_version + 1) if elem != i } if self.step_type == 'form'
+  def self.update_order!(ids, user = nil)
+    get_flow  = find(ids.first).flow
+    steps     = get_flow.steps_versions
+    order_ids = ids.inject({}) do |ids, id|
+      ids[id.to_s] = steps[id.to_s]
+      ids
+    end
+    get_flow.update! steps_versions: {}
+    get_flow.update! steps_versions: order_ids
   end
 
   def inactive!
-    get_flow.try(:verify_if_need_create_version?) ? self.update!(active: false) : self.destroy!
+    versions.present? ? update!(active: false) : destroy!
   end
 
-  def my_case_steps(options={})
-    case_steps.where({step_version: last_version}.merge(options))
+  def my_case_steps(options = {})
+    return [] if versions.blank?
+    my_version = self.version || versions.last.try(:id)
+    case_steps.where(options.merge(step_version: my_version))
   end
 
-  def my_fields(options={})
-    return fields.where(options) if last_version.blank? or last_version > versions.count
-    @my_fields ||= fields.where(options).map { |s| s.versions[last_version-2].try(:reify) }.compact
+  def my_fields(options = {}, live = false)
+    return fields.where(options) if versions.blank? or live
+    Version.where('Field', fields_versions, options)
   end
 
-  def my_triggers(options={})
-    return triggers.where(options) if last_version.blank? or last_version > versions.count
-    @my_triggers ||= triggers.where(options).map { |s| s.versions[last_version-2].try(:reify) }.compact
+  def my_triggers(options = {}, live = false)
+    return triggers.where(options) if versions.blank? or live
+    Version.where('Trigger', triggers_versions, options)
   end
 
   def my_child_flow
-    return if self.child_flow.blank?
-    return self.child_flow if self.child_flow_version == 1 and self.child_flow.versions.blank?
-    self.child_flow.versions[self.child_flow_version-1].reify
+    child_flow_version.blank? ? child_flow : Version.reify(child_flow_version)
   end
 
-  def get_flow(object=nil)
-    if object.blank?
-      return if self.try(:flow).blank?
-      object = self.flow
-    end
-    @get_flow ||= object
+  def get_flow(object = nil)
+    @get_flow ||= object || flow
   end
 
-  def version(version_n=1)
-    return self if self.last_version == version_n
-    self.versions[version_n-1].try(:reify)
-  end
-
-  protected
-  def list_versions
-    self.versions.map(&:reify) if self.versions.present?
+  def required_fields
+    my_fields.select { |field| field.required? }
   end
 
   private
   def cant_use_parent_flow_on_child_flow
-    return if self.flow.blank?
-    self.errors.add(:child_flow, :invalid) if self.flow.ancestors.map(&:id).include? self.child_flow.id
+    return if get_flow.blank?
+    errors.add(:child_flow, :invalid) if get_flow.ancestors.map(&:id).include? child_flow.id
   end
 
-  def set_updated_by_on_flow
-    return if self.flow.blank? or user.blank?
-    self.flow.update(updated_by: user)
+  def add_step_on_flow
+    step_versions = get_flow.steps_versions.dup
+    step_versions.merge!(id.to_s => nil)
+    get_flow.update! updated_by: user, steps_versions: {}
+    get_flow.update! updated_by: user, steps_versions: step_versions
   end
 
-  def set_child_flow_version
-    self.child_flow_version = self.child_flow.last_version
+  def set_draft
+    get_flow.update! updated_by: user, draft: true
+    self.draft = true
   end
 
-  def set_order_number
-    steps = self.try(:flow).try(:steps)
-    self.order_number = steps.present? ? (steps.maximum(:order_number) + 1) : 1
+  def remove_step_on_flow
+    step_versions = get_flow.steps_versions.dup
+    step_versions.delete(id.to_s)
+    get_flow.update! updated_by: user, steps_versions: {}
+    get_flow.update! updated_by: user, steps_versions: step_versions
   end
 
-  def set_last_version
-    return if self.changes.blank? or self.last_version_changed? or self.last_version_id_changed?
-    self.increment :last_version
+  # used on Entity
+  def list_versions
+    versions.map(&:reify) if versions.present?
   end
 
-  def update_last_version_id!
-    return if self.reload.versions.blank? or self.reload.last_version_id == self.reload.versions.last.id
-    self.reload.update! last_version_id: self.versions.last.id
-  end
-
-  def call_bump_on_initial_flow
-    get_flow.try(:bump_version_cascade!, self)
-  end
-
-  def need_create_version_by_keys?
-    need = false
-    need = true if get_flow.try(:verify_if_need_create_version?)
-    need = self.changes.keys.select{|key| KEYS_TO_CREATE_VERSION.include? key }.present? if self.persisted?
-    need
+  def permissions
+    PERMISSION_TYPES.inject({}) do |permissions, permission|
+      permissions[permission] = Group::Entity.represent(Group.that_includes_permission(permission, id))
+      permissions
+    end
   end
 
   def fields_id
-    self.fields.any? ? self.fields.map(&:id) : []
+    versions.present? ? fields_versions.keys : fields.pluck(:id)
   end
 
   def child_flow_id
-    self.child_flow.try(:id)
+    child_flow.try(:id)
   end
 
-  def my_fields_id
-    my_fields.map(&:id) if my_fields.present?
+  def version_id
+    version.try(:id)
   end
 
   class EntityVersion < Grape::Entity
     expose :id
     expose :title
+    expose :conduction_mode_open
     expose :step_type
-    expose :child_flow, using: Flow::Entity, if: {display_type: 'full'}
-    expose :my_child_flow, using: Flow::Entity, if: {display_type: 'full'}
+    expose :child_flow,    using: 'Flow::Entity', if: {display_type: 'full'}
+    expose :my_child_flow, using: 'Flow::Entity', if: {display_type: 'full'}
     expose :child_flow_id, unless: {display_type: 'full'}
-    expose :fields,        if:     {display_type: 'full'}
-    expose :my_fields,     if:     {display_type: 'full'}
-    expose :my_fields_id,  unless: {display_type: 'full'}
+    expose :fields,        using: 'Field::Entity', if: {display_type: 'full'}
+    expose :my_fields,     using: 'Field::Entity', if: {display_type: 'full'}
     expose :fields_id,     unless: {display_type: 'full'}
-    expose :order_number
     expose :active
-    expose :created_at, unless: {display_type: 'basic'}
-    expose :updated_at, unless: {display_type: 'basic'}
-    expose :last_version, unless: {display_type: 'basic'}
-    expose :last_version_id, unless: {display_type: 'basic'}
+    expose :version_id
+    expose :permissions,   if:     {display_type: 'full'}
+    expose :updated_at,    unless: {display_type: 'basic'}
+    expose :created_at,    unless: {display_type: 'basic'}
   end
 
   class Entity < Grape::Entity
     expose :id
     expose :title
+    expose :conduction_mode_open
     expose :step_type
-    expose :child_flow, using: Flow::Entity, if: {display_type: 'full'}
-    expose :my_child_flow, using: Flow::Entity, if: {display_type: 'full'}
+    expose :child_flow,    using: 'Flow::Entity', if: {display_type: 'full'}
+    expose :my_child_flow, using: 'Flow::Entity', if: {display_type: 'full'}
     expose :child_flow_id, unless: {display_type: 'full'}
-    expose :fields,        if:     {display_type: 'full'}
-    expose :my_fields,     if:     {display_type: 'full'}
-    expose :my_fields_id,  unless: {display_type: 'full'}
+    expose :fields,        using: 'Field::Entity', if: {display_type: 'full'}
+    expose :my_fields,     using: 'Field::Entity', if: {display_type: 'full'}
     expose :fields_id,     unless: {display_type: 'full'}
-    expose :order_number
     expose :active
-    expose :created_at, unless: {display_type: 'basic'}
-    expose :updated_at, unless: {display_type: 'basic'}
-    expose :last_version, unless: {display_type: 'basic'}
-    expose :last_version_id, unless: {display_type: 'basic'}
+    expose :version_id
+    expose :permissions,   if:     {display_type: 'full'}
+    expose :updated_at,    unless: {display_type: 'basic'}
+    expose :created_at,    unless: {display_type: 'basic'}
     expose :list_versions, using: Step::EntityVersion, unless: {display_type: 'basic'}
   end
 end

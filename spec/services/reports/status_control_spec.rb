@@ -8,10 +8,9 @@ describe Reports::StatusControl do
   describe "#overdue?" do
     let(:item) { create(:reports_item, category: category) }
 
-    context "item is on not final or initial status" do
+    context "item isn't on final status" do
       before do
         other_status = category.status_categories.where.not(
-          initial: true,
           final: true
         ).first.status
         Reports::UpdateItemStatus.new(item).update_status!(other_status)

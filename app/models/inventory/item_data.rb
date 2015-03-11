@@ -1,5 +1,4 @@
 class Inventory::ItemData < Inventory::Base
-
   belongs_to :item, class_name: "Inventory::Item", foreign_key: "inventory_item_id"
   belongs_to :field, class_name: "Inventory::Field", foreign_key: "inventory_field_id"
 
@@ -18,6 +17,9 @@ class Inventory::ItemData < Inventory::Base
       build_images_for(content)
     elsif field.kind == "attachments"
       build_attachments_for(content)
+    elsif field.use_options?
+      content = [content] unless content.is_a?(Array)
+      self.selected_options_ids = content.map(&:to_i)
     elsif !content.kind_of?(Array)
       write_attribute(:content, [content])
     else
@@ -26,10 +28,12 @@ class Inventory::ItemData < Inventory::Base
   end
 
   def content
-    if self.field && self.field.kind == "images"
+    if field && field.kind == "images"
       Inventory::ItemDataImage::Entity.represent(self.images)
-    elsif self.field && self.field.kind == "attachments"
+    elsif field && field.kind == "attachments"
       Inventory::ItemDataAttachment::Entity.represent(self.attachments)
+    elsif field && field.use_options?
+      selected_options.map(&:id)
     elsif !read_attribute(:content).nil? && (self.field && self.field.content_type != Array)
       super.first
     else
@@ -37,27 +41,50 @@ class Inventory::ItemData < Inventory::Base
     end
   end
 
+  # Field options reference (from `inventory_field_option_ids` column)
+  # If we use this kind of association using
+  # PG arrays, we should put this in a concern.
+  def selected_options
+    if inventory_field_option_ids.blank?
+      []
+    else
+      inventory_field_option_ids.map do |field_option_id|
+        Inventory::FieldOption.find_by(id: field_option_id)
+      end.compact
+    end
+  end
+
+  def selected_options=(field_options)
+    if field_options.is_a?(Array)
+      self.inventory_field_option_ids = field_options.map(&:id)
+    end
+  end
+
+  def selected_options_ids=(field_options_ids)
+    if field_options_ids.is_a?(Array)
+      self.inventory_field_option_ids = field_options_ids
+    end
+  end
+
   # Returns the content in the right type
   def converted_content
-    if field
-      # Put this on a dedicated class/module
-      # It is used on the ItemDataRepresenter as well
-      convertors = {
-        Fixnum => proc do |c|
-          c.to_i
-        end,
-        Float => proc do |c|
-          c.to_f
-        end
-      }
+    return content unless field
 
-      convertor = convertors[field.content_type]
-
-      if convertor && !content.nil?
-        convertor.call(content)
-      else
-        content
+    # Put this on a dedicated class/module
+    # It is used on the ItemDataRepresenter as well
+    convertors = {
+      Fixnum => proc do |c|
+        c.to_i
+      end,
+      Float => proc do |c|
+        c.to_f
       end
+    }
+
+    convertor = convertors[field.content_type]
+
+    if convertor && !content.nil?
+      convertor.call(content)
     else
       content
     end
@@ -67,6 +94,7 @@ class Inventory::ItemData < Inventory::Base
     expose :id
     expose :field, using: Inventory::Field::Entity
     expose :converted_content, as: :content
+    expose :selected_options, using: Inventory::FieldOption::Entity
   end
 
   private

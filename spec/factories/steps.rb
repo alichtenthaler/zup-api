@@ -1,11 +1,9 @@
-# Read about factories at https://github.com/thoughtbot/factory_girl
-
 FactoryGirl.define do
   factory :step do
     title { generate(:name) }
     description 'MyText'
     step_type 'flow'
-    sequence(:order_number) { |n| n }
+    user { User.first }
   end
 
   factory :step_type_form, parent: :step do

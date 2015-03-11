@@ -24,7 +24,7 @@ curl -X POST --data-binary '{"campo":"valor"}' -H 'Content-Type:application/json
 * [Criação](#create)
 * [Lista](#list)
 * [Exibir](#show)
-* [Atualizar](#update)
+* [Atualizar / Avançar Etapa](#update)
 * [Finalizar](#finish)
 * [Transferir para outro Fluxo](#transfer)
 * [Inativar](#inactive)
@@ -36,7 +36,8 @@ ___
 
 ### Criação <a name="create"></a>
 
-Criação de Caso é feito no envio dos dados da primeira Etapa
+Criação de Caso é feito no envio dos dados da primeira Etapa.
+Se não for enviado o "fields" a primeira Etapa será apenas iniciada e não estará como executada
 
 Endpoint: `/cases`
 
@@ -44,17 +45,21 @@ Method: post
 
 #### Parâmetros de Entrada
 
-| Nome            | Tipo    | Obrigatório | Descrição                                                   |
-|-----------------|---------|-------------|-------------------------------------------------------------|
-| step_id         | Integer | Sim         | ID do primeiro Step do Fluxo.                               |
-| initial_flow_id | Integer | Sim         | ID do Fluxo Inicial (pai de todos fluxos).                  |
-| fields          | Array   | Sim         | Array de Hash com ID do Campo e Value com o Valor do campo (a value será convertida no valor correto do campo para verificar as validações do campo). |
+| Nome                 | Tipo    | Obrigatório | Descrição                                                   |
+|----------------------|---------|-------------|-------------------------------------------------------------|
+| initial_flow_id      | Integer | Sim         | ID do Fluxo Inicial utilizando a versão corrente (pai de todos fluxos).                  |
+| fields               | Array   | Não         | Array de Hash com ID do Campo e Value com o Valor do campo (a value será convertida no valor correto do campo para verificar as validações do campo). |
+| responsible_user_id  | Integer | Não         | ID do Grupo que será responsável pela Etapa do Caso. |
+| responsible_group_id | Integer | Não         | ID do Grupo que será responsável pela Etapa do Caso. |
 
 #### Status HTTP
 
 | Código | Descrição                  |
 |--------|----------------------------|
 | 400    | Parâmetros inválidos.      |
+| 400    | Etapa está disabilitada    |
+| 400    | Etapa não pertence ao Caso |
+| 400    | Etapa atual não foi preenchida |
 | 401    | Acesso não autorizado.     |
 | 201    | Se foi criado com sucesso. |
 
@@ -63,7 +68,6 @@ Method: post
 ##### Request
 ```json
 {
-  "step_id": 1,
   "initial_flow_id": 2,
   "fields": [
     {"id": 1, "value": "10"}
@@ -107,139 +111,821 @@ Status: 201
 Content-Type: application/json
 ```
 
+| Nome     | Tipo    | Descrição                             |
+|----------|---------|---------------------------------------|
+| case     | Object  | Vide CaseObject get /cases/1          |
+
 ```json
 {
   "trigger_description": null,
   "trigger_values": null,
   "trigger_type": null,
   "case": {
-    "next_step": null,
-    "total_steps": 1,
-    "flow_version": 4,
-    "initial_flow_id": 1,
-    "updated_at": "2014-06-07T22:16:15.533-03:00",
-    "created_at": "2014-06-07T22:16:15.533-03:00",
-    "updated_by": null,
-    "created_by": {
-      "google_plus_user_id": null,
-      "twitter_user_id": null,
-      "facebook_user_id": null,
-      "created_at": "2014-06-05T00:35:45.743-03:00",
-      "district": "Sao Paulo",
-      "postal_code": "18000000",
-      "id": 21,
-      "name": "Fulano",
-      "groups": [
-        {
-          "permissions": {
-            "view_categories": "true",
-            "view_sections": "true"
-          },
-          "name": "Público",
-          "id": 1
+    "steps": [
+      {
+        "steps": [],
+        "flow": {
+          "steps_versions": {},
+          "resolution_states_versions": {},
+          "draft": false,
+          "current_version": null,
+          "step_id": null,
+          "status": "pending",
+          "id": 4,
+          "title": "Fluxo Filho",
+          "description": null,
+          "created_by_id": 1,
+          "updated_by_id": 1,
+          "initial": false,
+          "created_at": "2015-03-04T00:30:40.425-03:00",
+          "updated_at": "2015-03-04T00:31:03.225-03:00"
+        },
+        "step": {
+          "triggers_versions": {},
+          "fields_versions": {},
+          "user_id": 1,
+          "draft": false,
+          "conduction_mode_open": true,
+          "child_flow_version": null,
+          "child_flow_id": 4,
+          "id": 6,
+          "title": "Etapa 3",
+          "description": null,
+          "step_type": "flow",
+          "flow_id": 3,
+          "created_at": "2015-03-04T00:31:37.531-03:00",
+          "updated_at": "2015-03-04T00:51:47.252-03:00",
+          "active": true
         }
-      ],
-      "email": "test001@mailinator.com",
-      "phone": "123456",
-      "document": "57858662775",
-      "address": "Rua",
-      "address_additional": null
-    },
-    "id": 2,
-    "disabled_steps": [],
-    "original_case_id": null,
-    "children_case_ids": [],
-    "case_step_ids": [
-      2
+      },
+      {
+        "steps": [],
+        "flow": null,
+        "step": {
+          "triggers_versions": {},
+          "fields_versions": {
+            "3": 5
+          },
+          "user_id": 1,
+          "draft": false,
+          "conduction_mode_open": true,
+          "child_flow_version": null,
+          "child_flow_id": null,
+          "id": 5,
+          "title": "Etapa 2",
+          "description": null,
+          "step_type": "form",
+          "flow_id": 3,
+          "created_at": "2015-03-04T00:30:06.214-03:00",
+          "updated_at": "2015-03-04T00:51:47.232-03:00",
+          "active": true
+        }
+      },
+      {
+        "steps": [],
+        "flow": null,
+        "step": {
+          "triggers_versions": {},
+          "fields_versions": {
+            "2": 3
+          },
+          "user_id": 1,
+          "draft": false,
+          "conduction_mode_open": true,
+          "child_flow_version": null,
+          "child_flow_id": null,
+          "id": 4,
+          "title": "Etapa 1",
+          "description": null,
+          "step_type": "form",
+          "flow_id": 3,
+          "created_at": "2015-03-04T00:24:26.529-03:00",
+          "updated_at": "2015-03-04T00:51:47.210-03:00",
+          "active": true
+        }
+      }
     ],
-    "next_step_id": null,
-    "get_responsible_user": {
-      "google_plus_user_id": null,
-      "twitter_user_id": null,
-      "document": "57858662775",
-      "phone": "123456",
-      "email": "test001@mailinator.com",
-      "name": "Fulano",
-      "reset_password_token": null,
-      "salt": "902ad01d9d4767543203f8cdfc99d461",
-      "encrypted_password": "db5c8156b7fa81298287f802bc13e993aa7a78ebfbab3924d2e5c6a340081d275bcec708e17eb0504e041ef721b87433fd7de605ca539dd0f68594d1d9c7e24b",
-      "id": 21,
-      "address": "Rua",
-      "address_additional": null,
-      "postal_code": "18000000",
-      "district": "Sao Paulo",
-      "password_resetted_at": null,
-      "created_at": "2014-06-05T00:35:45.743-03:00",
-      "updated_at": "2014-06-05T00:35:45.743-03:00",
-      "facebook_user_id": null
+    "current_step": {
+      "updated_by": null,
+      "created_by": {
+        "google_plus_user_id": null,
+        "twitter_user_id": null,
+        "document": "67392343700",
+        "phone": "11912231545",
+        "email": "euricovidal@gmail.com",
+        "groups_names": [
+          "Administradores"
+        ],
+        "permissions": {
+          "flow_can_delete_own_cases": [],
+          "flow_can_delete_all_cases": [],
+          "create_reports_from_panel": true,
+          "updated_at": "2015-03-03T10:45:07.465-03:00",
+          "created_at": "2015-03-03T10:45:07.461-03:00",
+          "view_categories": false,
+          "edit_reports": true,
+          "edit_inventory_items": true,
+          "delete_reports": false,
+          "delete_inventory_items": false,
+          "manage_config": true,
+          "manage_inventory_formulas": true,
+          "manage_reports": true,
+          "id": 2,
+          "group_id": 2,
+          "manage_flows": true,
+          "manage_users": true,
+          "manage_inventory_categories": true,
+          "manage_inventory_items": true,
+          "manage_groups": true,
+          "manage_reports_categories": true,
+          "view_sections": false,
+          "panel_access": true,
+          "groups_can_edit": [],
+          "groups_can_view": [],
+          "reports_categories_can_edit": [],
+          "reports_categories_can_view": [],
+          "inventory_categories_can_edit": [],
+          "inventory_categories_can_view": [],
+          "inventory_sections_can_view": [],
+          "inventory_sections_can_edit": [],
+          "inventory_fields_can_edit": [],
+          "inventory_fields_can_view": [],
+          "flow_can_view_all_steps": [],
+          "flow_can_execute_all_steps": [
+            3
+          ],
+          "can_view_step": [],
+          "can_execute_step": []
+        },
+        "groups": [
+          {
+            "permissions": {
+              "flow_can_delete_own_cases": [],
+              "flow_can_delete_all_cases": [],
+              "create_reports_from_panel": true,
+              "updated_at": "2015-03-03T10:45:07.465-03:00",
+              "created_at": "2015-03-03T10:45:07.461-03:00",
+              "view_categories": false,
+              "edit_reports": true,
+              "edit_inventory_items": true,
+              "delete_reports": false,
+              "delete_inventory_items": false,
+              "manage_config": true,
+              "manage_inventory_formulas": true,
+              "manage_reports": true,
+              "id": 2,
+              "group_id": 2,
+              "manage_flows": true,
+              "manage_users": true,
+              "manage_inventory_categories": true,
+              "manage_inventory_items": true,
+              "manage_groups": true,
+              "manage_reports_categories": true,
+              "view_sections": false,
+              "panel_access": true,
+              "groups_can_edit": [],
+              "groups_can_view": [],
+              "reports_categories_can_edit": [],
+              "reports_categories_can_view": [],
+              "inventory_categories_can_edit": [],
+              "inventory_categories_can_view": [],
+              "inventory_sections_can_view": [],
+              "inventory_sections_can_edit": [],
+              "inventory_fields_can_edit": [],
+              "inventory_fields_can_view": [],
+              "flow_can_view_all_steps": [],
+              "flow_can_execute_all_steps": [
+                3
+              ],
+              "can_view_step": [],
+              "can_execute_step": []
+            },
+            "name": "Administradores",
+            "id": 2
+          }
+        ],
+        "name": "Hellen Armstrong Sr.",
+        "id": 1,
+        "address": "430 Danika Parkways",
+        "address_additional": "Suite 386",
+        "postal_code": "04005000",
+        "district": "Lake Elsafort",
+        "device_token": "445dcfb912fade983885d17f9aa42448",
+        "device_type": "ios",
+        "created_at": "2015-03-03T10:45:08.037-03:00",
+        "facebook_user_id": null
+      },
+      "case_step_data_fields": [],
+      "created_at": "2015-03-04T11:11:46.894-03:00",
+      "updated_at": "2015-03-04T11:11:46.894-03:00",
+      "id": 1,
+      "step_id": 5,
+      "step_version": 6,
+      "my_step": {
+        "list_versions": [
+          {
+            "created_at": "2015-03-04T00:30:06.214-03:00",
+            "updated_at": "2015-03-04T00:51:47.232-03:00",
+            "permissions": {
+              "can_execute_step": [],
+              "can_view_step": []
+            },
+            "version_id": 6,
+            "active": true,
+            "id": 5,
+            "title": "Etapa 2",
+            "conduction_mode_open": true,
+            "step_type": "form",
+            "child_flow": null,
+            "my_child_flow": null,
+            "fields": [
+              {
+                "draft": false,
+                "step_id": 5,
+                "active": true,
+                "origin_field_id": null,
+                "category_report_id": null,
+                "category_inventory_id": null,
+                "field_type": "text",
+                "title": "Campo 1",
+                "id": 3,
+                "created_at": "2015-03-04T00:30:27.297-03:00",
+                "updated_at": "2015-03-04T00:51:47.224-03:00",
+                "multiple": false,
+                "filter": null,
+                "requirements": null,
+                "values": null,
+                "user_id": 1,
+                "origin_field_version": null
+              }
+            ],
+            "my_fields": [
+              {
+                "draft": false,
+                "step_id": 5,
+                "active": true,
+                "origin_field_id": null,
+                "category_report_id": null,
+                "category_inventory_id": null,
+                "field_type": "text",
+                "title": "Campo 1",
+                "id": 3,
+                "created_at": "2015-03-04T00:30:27.297-03:00",
+                "updated_at": "2015-03-04T00:51:47.224-03:00",
+                "multiple": false,
+                "filter": null,
+                "requirements": null,
+                "values": null,
+                "user_id": 1,
+                "origin_field_version": null
+              }
+            ]
+          }
+        ],
+        "created_at": "2015-03-04T00:30:06.214-03:00",
+        "updated_at": "2015-03-04T00:51:47.232-03:00",
+        "permissions": {
+          "can_execute_step": [],
+          "can_view_step": []
+        },
+        "version_id": 6,
+        "active": true,
+        "id": 5,
+        "title": "Etapa 2",
+        "conduction_mode_open": true,
+        "step_type": "form",
+        "child_flow": null,
+        "my_child_flow": null,
+        "fields": [
+          {
+            "draft": false,
+            "step_id": 5,
+            "active": true,
+            "origin_field_id": null,
+            "category_report_id": null,
+            "category_inventory_id": null,
+            "field_type": "text",
+            "title": "Campo 1",
+            "id": 3,
+            "created_at": "2015-03-04T00:30:27.297-03:00",
+            "updated_at": "2015-03-04T00:51:47.224-03:00",
+            "multiple": false,
+            "filter": null,
+            "requirements": null,
+            "values": null,
+            "user_id": 1,
+            "origin_field_version": null
+          }
+        ],
+        "my_fields": [
+          {
+            "draft": false,
+            "step_id": 5,
+            "active": true,
+            "origin_field_id": null,
+            "category_report_id": null,
+            "category_inventory_id": null,
+            "field_type": "text",
+            "title": "Campo 1",
+            "id": 3,
+            "created_at": "2015-03-04T00:30:27.297-03:00",
+            "updated_at": "2015-03-04T00:51:47.224-03:00",
+            "multiple": false,
+            "filter": null,
+            "requirements": null,
+            "values": null,
+            "user_id": 1,
+            "origin_field_version": null
+          }
+        ]
+      },
+      "trigger_ids": [],
+      "responsible_user_id": 1,
+      "responsible_group_id": null,
+      "executed": true
     },
-    "original_case": null,
     "case_steps": [
       {
-        "updated_at": "2014-06-07T22:16:15.535-03:00",
-        "created_at": "2014-06-07T22:16:15.535-03:00",
         "updated_by": null,
         "created_by": {
           "google_plus_user_id": null,
           "twitter_user_id": null,
-          "facebook_user_id": null,
-          "created_at": "2014-06-05T00:35:45.743-03:00",
-          "district": "Sao Paulo",
-          "postal_code": "18000000",
-          "id": 21,
-          "name": "Fulano",
+          "document": "67392343700",
+          "phone": "11912231545",
+          "email": "euricovidal@gmail.com",
+          "groups_names": [
+            "Administradores"
+          ],
+          "permissions": {
+            "flow_can_delete_own_cases": [],
+            "flow_can_delete_all_cases": [],
+            "create_reports_from_panel": true,
+            "updated_at": "2015-03-03T10:45:07.465-03:00",
+            "created_at": "2015-03-03T10:45:07.461-03:00",
+            "view_categories": false,
+            "edit_reports": true,
+            "edit_inventory_items": true,
+            "delete_reports": false,
+            "delete_inventory_items": false,
+            "manage_config": true,
+            "manage_inventory_formulas": true,
+            "manage_reports": true,
+            "id": 2,
+            "group_id": 2,
+            "manage_flows": true,
+            "manage_users": true,
+            "manage_inventory_categories": true,
+            "manage_inventory_items": true,
+            "manage_groups": true,
+            "manage_reports_categories": true,
+            "view_sections": false,
+            "panel_access": true,
+            "groups_can_edit": [],
+            "groups_can_view": [],
+            "reports_categories_can_edit": [],
+            "reports_categories_can_view": [],
+            "inventory_categories_can_edit": [],
+            "inventory_categories_can_view": [],
+            "inventory_sections_can_view": [],
+            "inventory_sections_can_edit": [],
+            "inventory_fields_can_edit": [],
+            "inventory_fields_can_view": [],
+            "flow_can_view_all_steps": [],
+            "flow_can_execute_all_steps": [
+              3
+            ],
+            "can_view_step": [],
+            "can_execute_step": []
+          },
           "groups": [
             {
               "permissions": {
-                "view_categories": "true",
-                "view_sections": "true"
+                "flow_can_delete_own_cases": [],
+                "flow_can_delete_all_cases": [],
+                "create_reports_from_panel": true,
+                "updated_at": "2015-03-03T10:45:07.465-03:00",
+                "created_at": "2015-03-03T10:45:07.461-03:00",
+                "view_categories": false,
+                "edit_reports": true,
+                "edit_inventory_items": true,
+                "delete_reports": false,
+                "delete_inventory_items": false,
+                "manage_config": true,
+                "manage_inventory_formulas": true,
+                "manage_reports": true,
+                "id": 2,
+                "group_id": 2,
+                "manage_flows": true,
+                "manage_users": true,
+                "manage_inventory_categories": true,
+                "manage_inventory_items": true,
+                "manage_groups": true,
+                "manage_reports_categories": true,
+                "view_sections": false,
+                "panel_access": true,
+                "groups_can_edit": [],
+                "groups_can_view": [],
+                "reports_categories_can_edit": [],
+                "reports_categories_can_view": [],
+                "inventory_categories_can_edit": [],
+                "inventory_categories_can_view": [],
+                "inventory_sections_can_view": [],
+                "inventory_sections_can_edit": [],
+                "inventory_fields_can_edit": [],
+                "inventory_fields_can_view": [],
+                "flow_can_view_all_steps": [],
+                "flow_can_execute_all_steps": [
+                  3
+                ],
+                "can_view_step": [],
+                "can_execute_step": []
               },
-              "name": "Público",
-              "id": 1
+              "name": "Administradores",
+              "id": 2
             }
           ],
-          "email": "test001@mailinator.com",
-          "phone": "123456",
-          "document": "57858662775",
-          "address": "Rua",
-          "address_additional": null
+          "name": "Hellen Armstrong Sr.",
+          "id": 1,
+          "address": "430 Danika Parkways",
+          "address_additional": "Suite 386",
+          "postal_code": "04005000",
+          "district": "Lake Elsafort",
+          "device_token": "445dcfb912fade983885d17f9aa42448",
+          "device_type": "ios",
+          "created_at": "2015-03-03T10:45:08.037-03:00",
+          "facebook_user_id": null
         },
-        "id": 2,
-        "case_id": 2,
-        "step_id": 1,
-        "step_version": 1,
-        "case_step_data_fields": [
-          {
-            "case_step_data_attachments": [],
-            "case_step_data_images": [],
-            "value": "10",
-            "field": {
-              "list_versions": null,
-              "last_version_id": null,
-              "last_version": 1,
-              "updated_at": "2014-06-07T22:05:56.799-03:00",
-              "created_at": "2014-06-07T22:05:56.799-03:00",
+        "case_step_data_fields": [],
+        "created_at": "2015-03-04T11:11:46.894-03:00",
+        "updated_at": "2015-03-04T11:11:46.894-03:00",
+        "id": 1,
+        "step_id": 5,
+        "step_version": 6,
+        "my_step": {
+          "list_versions": [
+            {
+              "created_at": "2015-03-04T00:30:06.214-03:00",
+              "updated_at": "2015-03-04T00:51:47.232-03:00",
+              "permissions": {
+                "can_execute_step": [],
+                "can_view_step": []
+              },
+              "version_id": 6,
               "active": true,
-              "id": 2,
-              "title": "xxx",
-              "field_type": "integer",
+              "id": 5,
+              "title": "Etapa 2",
+              "conduction_mode_open": true,
+              "step_type": "form",
+              "child_flow": null,
+              "my_child_flow": null,
+              "fields": [
+                {
+                  "draft": false,
+                  "step_id": 5,
+                  "active": true,
+                  "origin_field_id": null,
+                  "category_report_id": null,
+                  "category_inventory_id": null,
+                  "field_type": "text",
+                  "title": "Campo 1",
+                  "id": 3,
+                  "created_at": "2015-03-04T00:30:27.297-03:00",
+                  "updated_at": "2015-03-04T00:51:47.224-03:00",
+                  "multiple": false,
+                  "filter": null,
+                  "requirements": null,
+                  "values": null,
+                  "user_id": 1,
+                  "origin_field_version": null
+                }
+              ],
+              "my_fields": [
+                {
+                  "draft": false,
+                  "step_id": 5,
+                  "active": true,
+                  "origin_field_id": null,
+                  "category_report_id": null,
+                  "category_inventory_id": null,
+                  "field_type": "text",
+                  "title": "Campo 1",
+                  "id": 3,
+                  "created_at": "2015-03-04T00:30:27.297-03:00",
+                  "updated_at": "2015-03-04T00:51:47.224-03:00",
+                  "multiple": false,
+                  "filter": null,
+                  "requirements": null,
+                  "values": null,
+                  "user_id": 1,
+                  "origin_field_version": null
+                }
+              ]
+            }
+          ],
+          "created_at": "2015-03-04T00:30:06.214-03:00",
+          "updated_at": "2015-03-04T00:51:47.232-03:00",
+          "permissions": {
+            "can_execute_step": [],
+            "can_view_step": []
+          },
+          "version_id": 6,
+          "active": true,
+          "id": 5,
+          "title": "Etapa 2",
+          "conduction_mode_open": true,
+          "step_type": "form",
+          "child_flow": null,
+          "my_child_flow": null,
+          "fields": [
+            {
+              "draft": false,
+              "step_id": 5,
+              "active": true,
+              "origin_field_id": null,
+              "category_report_id": null,
+              "category_inventory_id": null,
+              "field_type": "text",
+              "title": "Campo 1",
+              "id": 3,
+              "created_at": "2015-03-04T00:30:27.297-03:00",
+              "updated_at": "2015-03-04T00:51:47.224-03:00",
+              "multiple": false,
               "filter": null,
-              "origin_field": null,
-              "category_inventory": null,
-              "category_report": null,
-              "requirements": {
-                "presence": "true",
-                "minimum": "10"
-              }
-            },
-            "id": 2
-          }
-        ],
+              "requirements": null,
+              "values": null,
+              "user_id": 1,
+              "origin_field_version": null
+            }
+          ],
+          "my_fields": [
+            {
+              "draft": false,
+              "step_id": 5,
+              "active": true,
+              "origin_field_id": null,
+              "category_report_id": null,
+              "category_inventory_id": null,
+              "field_type": "text",
+              "title": "Campo 1",
+              "id": 3,
+              "created_at": "2015-03-04T00:30:27.297-03:00",
+              "updated_at": "2015-03-04T00:51:47.224-03:00",
+              "multiple": false,
+              "filter": null,
+              "requirements": null,
+              "values": null,
+              "user_id": 1,
+              "origin_field_version": null
+            }
+          ]
+        },
         "trigger_ids": [],
-        "responsible_user_id": 21,
-        "responsible_group_id": null
+        "responsible_user_id": 1,
+        "responsible_group_id": null,
+        "executed": true
       }
-    ]
+    ],
+    "original_case": null,
+    "get_responsible_group": null,
+    "get_responsible_user": {
+      "google_plus_user_id": null,
+      "twitter_user_id": null,
+      "document": "67392343700",
+      "phone": "11912231545",
+      "email": "euricovidal@gmail.com",
+      "groups_names": [
+        "Administradores"
+      ],
+      "permissions": {
+        "flow_can_delete_own_cases": [],
+        "flow_can_delete_all_cases": [],
+        "create_reports_from_panel": true,
+        "updated_at": "2015-03-03T10:45:07.465-03:00",
+        "created_at": "2015-03-03T10:45:07.461-03:00",
+        "view_categories": false,
+        "edit_reports": true,
+        "edit_inventory_items": true,
+        "delete_reports": false,
+        "delete_inventory_items": false,
+        "manage_config": true,
+        "manage_inventory_formulas": true,
+        "manage_reports": true,
+        "id": 2,
+        "group_id": 2,
+        "manage_flows": true,
+        "manage_users": true,
+        "manage_inventory_categories": true,
+        "manage_inventory_items": true,
+        "manage_groups": true,
+        "manage_reports_categories": true,
+        "view_sections": false,
+        "panel_access": true,
+        "groups_can_edit": [],
+        "groups_can_view": [],
+        "reports_categories_can_edit": [],
+        "reports_categories_can_view": [],
+        "inventory_categories_can_edit": [],
+        "inventory_categories_can_view": [],
+        "inventory_sections_can_view": [],
+        "inventory_sections_can_edit": [],
+        "inventory_fields_can_edit": [],
+        "inventory_fields_can_view": [],
+        "flow_can_view_all_steps": [],
+        "flow_can_execute_all_steps": [
+          3
+        ],
+        "can_view_step": [],
+        "can_execute_step": []
+      },
+      "groups": [
+        {
+          "permissions": {
+            "flow_can_delete_own_cases": [],
+            "flow_can_delete_all_cases": [],
+            "create_reports_from_panel": true,
+            "updated_at": "2015-03-03T10:45:07.465-03:00",
+            "created_at": "2015-03-03T10:45:07.461-03:00",
+            "view_categories": false,
+            "edit_reports": true,
+            "edit_inventory_items": true,
+            "delete_reports": false,
+            "delete_inventory_items": false,
+            "manage_config": true,
+            "manage_inventory_formulas": true,
+            "manage_reports": true,
+            "id": 2,
+            "group_id": 2,
+            "manage_flows": true,
+            "manage_users": true,
+            "manage_inventory_categories": true,
+            "manage_inventory_items": true,
+            "manage_groups": true,
+            "manage_reports_categories": true,
+            "view_sections": false,
+            "panel_access": true,
+            "groups_can_edit": [],
+            "groups_can_view": [],
+            "reports_categories_can_edit": [],
+            "reports_categories_can_view": [],
+            "inventory_categories_can_edit": [],
+            "inventory_categories_can_view": [],
+            "inventory_sections_can_view": [],
+            "inventory_sections_can_edit": [],
+            "inventory_fields_can_edit": [],
+            "inventory_fields_can_view": [],
+            "flow_can_view_all_steps": [],
+            "flow_can_execute_all_steps": [
+              3
+            ],
+            "can_view_step": [],
+            "can_execute_step": []
+          },
+          "name": "Administradores",
+          "id": 2
+        }
+      ],
+      "name": "Hellen Armstrong Sr.",
+      "id": 1,
+      "address": "430 Danika Parkways",
+      "address_additional": "Suite 386",
+      "postal_code": "04005000",
+      "district": "Lake Elsafort",
+      "device_token": "445dcfb912fade983885d17f9aa42448",
+      "device_type": "ios",
+      "created_at": "2015-03-03T10:45:08.037-03:00",
+      "facebook_user_id": null
+    },
+    "updated_by": null,
+    "created_by": {
+      "google_plus_user_id": null,
+      "twitter_user_id": null,
+      "document": "67392343700",
+      "phone": "11912231545",
+      "email": "euricovidal@gmail.com",
+      "groups_names": [
+        "Administradores"
+      ],
+      "permissions": {
+        "flow_can_delete_own_cases": [],
+        "flow_can_delete_all_cases": [],
+        "create_reports_from_panel": true,
+        "updated_at": "2015-03-03T10:45:07.465-03:00",
+        "created_at": "2015-03-03T10:45:07.461-03:00",
+        "view_categories": false,
+        "edit_reports": true,
+        "edit_inventory_items": true,
+        "delete_reports": false,
+        "delete_inventory_items": false,
+        "manage_config": true,
+        "manage_inventory_formulas": true,
+        "manage_reports": true,
+        "id": 2,
+        "group_id": 2,
+        "manage_flows": true,
+        "manage_users": true,
+        "manage_inventory_categories": true,
+        "manage_inventory_items": true,
+        "manage_groups": true,
+        "manage_reports_categories": true,
+        "view_sections": false,
+        "panel_access": true,
+        "groups_can_edit": [],
+        "groups_can_view": [],
+        "reports_categories_can_edit": [],
+        "reports_categories_can_view": [],
+        "inventory_categories_can_edit": [],
+        "inventory_categories_can_view": [],
+        "inventory_sections_can_view": [],
+        "inventory_sections_can_edit": [],
+        "inventory_fields_can_edit": [],
+        "inventory_fields_can_view": [],
+        "flow_can_view_all_steps": [],
+        "flow_can_execute_all_steps": [
+          3
+        ],
+        "can_view_step": [],
+        "can_execute_step": []
+      },
+      "groups": [
+        {
+          "permissions": {
+            "flow_can_delete_own_cases": [],
+            "flow_can_delete_all_cases": [],
+            "create_reports_from_panel": true,
+            "updated_at": "2015-03-03T10:45:07.465-03:00",
+            "created_at": "2015-03-03T10:45:07.461-03:00",
+            "view_categories": false,
+            "edit_reports": true,
+            "edit_inventory_items": true,
+            "delete_reports": false,
+            "delete_inventory_items": false,
+            "manage_config": true,
+            "manage_inventory_formulas": true,
+            "manage_reports": true,
+            "id": 2,
+            "group_id": 2,
+            "manage_flows": true,
+            "manage_users": true,
+            "manage_inventory_categories": true,
+            "manage_inventory_items": true,
+            "manage_groups": true,
+            "manage_reports_categories": true,
+            "view_sections": false,
+            "panel_access": true,
+            "groups_can_edit": [],
+            "groups_can_view": [],
+            "reports_categories_can_edit": [],
+            "reports_categories_can_view": [],
+            "inventory_categories_can_edit": [],
+            "inventory_categories_can_view": [],
+            "inventory_sections_can_view": [],
+            "inventory_sections_can_edit": [],
+            "inventory_fields_can_edit": [],
+            "inventory_fields_can_view": [],
+            "flow_can_view_all_steps": [],
+            "flow_can_execute_all_steps": [
+              3
+            ],
+            "can_view_step": [],
+            "can_execute_step": []
+          },
+          "name": "Administradores",
+          "id": 2
+        }
+      ],
+      "name": "Hellen Armstrong Sr.",
+      "id": 1,
+      "address": "430 Danika Parkways",
+      "address_additional": "Suite 386",
+      "postal_code": "04005000",
+      "district": "Lake Elsafort",
+      "device_token": "445dcfb912fade983885d17f9aa42448",
+      "device_type": "ios",
+      "created_at": "2015-03-03T10:45:08.037-03:00",
+      "facebook_user_id": null
+    },
+    "completed": false,
+    "steps_not_fulfilled": [
+      4
+    ],
+    "total_steps": 2,
+    "flow_version": 8,
+    "initial_flow_id": 3,
+    "updated_at": "2015-03-04T11:11:46.891-03:00",
+    "created_at": "2015-03-04T11:11:46.891-03:00",
+    "updated_by_id": null,
+    "created_by_id": 1,
+    "id": 1,
+    "disabled_steps": [],
+    "original_case_id": null,
+    "children_case_ids": [],
+    "case_step_ids": [
+      1
+    ],
+    "next_step_id": 5,
+    "responsible_user_id": 1,
+    "responsible_group_id": null,
+    "status": "active"
   },
   "message": "Caso criado com sucesso"
 }
@@ -258,6 +944,7 @@ Method: get
 |----------------------|---------|-------------|-------------------------------------------------------------|
 | display_type         | String  | Não         | para retornar todos os dados utilizar 'full'.               |
 | initial_flow_id      | String  | Não         | Texto de IDs de Fluxo Inicial(separados por ,).             |
+| initial_flow_version | String  | Não         | Texto de Versões de Fluxo Inicial(separados por ,).         |
 | responsible_user_id  | String  | Não         | Texto de IDs de Usuários(separados por ,).                  |
 | responsible_group_id | String  | Não         | Texto de IDs de Grupos(separados por ,).                    |
 | created_by_id        | String  | Não         | Texto de IDs de Usuários(separados por ,).                  |
@@ -286,278 +973,93 @@ Status: 200
 Content-Type: application/json
 ```
 
+| Nome     | Tipo    | Descrição                             |
+|----------|---------|---------------------------------------|
+| case     | Object  | Vide CaseObject get /cases/1          |
+
+**Sem display_type**
 ```json
 {
   "cases": [
     {
-      "next_step": null,
-      "case_steps": [
-        {
-          "updated_at": "2014-06-07T22:15:46.722-03:00",
-          "created_at": "2014-06-07T22:15:46.722-03:00",
-          "updated_by": null,
-          "created_by": {
-            "google_plus_user_id": null,
-            "twitter_user_id": null,
-            "facebook_user_id": null,
-            "created_at": "2014-06-05T00:35:45.743-03:00",
-            "district": "Sao Paulo",
-            "postal_code": "18000000",
-            "id": 21,
-            "name": "Fulano",
-            "groups": [
-              {
-                "permissions": {
-                  "view_categories": "true",
-                  "view_sections": "true"
-                },
-                "name": "Público",
-                "id": 1
-              }
-            ],
-            "email": "test001@mailinator.com",
-            "phone": "123456",
-            "document": "57858662775",
-            "address": "Rua",
-            "address_additional": null
-          },
-          "id": 1,
-          "case_id": 1,
-          "step_id": 1,
-          "step_version": 1,
-          "case_step_data_fields": [
-            {
-              "case_step_data_attachments": [],
-              "case_step_data_images": [],
-              "value": "10",
-              "field": {
-                "list_versions": null,
-                "last_version_id": null,
-                "last_version": 1,
-                "updated_at": "2014-06-07T22:05:56.799-03:00",
-                "created_at": "2014-06-07T22:05:56.799-03:00",
-                "active": true,
-                "id": 2,
-                "title": "xxx",
-                "field_type": "integer",
-                "filter": null,
-                "origin_field": null,
-                "category_inventory": null,
-                "category_report": null,
-                "requirements": {
-                  "presence": "true",
-                  "minimum": "10"
-                }
-              },
-              "id": 1
-            }
-          ],
-          "trigger_ids": [],
-          "responsible_user_id": 21,
-          "responsible_group_id": null
-        }
-      ],
-      "original_case": null,
-      "responsible_group": null,
-      "responsible_user": {
-        "google_plus_user_id": null,
-        "twitter_user_id": null,
-        "document": "57858662775",
-        "phone": "123456",
-        "email": "test001@mailinator.com",
-        "name": "Fulano",
-        "reset_password_token": null,
-        "salt": "902ad01d9d4767543203f8cdfc99d461",
-        "encrypted_password": "db5c8156b7fa81298287f802bc13e993aa7a78ebfbab3924d2e5c6a340081d275bcec708e17eb0504e041ef721b87433fd7de605ca539dd0f68594d1d9c7e24b",
-        "id": 21,
-        "address": "Rua",
-        "address_additional": null,
-        "postal_code": "18000000",
-        "district": "Sao Paulo",
-        "password_resetted_at": null,
-        "created_at": "2014-06-05T00:35:45.743-03:00",
-        "updated_at": "2014-06-05T00:35:45.743-03:00",
-        "facebook_user_id": null
-      },
-      "updated_by": null,
+      "completed": false,
+      "steps_not_fulfilled": [],
       "total_steps": 1,
-      "flow_version": 4,
-      "initial_flow_id": 1,
-      "updated_at": "2014-06-07T22:15:46.710-03:00",
-      "created_at": "2014-06-07T22:15:46.710-03:00",
+      "flow_version": 12,
+      "initial_flow_id": 6,
+      "updated_at": "2015-03-04T12:11:21.810-03:00",
+      "created_at": "2015-03-04T12:11:21.810-03:00",
       "updated_by_id": null,
-      "created_by_id": 21,
+      "created_by_id": 1,
+      "id": 2,
+      "disabled_steps": [],
+      "original_case_id": 1,
+      "children_case_ids": [],
+      "case_step_ids": [],
+      "next_step_id": 7,
+      "responsible_user_id": null,
+      "responsible_group_id": null,
+      "status": "active"
+    },
+    {
+      "completed": false,
+      "steps_not_fulfilled": [
+        4
+      ],
+      "total_steps": 2,
+      "flow_version": 8,
+      "initial_flow_id": 3,
+      "updated_at": "2015-03-04T12:11:21.818-03:00",
+      "created_at": "2015-03-04T11:11:46.891-03:00",
+      "updated_by_id": 1,
+      "created_by_id": 1,
       "id": 1,
       "disabled_steps": [],
       "original_case_id": null,
-      "children_case_ids": [],
+      "children_case_ids": [
+        2
+      ],
       "case_step_ids": [
         1
       ],
-      "next_step_id": null,
-      "responsible_user_id": 21,
+      "next_step_id": 4,
+      "responsible_user_id": 1,
       "responsible_group_id": null,
-      "created_by": {
-        "google_plus_user_id": null,
-        "twitter_user_id": null,
-        "facebook_user_id": null,
-        "created_at": "2014-06-05T00:35:45.743-03:00",
-        "district": "Sao Paulo",
-        "postal_code": "18000000",
-        "id": 21,
-        "name": "Fulano",
-        "groups": [
-          {
-            "permissions": {
-              "view_categories": "true",
-              "view_sections": "true"
-            },
-            "name": "Público",
-            "id": 1
-          }
-        ],
-        "email": "test001@mailinator.com",
-        "phone": "123456",
-        "document": "57858662775",
-        "address": "Rua",
-        "address_additional": null
-      }
+      "status": "transfer"
     },
     {
-      "next_step": null,
-      "case_steps": [
-        {
-          "updated_at": "2014-06-07T22:16:15.535-03:00",
-          "created_at": "2014-06-07T22:16:15.535-03:00",
-          "updated_by": null,
-          "created_by": {
-            "google_plus_user_id": null,
-            "twitter_user_id": null,
-            "facebook_user_id": null,
-            "created_at": "2014-06-05T00:35:45.743-03:00",
-            "district": "Sao Paulo",
-            "postal_code": "18000000",
-            "id": 21,
-            "name": "Fulano",
-            "groups": [
-              {
-                "permissions": {
-                  "view_categories": "true",
-                  "view_sections": "true"
-                },
-                "name": "Público",
-                "id": 1
-              }
-            ],
-            "email": "test001@mailinator.com",
-            "phone": "123456",
-            "document": "57858662775",
-            "address": "Rua",
-            "address_additional": null
-          },
-          "id": 2,
-          "case_id": 2,
-          "step_id": 1,
-          "step_version": 1,
-          "case_step_data_fields": [
-            {
-              "case_step_data_attachments": [],
-              "case_step_data_images": [],
-              "value": "10",
-              "field": {
-                "list_versions": null,
-                "last_version_id": null,
-                "last_version": 1,
-                "updated_at": "2014-06-07T22:05:56.799-03:00",
-                "created_at": "2014-06-07T22:05:56.799-03:00",
-                "active": true,
-                "id": 2,
-                "title": "xxx",
-                "field_type": "integer",
-                "filter": null,
-                "origin_field": null,
-                "category_inventory": null,
-                "category_report": null,
-                "requirements": {
-                  "presence": "true",
-                  "minimum": "10"
-                }
-              },
-              "id": 2
-            }
-          ],
-          "trigger_ids": [],
-          "responsible_user_id": 21,
-          "responsible_group_id": null
-        }
+      "completed": false,
+      "steps_not_fulfilled": [
+        4
       ],
-      "original_case": null,
-      "responsible_group": null,
-      "responsible_user": {
-        "google_plus_user_id": null,
-        "twitter_user_id": null,
-        "document": "57858662775",
-        "phone": "123456",
-        "email": "test001@mailinator.com",
-        "name": "Fulano",
-        "reset_password_token": null,
-        "salt": "902ad01d9d4767543203f8cdfc99d461",
-        "encrypted_password": "db5c8156b7fa81298287f802bc13e993aa7a78ebfbab3924d2e5c6a340081d275bcec708e17eb0504e041ef721b87433fd7de605ca539dd0f68594d1d9c7e24b",
-        "id": 21,
-        "address": "Rua",
-        "address_additional": null,
-        "postal_code": "18000000",
-        "district": "Sao Paulo",
-        "password_resetted_at": null,
-        "created_at": "2014-06-05T00:35:45.743-03:00",
-        "updated_at": "2014-06-05T00:35:45.743-03:00",
-        "facebook_user_id": null
-      },
-      "updated_by": null,
-      "total_steps": 1,
-      "flow_version": 4,
-      "initial_flow_id": 1,
-      "updated_at": "2014-06-07T22:16:15.533-03:00",
-      "created_at": "2014-06-07T22:16:15.533-03:00",
-      "updated_by_id": null,
-      "created_by_id": 21,
-      "id": 2,
+      "total_steps": 2,
+      "flow_version": 8,
+      "initial_flow_id": 3,
+      "updated_at": "2015-03-04T12:13:17.473-03:00",
+      "created_at": "2015-03-04T12:12:41.309-03:00",
+      "updated_by_id": 1,
+      "created_by_id": 1,
+      "id": 3,
       "disabled_steps": [],
       "original_case_id": null,
       "children_case_ids": [],
       "case_step_ids": [
         2
       ],
-      "next_step_id": null,
-      "responsible_user_id": 21,
+      "next_step_id": 4,
+      "responsible_user_id": 1,
       "responsible_group_id": null,
-      "created_by": {
-        "google_plus_user_id": null,
-        "twitter_user_id": null,
-        "facebook_user_id": null,
-        "created_at": "2014-06-05T00:35:45.743-03:00",
-        "district": "Sao Paulo",
-        "postal_code": "18000000",
-        "id": 21,
-        "name": "Fulano",
-        "groups": [
-          {
-            "permissions": {
-              "view_categories": "true",
-              "view_sections": "true"
-            },
-            "name": "Público",
-            "id": 1
-          }
-        ],
-        "email": "test001@mailinator.com",
-        "phone": "123456",
-        "document": "57858662775",
-        "address": "Rua",
-        "address_additional": null
-      }
+      "status": "active"
     }
   ]
+}
+```
+
+**Com display_type=full**
+Retorno consideravel extenso, retorna um Array de CaseObject (vide get /cases/1) com display_type=full
+```json
+{
+  "cases": [CaseObject, CaseObject]
 }
 ```
 ___
@@ -601,147 +1103,1293 @@ Status: 200
 Content-Type: application/json
 ```
 
+###### CaseObject
+| Nome                       | Tipo       | Descrição                                                                                                  |
+|----------------------------|------------|------------------------------------------------------------------------------------------------------------|
+| id                         | Interger   | ID do objeto.                                                                                              |
+| updated_at                 | DateTime   | Data e horário da última atualização do objeto.                                                            |
+| updated_by                 | Object     | Objeto do usuário que atualializou o objeto.                                                                |
+| updated_by_id              | Integer    | ID do usuário que atualializou o objeto.                                                                |
+| created_at                 | DateTime   | Data e horário da criação do objeto.                                                                       |
+| created_by                 | Object     | Objeto do usuário que criou o Caso.                                                                       |
+| created_by_id              | Integer    | ID do usuário que criou o Caso.                                                                       |
+| total_steps                | Integer    | Número total de Etapas do Caso.                                                                            |
+| get_responsible_group      | Object     | Grupo responsável pela Etapa atual.                                                                        |
+| get_responsible_group      | Object     | Grupo responsável pela Etapa atual.                                                                        |
+| responsible_user_id        | Integer    | ID do Usuário responsável pela Etapa atual.                                                                        |
+| responsible_group_id       | Integer    | ID do Grupo responsável pela Etapa atual.                                                                        |
+| get_responsible_user       | Object     | Usuário responsável pela Etapa atual.                                                                        |
+| status                     | String     | Status do Caso (active, pending, finished, inactive, transfer ou not_satisfied)                                                                |
+| completed                  | Boolean    | Se o Caso está completo                                                                                                                       |
+| case_steps                 | Array      | Array de Etapas Preenchidas no Caso (vide CaseStepObject)                                                                                      |
+| original_case              | Object     | Objeto do Caso original, quando um Caso foi transferido para outro Fluxo                                                                       |
+| original_case_id           | Integer    | ID do Objeto do Caso original, quando um Caso foi transferido para outro Fluxo                                                                       |
+| children_case_id           | Integer    | ID do Objeto do Caso filho, quando um Caso foi transferido para outro Fluxo                                                                       |
+| case_step_ids              | Array      | Array de IDs das Etapas Preenchidas (não é o ID da Etapa do Fluxo)                                                                             |
+| initial_flow_id            | Integer    | ID do Fluxo Inicial utilizado                                                                                                                  |
+| flow_version               | Integer    | ID da versão do Fluxo Inicial                                                                                                                  |
+| current_step               | Object     | Objeto da Etapa atual (vide CaseStepObject), última Etapa Preenchida                                                                           |
+| steps                      | Array      | Árvore de Array de todas Etapas do Caso (baseado no Fluxo Inicial) |
+| disabled_steps             | Array      | ID de Etapas desabilitadas por Gatilhos                           |
+| steps_not_fulfilled        | Array      | ID de Etapas não preenchidas quando o status do Caso é 'not_satisfied' |
+| next_step_id               | Integer    | ID da próxima Etapa a ser preenchida                                   |
+
+**Sem display_type**
 ```json
 {
   "case": {
-    "next_step": null,
-    "case_steps": [
-      {
-        "updated_at": "2014-06-07T22:16:15.535-03:00",
-        "created_at": "2014-06-07T22:16:15.535-03:00",
-        "updated_by": null,
-        "created_by": {
-          "google_plus_user_id": null,
-          "twitter_user_id": null,
-          "facebook_user_id": null,
-          "created_at": "2014-06-05T00:35:45.743-03:00",
-          "district": "Sao Paulo",
-          "postal_code": "18000000",
-          "id": 21,
-          "name": "Fulano",
-          "groups": [
-            {
-              "permissions": {
-                "view_categories": "true",
-                "view_sections": "true"
-              },
-              "name": "Público",
-              "id": 1
-            }
-          ],
-          "email": "test001@mailinator.com",
-          "phone": "123456",
-          "document": "57858662775",
-          "address": "Rua",
-          "address_additional": null
-        },
-        "id": 2,
-        "case_id": 2,
-        "step_id": 1,
-        "step_version": 1,
-        "case_step_data_fields": [
-          {
-            "case_step_data_attachments": [],
-            "case_step_data_images": [],
-            "value": "10",
-            "field": {
-              "list_versions": null,
-              "last_version_id": null,
-              "last_version": 1,
-              "updated_at": "2014-06-07T22:05:56.799-03:00",
-              "created_at": "2014-06-07T22:05:56.799-03:00",
-              "active": true,
-              "id": 2,
-              "title": "xxx",
-              "field_type": "integer",
-              "filter": null,
-              "origin_field": null,
-              "category_inventory": null,
-              "category_report": null,
-              "requirements": {
-                "presence": "true",
-                "minimum": "10"
-              }
-            },
-            "id": 2
-          }
-        ],
-        "trigger_ids": [],
-        "responsible_user_id": 21,
-        "responsible_group_id": null
-      }
+    "completed": false,
+    "steps_not_fulfilled": [
+      4
     ],
-    "original_case": null,
-    "responsible_group": null,
-    "responsible_user": {
-      "google_plus_user_id": null,
-      "twitter_user_id": null,
-      "document": "57858662775",
-      "phone": "123456",
-      "email": "test001@mailinator.com",
-      "name": "Fulano",
-      "reset_password_token": null,
-      "salt": "902ad01d9d4767543203f8cdfc99d461",
-      "encrypted_password": "db5c8156b7fa81298287f802bc13e993aa7a78ebfbab3924d2e5c6a340081d275bcec708e17eb0504e041ef721b87433fd7de605ca539dd0f68594d1d9c7e24b",
-      "id": 21,
-      "address": "Rua",
-      "address_additional": null,
-      "postal_code": "18000000",
-      "district": "Sao Paulo",
-      "password_resetted_at": null,
-      "created_at": "2014-06-05T00:35:45.743-03:00",
-      "updated_at": "2014-06-05T00:35:45.743-03:00",
-      "facebook_user_id": null
-    },
-    "updated_by": null,
-    "total_steps": 1,
-    "flow_version": 4,
-    "initial_flow_id": 1,
-    "updated_at": "2014-06-07T22:16:15.533-03:00",
-    "created_at": "2014-06-07T22:16:15.533-03:00",
-    "updated_by_id": null,
-    "created_by_id": 21,
-    "id": 2,
+    "total_steps": 2,
+    "flow_version": 8,
+    "initial_flow_id": 3,
+    "updated_at": "2015-03-04T11:21:27.385-03:00",
+    "created_at": "2015-03-04T11:11:46.891-03:00",
+    "updated_by_id": 1,
+    "created_by_id": 1,
+    "id": 1,
     "disabled_steps": [],
     "original_case_id": null,
     "children_case_ids": [],
     "case_step_ids": [
-      2
+      1
     ],
-    "next_step_id": null,
-    "responsible_user_id": 21,
+    "next_step_id": 4,
+    "responsible_user_id": 1,
     "responsible_group_id": null,
-    "created_by": {
-      "google_plus_user_id": null,
-      "twitter_user_id": null,
-      "facebook_user_id": null,
-      "created_at": "2014-06-05T00:35:45.743-03:00",
-      "district": "Sao Paulo",
-      "postal_code": "18000000",
-      "id": 21,
-      "name": "Fulano",
-      "groups": [
-        {
-          "permissions": {
-            "view_categories": "true",
-            "view_sections": "true"
-          },
-          "name": "Público",
-          "id": 1
-        }
-      ],
-      "email": "test001@mailinator.com",
-      "phone": "123456",
-      "document": "57858662775",
-      "address": "Rua",
-      "address_additional": null
-    }
+    "status": "active"
   }
 }
 ```
+
+**Com display_type=full**
+```json
+{
+  "case": {
+    "steps": [
+      {
+        "steps": [],
+        "flow": {
+          "steps_versions": {},
+          "resolution_states_versions": {},
+          "draft": false,
+          "current_version": null,
+          "step_id": null,
+          "status": "pending",
+          "id": 4,
+          "title": "Fluxo Filho",
+          "description": null,
+          "created_by_id": 1,
+          "updated_by_id": 1,
+          "initial": false,
+          "created_at": "2015-03-04T00:30:40.425-03:00",
+          "updated_at": "2015-03-04T00:31:03.225-03:00"
+        },
+        "step": {
+          "triggers_versions": {},
+          "fields_versions": {},
+          "user_id": 1,
+          "draft": false,
+          "conduction_mode_open": true,
+          "child_flow_version": null,
+          "child_flow_id": 4,
+          "id": 6,
+          "title": "Etapa 3",
+          "description": null,
+          "step_type": "flow",
+          "flow_id": 3,
+          "created_at": "2015-03-04T00:31:37.531-03:00",
+          "updated_at": "2015-03-04T00:51:47.252-03:00",
+          "active": true
+        }
+      },
+      {
+        "steps": [],
+        "flow": null,
+        "step": {
+          "triggers_versions": {},
+          "fields_versions": {
+            "3": 5
+          },
+          "user_id": 1,
+          "draft": false,
+          "conduction_mode_open": true,
+          "child_flow_version": null,
+          "child_flow_id": null,
+          "id": 5,
+          "title": "Etapa 2",
+          "description": null,
+          "step_type": "form",
+          "flow_id": 3,
+          "created_at": "2015-03-04T00:30:06.214-03:00",
+          "updated_at": "2015-03-04T00:51:47.232-03:00",
+          "active": true
+        }
+      },
+      {
+        "steps": [],
+        "flow": null,
+        "step": {
+          "triggers_versions": {},
+          "fields_versions": {
+            "2": 3
+          },
+          "user_id": 1,
+          "draft": false,
+          "conduction_mode_open": true,
+          "child_flow_version": null,
+          "child_flow_id": null,
+          "id": 4,
+          "title": "Etapa 1",
+          "description": null,
+          "step_type": "form",
+          "flow_id": 3,
+          "created_at": "2015-03-04T00:24:26.529-03:00",
+          "updated_at": "2015-03-04T00:51:47.210-03:00",
+          "active": true
+        }
+      }
+    ],
+    "current_step": {
+      "updated_by": {
+        "google_plus_user_id": null,
+        "twitter_user_id": null,
+        "document": "67392343700",
+        "phone": "11912231545",
+        "email": "euricovidal@gmail.com",
+        "groups_names": [
+          "Administradores"
+        ],
+        "permissions": {
+          "flow_can_delete_own_cases": [],
+          "flow_can_delete_all_cases": [],
+          "create_reports_from_panel": true,
+          "updated_at": "2015-03-03T10:45:07.465-03:00",
+          "created_at": "2015-03-03T10:45:07.461-03:00",
+          "view_categories": false,
+          "edit_reports": true,
+          "edit_inventory_items": true,
+          "delete_reports": false,
+          "delete_inventory_items": false,
+          "manage_config": true,
+          "manage_inventory_formulas": true,
+          "manage_reports": true,
+          "id": 2,
+          "group_id": 2,
+          "manage_flows": true,
+          "manage_users": true,
+          "manage_inventory_categories": true,
+          "manage_inventory_items": true,
+          "manage_groups": true,
+          "manage_reports_categories": true,
+          "view_sections": false,
+          "panel_access": true,
+          "groups_can_edit": [],
+          "groups_can_view": [],
+          "reports_categories_can_edit": [],
+          "reports_categories_can_view": [],
+          "inventory_categories_can_edit": [],
+          "inventory_categories_can_view": [],
+          "inventory_sections_can_view": [],
+          "inventory_sections_can_edit": [],
+          "inventory_fields_can_edit": [],
+          "inventory_fields_can_view": [],
+          "flow_can_view_all_steps": [],
+          "flow_can_execute_all_steps": [
+            3
+          ],
+          "can_view_step": [],
+          "can_execute_step": []
+        },
+        "groups": [
+          {
+            "permissions": {
+              "flow_can_delete_own_cases": [],
+              "flow_can_delete_all_cases": [],
+              "create_reports_from_panel": true,
+              "updated_at": "2015-03-03T10:45:07.465-03:00",
+              "created_at": "2015-03-03T10:45:07.461-03:00",
+              "view_categories": false,
+              "edit_reports": true,
+              "edit_inventory_items": true,
+              "delete_reports": false,
+              "delete_inventory_items": false,
+              "manage_config": true,
+              "manage_inventory_formulas": true,
+              "manage_reports": true,
+              "id": 2,
+              "group_id": 2,
+              "manage_flows": true,
+              "manage_users": true,
+              "manage_inventory_categories": true,
+              "manage_inventory_items": true,
+              "manage_groups": true,
+              "manage_reports_categories": true,
+              "view_sections": false,
+              "panel_access": true,
+              "groups_can_edit": [],
+              "groups_can_view": [],
+              "reports_categories_can_edit": [],
+              "reports_categories_can_view": [],
+              "inventory_categories_can_edit": [],
+              "inventory_categories_can_view": [],
+              "inventory_sections_can_view": [],
+              "inventory_sections_can_edit": [],
+              "inventory_fields_can_edit": [],
+              "inventory_fields_can_view": [],
+              "flow_can_view_all_steps": [],
+              "flow_can_execute_all_steps": [
+                3
+              ],
+              "can_view_step": [],
+              "can_execute_step": []
+            },
+            "name": "Administradores",
+            "id": 2
+          }
+        ],
+        "name": "Hellen Armstrong Sr.",
+        "id": 1,
+        "address": "430 Danika Parkways",
+        "address_additional": "Suite 386",
+        "postal_code": "04005000",
+        "district": "Lake Elsafort",
+        "device_token": "445dcfb912fade983885d17f9aa42448",
+        "device_type": "ios",
+        "created_at": "2015-03-03T10:45:08.037-03:00",
+        "facebook_user_id": null
+      },
+      "created_by": {
+        "google_plus_user_id": null,
+        "twitter_user_id": null,
+        "document": "67392343700",
+        "phone": "11912231545",
+        "email": "euricovidal@gmail.com",
+        "groups_names": [
+          "Administradores"
+        ],
+        "permissions": {
+          "flow_can_delete_own_cases": [],
+          "flow_can_delete_all_cases": [],
+          "create_reports_from_panel": true,
+          "updated_at": "2015-03-03T10:45:07.465-03:00",
+          "created_at": "2015-03-03T10:45:07.461-03:00",
+          "view_categories": false,
+          "edit_reports": true,
+          "edit_inventory_items": true,
+          "delete_reports": false,
+          "delete_inventory_items": false,
+          "manage_config": true,
+          "manage_inventory_formulas": true,
+          "manage_reports": true,
+          "id": 2,
+          "group_id": 2,
+          "manage_flows": true,
+          "manage_users": true,
+          "manage_inventory_categories": true,
+          "manage_inventory_items": true,
+          "manage_groups": true,
+          "manage_reports_categories": true,
+          "view_sections": false,
+          "panel_access": true,
+          "groups_can_edit": [],
+          "groups_can_view": [],
+          "reports_categories_can_edit": [],
+          "reports_categories_can_view": [],
+          "inventory_categories_can_edit": [],
+          "inventory_categories_can_view": [],
+          "inventory_sections_can_view": [],
+          "inventory_sections_can_edit": [],
+          "inventory_fields_can_edit": [],
+          "inventory_fields_can_view": [],
+          "flow_can_view_all_steps": [],
+          "flow_can_execute_all_steps": [
+            3
+          ],
+          "can_view_step": [],
+          "can_execute_step": []
+        },
+        "groups": [
+          {
+            "permissions": {
+              "flow_can_delete_own_cases": [],
+              "flow_can_delete_all_cases": [],
+              "create_reports_from_panel": true,
+              "updated_at": "2015-03-03T10:45:07.465-03:00",
+              "created_at": "2015-03-03T10:45:07.461-03:00",
+              "view_categories": false,
+              "edit_reports": true,
+              "edit_inventory_items": true,
+              "delete_reports": false,
+              "delete_inventory_items": false,
+              "manage_config": true,
+              "manage_inventory_formulas": true,
+              "manage_reports": true,
+              "id": 2,
+              "group_id": 2,
+              "manage_flows": true,
+              "manage_users": true,
+              "manage_inventory_categories": true,
+              "manage_inventory_items": true,
+              "manage_groups": true,
+              "manage_reports_categories": true,
+              "view_sections": false,
+              "panel_access": true,
+              "groups_can_edit": [],
+              "groups_can_view": [],
+              "reports_categories_can_edit": [],
+              "reports_categories_can_view": [],
+              "inventory_categories_can_edit": [],
+              "inventory_categories_can_view": [],
+              "inventory_sections_can_view": [],
+              "inventory_sections_can_edit": [],
+              "inventory_fields_can_edit": [],
+              "inventory_fields_can_view": [],
+              "flow_can_view_all_steps": [],
+              "flow_can_execute_all_steps": [
+                3
+              ],
+              "can_view_step": [],
+              "can_execute_step": []
+            },
+            "name": "Administradores",
+            "id": 2
+          }
+        ],
+        "name": "Hellen Armstrong Sr.",
+        "id": 1,
+        "address": "430 Danika Parkways",
+        "address_additional": "Suite 386",
+        "postal_code": "04005000",
+        "district": "Lake Elsafort",
+        "device_token": "445dcfb912fade983885d17f9aa42448",
+        "device_type": "ios",
+        "created_at": "2015-03-03T10:45:08.037-03:00",
+        "facebook_user_id": null
+      },
+      "case_step_data_fields": [
+        {
+          "case_step_data_attachments": [],
+          "case_step_data_images": [],
+          "value": "teste",
+          "field": {
+            "list_versions": [
+              {
+                "previous_field": null,
+                "created_at": "2015-03-04T00:29:36.020-03:00",
+                "updated_at": "2015-03-04T00:51:47.192-03:00",
+                "version_id": 3,
+                "active": true,
+                "values": null,
+                "id": 2,
+                "title": "Campo 1",
+                "field_type": "text",
+                "filter": null,
+                "origin_field_id": null,
+                "category_inventory": null,
+                "category_report": null,
+                "requirements": {
+                  "presence": "true"
+                }
+              }
+            ],
+            "previous_field": null,
+            "created_at": "2015-03-04T00:29:36.020-03:00",
+            "updated_at": "2015-03-04T00:51:47.192-03:00",
+            "version_id": null,
+            "active": true,
+            "values": null,
+            "id": 2,
+            "title": "Campo 1",
+            "field_type": "text",
+            "filter": null,
+            "origin_field_id": null,
+            "category_inventory": null,
+            "category_report": null,
+            "requirements": {
+              "presence": "true"
+            }
+          },
+          "id": 1
+        }
+      ],
+      "created_at": "2015-03-04T11:11:46.894-03:00",
+      "updated_at": "2015-03-04T11:21:27.267-03:00",
+      "id": 1,
+      "step_id": 5,
+      "step_version": 6,
+      "my_step": {
+        "list_versions": [
+          {
+            "created_at": "2015-03-04T00:30:06.214-03:00",
+            "updated_at": "2015-03-04T00:51:47.232-03:00",
+            "permissions": {
+              "can_execute_step": [],
+              "can_view_step": []
+            },
+            "version_id": 6,
+            "active": true,
+            "id": 5,
+            "title": "Etapa 2",
+            "conduction_mode_open": true,
+            "step_type": "form",
+            "child_flow": null,
+            "my_child_flow": null,
+            "fields": [
+              {
+                "draft": false,
+                "step_id": 5,
+                "active": true,
+                "origin_field_id": null,
+                "category_report_id": null,
+                "category_inventory_id": null,
+                "field_type": "text",
+                "title": "Campo 1",
+                "id": 3,
+                "created_at": "2015-03-04T00:30:27.297-03:00",
+                "updated_at": "2015-03-04T00:51:47.224-03:00",
+                "multiple": false,
+                "filter": null,
+                "requirements": null,
+                "values": null,
+                "user_id": 1,
+                "origin_field_version": null
+              }
+            ],
+            "my_fields": [
+              {
+                "draft": false,
+                "step_id": 5,
+                "active": true,
+                "origin_field_id": null,
+                "category_report_id": null,
+                "category_inventory_id": null,
+                "field_type": "text",
+                "title": "Campo 1",
+                "id": 3,
+                "created_at": "2015-03-04T00:30:27.297-03:00",
+                "updated_at": "2015-03-04T00:51:47.224-03:00",
+                "multiple": false,
+                "filter": null,
+                "requirements": null,
+                "values": null,
+                "user_id": 1,
+                "origin_field_version": null
+              }
+            ]
+          }
+        ],
+        "created_at": "2015-03-04T00:30:06.214-03:00",
+        "updated_at": "2015-03-04T00:51:47.232-03:00",
+        "permissions": {
+          "can_execute_step": [],
+          "can_view_step": []
+        },
+        "version_id": 6,
+        "active": true,
+        "id": 5,
+        "title": "Etapa 2",
+        "conduction_mode_open": true,
+        "step_type": "form",
+        "child_flow": null,
+        "my_child_flow": null,
+        "fields": [
+          {
+            "draft": false,
+            "step_id": 5,
+            "active": true,
+            "origin_field_id": null,
+            "category_report_id": null,
+            "category_inventory_id": null,
+            "field_type": "text",
+            "title": "Campo 1",
+            "id": 3,
+            "created_at": "2015-03-04T00:30:27.297-03:00",
+            "updated_at": "2015-03-04T00:51:47.224-03:00",
+            "multiple": false,
+            "filter": null,
+            "requirements": null,
+            "values": null,
+            "user_id": 1,
+            "origin_field_version": null
+          }
+        ],
+        "my_fields": [
+          {
+            "draft": false,
+            "step_id": 5,
+            "active": true,
+            "origin_field_id": null,
+            "category_report_id": null,
+            "category_inventory_id": null,
+            "field_type": "text",
+            "title": "Campo 1",
+            "id": 3,
+            "created_at": "2015-03-04T00:30:27.297-03:00",
+            "updated_at": "2015-03-04T00:51:47.224-03:00",
+            "multiple": false,
+            "filter": null,
+            "requirements": null,
+            "values": null,
+            "user_id": 1,
+            "origin_field_version": null
+          }
+        ]
+      },
+      "trigger_ids": [],
+      "responsible_user_id": 1,
+      "responsible_group_id": null,
+      "executed": true
+    },
+    "case_steps": [
+      {
+        "updated_by": {
+          "google_plus_user_id": null,
+          "twitter_user_id": null,
+          "document": "67392343700",
+          "phone": "11912231545",
+          "email": "euricovidal@gmail.com",
+          "groups_names": [
+            "Administradores"
+          ],
+          "permissions": {
+            "flow_can_delete_own_cases": [],
+            "flow_can_delete_all_cases": [],
+            "create_reports_from_panel": true,
+            "updated_at": "2015-03-03T10:45:07.465-03:00",
+            "created_at": "2015-03-03T10:45:07.461-03:00",
+            "view_categories": false,
+            "edit_reports": true,
+            "edit_inventory_items": true,
+            "delete_reports": false,
+            "delete_inventory_items": false,
+            "manage_config": true,
+            "manage_inventory_formulas": true,
+            "manage_reports": true,
+            "id": 2,
+            "group_id": 2,
+            "manage_flows": true,
+            "manage_users": true,
+            "manage_inventory_categories": true,
+            "manage_inventory_items": true,
+            "manage_groups": true,
+            "manage_reports_categories": true,
+            "view_sections": false,
+            "panel_access": true,
+            "groups_can_edit": [],
+            "groups_can_view": [],
+            "reports_categories_can_edit": [],
+            "reports_categories_can_view": [],
+            "inventory_categories_can_edit": [],
+            "inventory_categories_can_view": [],
+            "inventory_sections_can_view": [],
+            "inventory_sections_can_edit": [],
+            "inventory_fields_can_edit": [],
+            "inventory_fields_can_view": [],
+            "flow_can_view_all_steps": [],
+            "flow_can_execute_all_steps": [
+              3
+            ],
+            "can_view_step": [],
+            "can_execute_step": []
+          },
+          "groups": [
+            {
+              "permissions": {
+                "flow_can_delete_own_cases": [],
+                "flow_can_delete_all_cases": [],
+                "create_reports_from_panel": true,
+                "updated_at": "2015-03-03T10:45:07.465-03:00",
+                "created_at": "2015-03-03T10:45:07.461-03:00",
+                "view_categories": false,
+                "edit_reports": true,
+                "edit_inventory_items": true,
+                "delete_reports": false,
+                "delete_inventory_items": false,
+                "manage_config": true,
+                "manage_inventory_formulas": true,
+                "manage_reports": true,
+                "id": 2,
+                "group_id": 2,
+                "manage_flows": true,
+                "manage_users": true,
+                "manage_inventory_categories": true,
+                "manage_inventory_items": true,
+                "manage_groups": true,
+                "manage_reports_categories": true,
+                "view_sections": false,
+                "panel_access": true,
+                "groups_can_edit": [],
+                "groups_can_view": [],
+                "reports_categories_can_edit": [],
+                "reports_categories_can_view": [],
+                "inventory_categories_can_edit": [],
+                "inventory_categories_can_view": [],
+                "inventory_sections_can_view": [],
+                "inventory_sections_can_edit": [],
+                "inventory_fields_can_edit": [],
+                "inventory_fields_can_view": [],
+                "flow_can_view_all_steps": [],
+                "flow_can_execute_all_steps": [
+                  3
+                ],
+                "can_view_step": [],
+                "can_execute_step": []
+              },
+              "name": "Administradores",
+              "id": 2
+            }
+          ],
+          "name": "Hellen Armstrong Sr.",
+          "id": 1,
+          "address": "430 Danika Parkways",
+          "address_additional": "Suite 386",
+          "postal_code": "04005000",
+          "district": "Lake Elsafort",
+          "device_token": "445dcfb912fade983885d17f9aa42448",
+          "device_type": "ios",
+          "created_at": "2015-03-03T10:45:08.037-03:00",
+          "facebook_user_id": null
+        },
+        "created_by": {
+          "google_plus_user_id": null,
+          "twitter_user_id": null,
+          "document": "67392343700",
+          "phone": "11912231545",
+          "email": "euricovidal@gmail.com",
+          "groups_names": [
+            "Administradores"
+          ],
+          "permissions": {
+            "flow_can_delete_own_cases": [],
+            "flow_can_delete_all_cases": [],
+            "create_reports_from_panel": true,
+            "updated_at": "2015-03-03T10:45:07.465-03:00",
+            "created_at": "2015-03-03T10:45:07.461-03:00",
+            "view_categories": false,
+            "edit_reports": true,
+            "edit_inventory_items": true,
+            "delete_reports": false,
+            "delete_inventory_items": false,
+            "manage_config": true,
+            "manage_inventory_formulas": true,
+            "manage_reports": true,
+            "id": 2,
+            "group_id": 2,
+            "manage_flows": true,
+            "manage_users": true,
+            "manage_inventory_categories": true,
+            "manage_inventory_items": true,
+            "manage_groups": true,
+            "manage_reports_categories": true,
+            "view_sections": false,
+            "panel_access": true,
+            "groups_can_edit": [],
+            "groups_can_view": [],
+            "reports_categories_can_edit": [],
+            "reports_categories_can_view": [],
+            "inventory_categories_can_edit": [],
+            "inventory_categories_can_view": [],
+            "inventory_sections_can_view": [],
+            "inventory_sections_can_edit": [],
+            "inventory_fields_can_edit": [],
+            "inventory_fields_can_view": [],
+            "flow_can_view_all_steps": [],
+            "flow_can_execute_all_steps": [
+              3
+            ],
+            "can_view_step": [],
+            "can_execute_step": []
+          },
+          "groups": [
+            {
+              "permissions": {
+                "flow_can_delete_own_cases": [],
+                "flow_can_delete_all_cases": [],
+                "create_reports_from_panel": true,
+                "updated_at": "2015-03-03T10:45:07.465-03:00",
+                "created_at": "2015-03-03T10:45:07.461-03:00",
+                "view_categories": false,
+                "edit_reports": true,
+                "edit_inventory_items": true,
+                "delete_reports": false,
+                "delete_inventory_items": false,
+                "manage_config": true,
+                "manage_inventory_formulas": true,
+                "manage_reports": true,
+                "id": 2,
+                "group_id": 2,
+                "manage_flows": true,
+                "manage_users": true,
+                "manage_inventory_categories": true,
+                "manage_inventory_items": true,
+                "manage_groups": true,
+                "manage_reports_categories": true,
+                "view_sections": false,
+                "panel_access": true,
+                "groups_can_edit": [],
+                "groups_can_view": [],
+                "reports_categories_can_edit": [],
+                "reports_categories_can_view": [],
+                "inventory_categories_can_edit": [],
+                "inventory_categories_can_view": [],
+                "inventory_sections_can_view": [],
+                "inventory_sections_can_edit": [],
+                "inventory_fields_can_edit": [],
+                "inventory_fields_can_view": [],
+                "flow_can_view_all_steps": [],
+                "flow_can_execute_all_steps": [
+                  3
+                ],
+                "can_view_step": [],
+                "can_execute_step": []
+              },
+              "name": "Administradores",
+              "id": 2
+            }
+          ],
+          "name": "Hellen Armstrong Sr.",
+          "id": 1,
+          "address": "430 Danika Parkways",
+          "address_additional": "Suite 386",
+          "postal_code": "04005000",
+          "district": "Lake Elsafort",
+          "device_token": "445dcfb912fade983885d17f9aa42448",
+          "device_type": "ios",
+          "created_at": "2015-03-03T10:45:08.037-03:00",
+          "facebook_user_id": null
+        },
+        "case_step_data_fields": [
+          {
+            "case_step_data_attachments": [],
+            "case_step_data_images": [],
+            "value": "teste",
+            "field": {
+              "list_versions": [
+                {
+                  "previous_field": null,
+                  "created_at": "2015-03-04T00:29:36.020-03:00",
+                  "updated_at": "2015-03-04T00:51:47.192-03:00",
+                  "version_id": 3,
+                  "active": true,
+                  "values": null,
+                  "id": 2,
+                  "title": "Campo 1",
+                  "field_type": "text",
+                  "filter": null,
+                  "origin_field_id": null,
+                  "category_inventory": null,
+                  "category_report": null,
+                  "requirements": {
+                    "presence": "true"
+                  }
+                }
+              ],
+              "previous_field": null,
+              "created_at": "2015-03-04T00:29:36.020-03:00",
+              "updated_at": "2015-03-04T00:51:47.192-03:00",
+              "version_id": null,
+              "active": true,
+              "values": null,
+              "id": 2,
+              "title": "Campo 1",
+              "field_type": "text",
+              "filter": null,
+              "origin_field_id": null,
+              "category_inventory": null,
+              "category_report": null,
+              "requirements": {
+                "presence": "true"
+              }
+            },
+            "id": 1
+          }
+        ],
+        "created_at": "2015-03-04T11:11:46.894-03:00",
+        "updated_at": "2015-03-04T11:21:27.267-03:00",
+        "id": 1,
+        "step_id": 5,
+        "step_version": 6,
+        "my_step": {
+          "list_versions": [
+            {
+              "created_at": "2015-03-04T00:30:06.214-03:00",
+              "updated_at": "2015-03-04T00:51:47.232-03:00",
+              "permissions": {
+                "can_execute_step": [],
+                "can_view_step": []
+              },
+              "version_id": 6,
+              "active": true,
+              "id": 5,
+              "title": "Etapa 2",
+              "conduction_mode_open": true,
+              "step_type": "form",
+              "child_flow": null,
+              "my_child_flow": null,
+              "fields": [
+                {
+                  "draft": false,
+                  "step_id": 5,
+                  "active": true,
+                  "origin_field_id": null,
+                  "category_report_id": null,
+                  "category_inventory_id": null,
+                  "field_type": "text",
+                  "title": "Campo 1",
+                  "id": 3,
+                  "created_at": "2015-03-04T00:30:27.297-03:00",
+                  "updated_at": "2015-03-04T00:51:47.224-03:00",
+                  "multiple": false,
+                  "filter": null,
+                  "requirements": null,
+                  "values": null,
+                  "user_id": 1,
+                  "origin_field_version": null
+                }
+              ],
+              "my_fields": [
+                {
+                  "draft": false,
+                  "step_id": 5,
+                  "active": true,
+                  "origin_field_id": null,
+                  "category_report_id": null,
+                  "category_inventory_id": null,
+                  "field_type": "text",
+                  "title": "Campo 1",
+                  "id": 3,
+                  "created_at": "2015-03-04T00:30:27.297-03:00",
+                  "updated_at": "2015-03-04T00:51:47.224-03:00",
+                  "multiple": false,
+                  "filter": null,
+                  "requirements": null,
+                  "values": null,
+                  "user_id": 1,
+                  "origin_field_version": null
+                }
+              ]
+            }
+          ],
+          "created_at": "2015-03-04T00:30:06.214-03:00",
+          "updated_at": "2015-03-04T00:51:47.232-03:00",
+          "permissions": {
+            "can_execute_step": [],
+            "can_view_step": []
+          },
+          "version_id": 6,
+          "active": true,
+          "id": 5,
+          "title": "Etapa 2",
+          "conduction_mode_open": true,
+          "step_type": "form",
+          "child_flow": null,
+          "my_child_flow": null,
+          "fields": [
+            {
+              "draft": false,
+              "step_id": 5,
+              "active": true,
+              "origin_field_id": null,
+              "category_report_id": null,
+              "category_inventory_id": null,
+              "field_type": "text",
+              "title": "Campo 1",
+              "id": 3,
+              "created_at": "2015-03-04T00:30:27.297-03:00",
+              "updated_at": "2015-03-04T00:51:47.224-03:00",
+              "multiple": false,
+              "filter": null,
+              "requirements": null,
+              "values": null,
+              "user_id": 1,
+              "origin_field_version": null
+            }
+          ],
+          "my_fields": [
+            {
+              "draft": false,
+              "step_id": 5,
+              "active": true,
+              "origin_field_id": null,
+              "category_report_id": null,
+              "category_inventory_id": null,
+              "field_type": "text",
+              "title": "Campo 1",
+              "id": 3,
+              "created_at": "2015-03-04T00:30:27.297-03:00",
+              "updated_at": "2015-03-04T00:51:47.224-03:00",
+              "multiple": false,
+              "filter": null,
+              "requirements": null,
+              "values": null,
+              "user_id": 1,
+              "origin_field_version": null
+            }
+          ]
+        },
+        "trigger_ids": [],
+        "responsible_user_id": 1,
+        "responsible_group_id": null,
+        "executed": true
+      }
+    ],
+    "original_case": null,
+    "get_responsible_group": null,
+    "get_responsible_user": {
+      "google_plus_user_id": null,
+      "twitter_user_id": null,
+      "document": "67392343700",
+      "phone": "11912231545",
+      "email": "euricovidal@gmail.com",
+      "groups_names": [
+        "Administradores"
+      ],
+      "permissions": {
+        "flow_can_delete_own_cases": [],
+        "flow_can_delete_all_cases": [],
+        "create_reports_from_panel": true,
+        "updated_at": "2015-03-03T10:45:07.465-03:00",
+        "created_at": "2015-03-03T10:45:07.461-03:00",
+        "view_categories": false,
+        "edit_reports": true,
+        "edit_inventory_items": true,
+        "delete_reports": false,
+        "delete_inventory_items": false,
+        "manage_config": true,
+        "manage_inventory_formulas": true,
+        "manage_reports": true,
+        "id": 2,
+        "group_id": 2,
+        "manage_flows": true,
+        "manage_users": true,
+        "manage_inventory_categories": true,
+        "manage_inventory_items": true,
+        "manage_groups": true,
+        "manage_reports_categories": true,
+        "view_sections": false,
+        "panel_access": true,
+        "groups_can_edit": [],
+        "groups_can_view": [],
+        "reports_categories_can_edit": [],
+        "reports_categories_can_view": [],
+        "inventory_categories_can_edit": [],
+        "inventory_categories_can_view": [],
+        "inventory_sections_can_view": [],
+        "inventory_sections_can_edit": [],
+        "inventory_fields_can_edit": [],
+        "inventory_fields_can_view": [],
+        "flow_can_view_all_steps": [],
+        "flow_can_execute_all_steps": [
+          3
+        ],
+        "can_view_step": [],
+        "can_execute_step": []
+      },
+      "groups": [
+        {
+          "permissions": {
+            "flow_can_delete_own_cases": [],
+            "flow_can_delete_all_cases": [],
+            "create_reports_from_panel": true,
+            "updated_at": "2015-03-03T10:45:07.465-03:00",
+            "created_at": "2015-03-03T10:45:07.461-03:00",
+            "view_categories": false,
+            "edit_reports": true,
+            "edit_inventory_items": true,
+            "delete_reports": false,
+            "delete_inventory_items": false,
+            "manage_config": true,
+            "manage_inventory_formulas": true,
+            "manage_reports": true,
+            "id": 2,
+            "group_id": 2,
+            "manage_flows": true,
+            "manage_users": true,
+            "manage_inventory_categories": true,
+            "manage_inventory_items": true,
+            "manage_groups": true,
+            "manage_reports_categories": true,
+            "view_sections": false,
+            "panel_access": true,
+            "groups_can_edit": [],
+            "groups_can_view": [],
+            "reports_categories_can_edit": [],
+            "reports_categories_can_view": [],
+            "inventory_categories_can_edit": [],
+            "inventory_categories_can_view": [],
+            "inventory_sections_can_view": [],
+            "inventory_sections_can_edit": [],
+            "inventory_fields_can_edit": [],
+            "inventory_fields_can_view": [],
+            "flow_can_view_all_steps": [],
+            "flow_can_execute_all_steps": [
+              3
+            ],
+            "can_view_step": [],
+            "can_execute_step": []
+          },
+          "name": "Administradores",
+          "id": 2
+        }
+      ],
+      "name": "Hellen Armstrong Sr.",
+      "id": 1,
+      "address": "430 Danika Parkways",
+      "address_additional": "Suite 386",
+      "postal_code": "04005000",
+      "district": "Lake Elsafort",
+      "device_token": "445dcfb912fade983885d17f9aa42448",
+      "device_type": "ios",
+      "created_at": "2015-03-03T10:45:08.037-03:00",
+      "facebook_user_id": null
+    },
+    "updated_by": {
+      "google_plus_user_id": null,
+      "twitter_user_id": null,
+      "document": "67392343700",
+      "phone": "11912231545",
+      "email": "euricovidal@gmail.com",
+      "groups_names": [
+        "Administradores"
+      ],
+      "permissions": {
+        "flow_can_delete_own_cases": [],
+        "flow_can_delete_all_cases": [],
+        "create_reports_from_panel": true,
+        "updated_at": "2015-03-03T10:45:07.465-03:00",
+        "created_at": "2015-03-03T10:45:07.461-03:00",
+        "view_categories": false,
+        "edit_reports": true,
+        "edit_inventory_items": true,
+        "delete_reports": false,
+        "delete_inventory_items": false,
+        "manage_config": true,
+        "manage_inventory_formulas": true,
+        "manage_reports": true,
+        "id": 2,
+        "group_id": 2,
+        "manage_flows": true,
+        "manage_users": true,
+        "manage_inventory_categories": true,
+        "manage_inventory_items": true,
+        "manage_groups": true,
+        "manage_reports_categories": true,
+        "view_sections": false,
+        "panel_access": true,
+        "groups_can_edit": [],
+        "groups_can_view": [],
+        "reports_categories_can_edit": [],
+        "reports_categories_can_view": [],
+        "inventory_categories_can_edit": [],
+        "inventory_categories_can_view": [],
+        "inventory_sections_can_view": [],
+        "inventory_sections_can_edit": [],
+        "inventory_fields_can_edit": [],
+        "inventory_fields_can_view": [],
+        "flow_can_view_all_steps": [],
+        "flow_can_execute_all_steps": [
+          3
+        ],
+        "can_view_step": [],
+        "can_execute_step": []
+      },
+      "groups": [
+        {
+          "permissions": {
+            "flow_can_delete_own_cases": [],
+            "flow_can_delete_all_cases": [],
+            "create_reports_from_panel": true,
+            "updated_at": "2015-03-03T10:45:07.465-03:00",
+            "created_at": "2015-03-03T10:45:07.461-03:00",
+            "view_categories": false,
+            "edit_reports": true,
+            "edit_inventory_items": true,
+            "delete_reports": false,
+            "delete_inventory_items": false,
+            "manage_config": true,
+            "manage_inventory_formulas": true,
+            "manage_reports": true,
+            "id": 2,
+            "group_id": 2,
+            "manage_flows": true,
+            "manage_users": true,
+            "manage_inventory_categories": true,
+            "manage_inventory_items": true,
+            "manage_groups": true,
+            "manage_reports_categories": true,
+            "view_sections": false,
+            "panel_access": true,
+            "groups_can_edit": [],
+            "groups_can_view": [],
+            "reports_categories_can_edit": [],
+            "reports_categories_can_view": [],
+            "inventory_categories_can_edit": [],
+            "inventory_categories_can_view": [],
+            "inventory_sections_can_view": [],
+            "inventory_sections_can_edit": [],
+            "inventory_fields_can_edit": [],
+            "inventory_fields_can_view": [],
+            "flow_can_view_all_steps": [],
+            "flow_can_execute_all_steps": [
+              3
+            ],
+            "can_view_step": [],
+            "can_execute_step": []
+          },
+          "name": "Administradores",
+          "id": 2
+        }
+      ],
+      "name": "Hellen Armstrong Sr.",
+      "id": 1,
+      "address": "430 Danika Parkways",
+      "address_additional": "Suite 386",
+      "postal_code": "04005000",
+      "district": "Lake Elsafort",
+      "device_token": "445dcfb912fade983885d17f9aa42448",
+      "device_type": "ios",
+      "created_at": "2015-03-03T10:45:08.037-03:00",
+      "facebook_user_id": null
+    },
+    "created_by": {
+      "google_plus_user_id": null,
+      "twitter_user_id": null,
+      "document": "67392343700",
+      "phone": "11912231545",
+      "email": "euricovidal@gmail.com",
+      "groups_names": [
+        "Administradores"
+      ],
+      "permissions": {
+        "flow_can_delete_own_cases": [],
+        "flow_can_delete_all_cases": [],
+        "create_reports_from_panel": true,
+        "updated_at": "2015-03-03T10:45:07.465-03:00",
+        "created_at": "2015-03-03T10:45:07.461-03:00",
+        "view_categories": false,
+        "edit_reports": true,
+        "edit_inventory_items": true,
+        "delete_reports": false,
+        "delete_inventory_items": false,
+        "manage_config": true,
+        "manage_inventory_formulas": true,
+        "manage_reports": true,
+        "id": 2,
+        "group_id": 2,
+        "manage_flows": true,
+        "manage_users": true,
+        "manage_inventory_categories": true,
+        "manage_inventory_items": true,
+        "manage_groups": true,
+        "manage_reports_categories": true,
+        "view_sections": false,
+        "panel_access": true,
+        "groups_can_edit": [],
+        "groups_can_view": [],
+        "reports_categories_can_edit": [],
+        "reports_categories_can_view": [],
+        "inventory_categories_can_edit": [],
+        "inventory_categories_can_view": [],
+        "inventory_sections_can_view": [],
+        "inventory_sections_can_edit": [],
+        "inventory_fields_can_edit": [],
+        "inventory_fields_can_view": [],
+        "flow_can_view_all_steps": [],
+        "flow_can_execute_all_steps": [
+          3
+        ],
+        "can_view_step": [],
+        "can_execute_step": []
+      },
+      "groups": [
+        {
+          "permissions": {
+            "flow_can_delete_own_cases": [],
+            "flow_can_delete_all_cases": [],
+            "create_reports_from_panel": true,
+            "updated_at": "2015-03-03T10:45:07.465-03:00",
+            "created_at": "2015-03-03T10:45:07.461-03:00",
+            "view_categories": false,
+            "edit_reports": true,
+            "edit_inventory_items": true,
+            "delete_reports": false,
+            "delete_inventory_items": false,
+            "manage_config": true,
+            "manage_inventory_formulas": true,
+            "manage_reports": true,
+            "id": 2,
+            "group_id": 2,
+            "manage_flows": true,
+            "manage_users": true,
+            "manage_inventory_categories": true,
+            "manage_inventory_items": true,
+            "manage_groups": true,
+            "manage_reports_categories": true,
+            "view_sections": false,
+            "panel_access": true,
+            "groups_can_edit": [],
+            "groups_can_view": [],
+            "reports_categories_can_edit": [],
+            "reports_categories_can_view": [],
+            "inventory_categories_can_edit": [],
+            "inventory_categories_can_view": [],
+            "inventory_sections_can_view": [],
+            "inventory_sections_can_edit": [],
+            "inventory_fields_can_edit": [],
+            "inventory_fields_can_view": [],
+            "flow_can_view_all_steps": [],
+            "flow_can_execute_all_steps": [
+              3
+            ],
+            "can_view_step": [],
+            "can_execute_step": []
+          },
+          "name": "Administradores",
+          "id": 2
+        }
+      ],
+      "name": "Hellen Armstrong Sr.",
+      "id": 1,
+      "address": "430 Danika Parkways",
+      "address_additional": "Suite 386",
+      "postal_code": "04005000",
+      "district": "Lake Elsafort",
+      "device_token": "445dcfb912fade983885d17f9aa42448",
+      "device_type": "ios",
+      "created_at": "2015-03-03T10:45:08.037-03:00",
+      "facebook_user_id": null
+    },
+    "completed": false,
+    "steps_not_fulfilled": [
+      4
+    ],
+    "total_steps": 2,
+    "flow_version": 8,
+    "initial_flow_id": 3,
+    "updated_at": "2015-03-04T11:21:27.385-03:00",
+    "created_at": "2015-03-04T11:11:46.891-03:00",
+    "updated_by_id": 1,
+    "created_by_id": 1,
+    "id": 1,
+    "disabled_steps": [],
+    "original_case_id": null,
+    "children_case_ids": [],
+    "case_step_ids": [
+      1
+    ],
+    "next_step_id": 4,
+    "responsible_user_id": 1,
+    "responsible_group_id": null,
+    "status": "active"
+  }
+}
+``
 ___
 
-### Atualizar <a name="update"></a>
+### Atualizar / Avançar Etapa <a name="update"></a>
 
 Endpoint: `/cases/:id`
 
@@ -749,19 +2397,24 @@ Method: put
 
 #### Parâmetros de Entrada
 
-| Nome            | Tipo    | Obrigatório | Descrição                                                   |
-|-----------------|---------|-------------|-------------------------------------------------------------|
-| step_id         | Integer | Sim         | ID do primeiro Step do Fluxo.                               |
-| step_version    | Integer | Sim         | Número da versão da Etapa.                                  |
-| fields          | Array   | Sim         | Array de Hash com ID do Campo e Value com o Valor do campo (a value será convertida no valor correto do campo para verificar as validações do campo). |
+| Nome                 | Tipo    | Obrigatório | Descrição                                                   |
+|----------------------|---------|-------------|-------------------------------------------------------------|
+| step_id              | Integer | Sim         | ID do primeiro Step do Fluxo.                               |
+| fields               | Array   | Sim         | Array de Hash com ID do Campo e Value com o Valor do campo (a value será convertida no valor correto do campo para verificar as validações do campo). |
+| responsible_user_id  | Integer | Não         | ID do Grupo que será responsável pela Etapa do Caso. |
+| responsible_group_id | Integer | Não         | ID do Grupo que será responsável pela Etapa do Caso. |
 
 #### Status HTTP
 
 | Código | Descrição                  |
 |--------|----------------------------|
 | 400    | Parâmetros inválidos.      |
+| 400    | Etapa está disabilitada    |
+| 400    | Etapa não pertence ao Caso |
+| 400    | Etapa atual não foi preenchida |
 | 401    | Acesso não autorizado.     |
-| 200    | Se foi criado com sucesso. |
+| 405    | Caso está finalizado       |
+| 200    | Etapa atualizada com sucesso |
 
 #### Exemplo
 
@@ -769,7 +2422,6 @@ Method: put
 ```json
 {
   "step_id": 1,
-  "step_version": 1,
   "fields": [
     {"id": 1, "value": "1"}
   ]
@@ -802,6 +2454,8 @@ No retorno de criação do Caso, o retorno é trazido com display_type='full'.
 
 Se for a última Etapa do Caso o Caso será finalizado e será cirada uma entrada no CasesLogEntries com a ação de 'finished'.
 
+Se alguma Etapa foi desabilitada por um Gatilho e alguma outra Etapa depois a desabilitou, quando tentar finalizar o Caso, ele estará como 'not_satisfied' e retornará os IDs dessas Etapas em 'steps_not_fulfilled', quando não tiver mais Etapas no 'steps_not_fulfilled' o Caso será automaticamente finalizado.
+
 Quando houver um Gatilho que foi executado no final do Caso no retorno vai ter dois valores preenchidos **trigger_values** e **trigger_type**.
 
 **trigger_values** terá o ID do item
@@ -819,151 +2473,1211 @@ Content-Type: application/json
   "trigger_values": null,
   "trigger_type": null,
   "case": {
-    "next_step": null,
+    "steps": [
+      {
+        "steps": [],
+        "flow": {
+          "steps_versions": {},
+          "resolution_states_versions": {},
+          "draft": false,
+          "current_version": null,
+          "step_id": null,
+          "status": "pending",
+          "id": 4,
+          "title": "Fluxo Filho",
+          "description": null,
+          "created_by_id": 1,
+          "updated_by_id": 1,
+          "initial": false,
+          "created_at": "2015-03-04T00:30:40.425-03:00",
+          "updated_at": "2015-03-04T00:31:03.225-03:00"
+        },
+        "step": {
+          "triggers_versions": {},
+          "fields_versions": {},
+          "user_id": 1,
+          "draft": false,
+          "conduction_mode_open": true,
+          "child_flow_version": null,
+          "child_flow_id": 4,
+          "id": 6,
+          "title": "Etapa 3",
+          "description": null,
+          "step_type": "flow",
+          "flow_id": 3,
+          "created_at": "2015-03-04T00:31:37.531-03:00",
+          "updated_at": "2015-03-04T00:51:47.252-03:00",
+          "active": true
+        }
+      },
+      {
+        "steps": [],
+        "flow": null,
+        "step": {
+          "triggers_versions": {},
+          "fields_versions": {
+            "3": 5
+          },
+          "user_id": 1,
+          "draft": false,
+          "conduction_mode_open": true,
+          "child_flow_version": null,
+          "child_flow_id": null,
+          "id": 5,
+          "title": "Etapa 2",
+          "description": null,
+          "step_type": "form",
+          "flow_id": 3,
+          "created_at": "2015-03-04T00:30:06.214-03:00",
+          "updated_at": "2015-03-04T00:51:47.232-03:00",
+          "active": true
+        }
+      },
+      {
+        "steps": [],
+        "flow": null,
+        "step": {
+          "triggers_versions": {},
+          "fields_versions": {
+            "2": 3
+          },
+          "user_id": 1,
+          "draft": false,
+          "conduction_mode_open": true,
+          "child_flow_version": null,
+          "child_flow_id": null,
+          "id": 4,
+          "title": "Etapa 1",
+          "description": null,
+          "step_type": "form",
+          "flow_id": 3,
+          "created_at": "2015-03-04T00:24:26.529-03:00",
+          "updated_at": "2015-03-04T00:51:47.210-03:00",
+          "active": true
+        }
+      }
+    ],
+    "current_step": {
+      "updated_by": {
+        "google_plus_user_id": null,
+        "twitter_user_id": null,
+        "document": "67392343700",
+        "phone": "11912231545",
+        "email": "euricovidal@gmail.com",
+        "groups_names": [
+          "Administradores"
+        ],
+        "permissions": {
+          "flow_can_delete_own_cases": [],
+          "flow_can_delete_all_cases": [],
+          "create_reports_from_panel": true,
+          "updated_at": "2015-03-03T10:45:07.465-03:00",
+          "created_at": "2015-03-03T10:45:07.461-03:00",
+          "view_categories": false,
+          "edit_reports": true,
+          "edit_inventory_items": true,
+          "delete_reports": false,
+          "delete_inventory_items": false,
+          "manage_config": true,
+          "manage_inventory_formulas": true,
+          "manage_reports": true,
+          "id": 2,
+          "group_id": 2,
+          "manage_flows": true,
+          "manage_users": true,
+          "manage_inventory_categories": true,
+          "manage_inventory_items": true,
+          "manage_groups": true,
+          "manage_reports_categories": true,
+          "view_sections": false,
+          "panel_access": true,
+          "groups_can_edit": [],
+          "groups_can_view": [],
+          "reports_categories_can_edit": [],
+          "reports_categories_can_view": [],
+          "inventory_categories_can_edit": [],
+          "inventory_categories_can_view": [],
+          "inventory_sections_can_view": [],
+          "inventory_sections_can_edit": [],
+          "inventory_fields_can_edit": [],
+          "inventory_fields_can_view": [],
+          "flow_can_view_all_steps": [],
+          "flow_can_execute_all_steps": [
+            3
+          ],
+          "can_view_step": [],
+          "can_execute_step": []
+        },
+        "groups": [
+          {
+            "permissions": {
+              "flow_can_delete_own_cases": [],
+              "flow_can_delete_all_cases": [],
+              "create_reports_from_panel": true,
+              "updated_at": "2015-03-03T10:45:07.465-03:00",
+              "created_at": "2015-03-03T10:45:07.461-03:00",
+              "view_categories": false,
+              "edit_reports": true,
+              "edit_inventory_items": true,
+              "delete_reports": false,
+              "delete_inventory_items": false,
+              "manage_config": true,
+              "manage_inventory_formulas": true,
+              "manage_reports": true,
+              "id": 2,
+              "group_id": 2,
+              "manage_flows": true,
+              "manage_users": true,
+              "manage_inventory_categories": true,
+              "manage_inventory_items": true,
+              "manage_groups": true,
+              "manage_reports_categories": true,
+              "view_sections": false,
+              "panel_access": true,
+              "groups_can_edit": [],
+              "groups_can_view": [],
+              "reports_categories_can_edit": [],
+              "reports_categories_can_view": [],
+              "inventory_categories_can_edit": [],
+              "inventory_categories_can_view": [],
+              "inventory_sections_can_view": [],
+              "inventory_sections_can_edit": [],
+              "inventory_fields_can_edit": [],
+              "inventory_fields_can_view": [],
+              "flow_can_view_all_steps": [],
+              "flow_can_execute_all_steps": [
+                3
+              ],
+              "can_view_step": [],
+              "can_execute_step": []
+            },
+            "name": "Administradores",
+            "id": 2
+          }
+        ],
+        "name": "Hellen Armstrong Sr.",
+        "id": 1,
+        "address": "430 Danika Parkways",
+        "address_additional": "Suite 386",
+        "postal_code": "04005000",
+        "district": "Lake Elsafort",
+        "device_token": "445dcfb912fade983885d17f9aa42448",
+        "device_type": "ios",
+        "created_at": "2015-03-03T10:45:08.037-03:00",
+        "facebook_user_id": null
+      },
+      "created_by": {
+        "google_plus_user_id": null,
+        "twitter_user_id": null,
+        "document": "67392343700",
+        "phone": "11912231545",
+        "email": "euricovidal@gmail.com",
+        "groups_names": [
+          "Administradores"
+        ],
+        "permissions": {
+          "flow_can_delete_own_cases": [],
+          "flow_can_delete_all_cases": [],
+          "create_reports_from_panel": true,
+          "updated_at": "2015-03-03T10:45:07.465-03:00",
+          "created_at": "2015-03-03T10:45:07.461-03:00",
+          "view_categories": false,
+          "edit_reports": true,
+          "edit_inventory_items": true,
+          "delete_reports": false,
+          "delete_inventory_items": false,
+          "manage_config": true,
+          "manage_inventory_formulas": true,
+          "manage_reports": true,
+          "id": 2,
+          "group_id": 2,
+          "manage_flows": true,
+          "manage_users": true,
+          "manage_inventory_categories": true,
+          "manage_inventory_items": true,
+          "manage_groups": true,
+          "manage_reports_categories": true,
+          "view_sections": false,
+          "panel_access": true,
+          "groups_can_edit": [],
+          "groups_can_view": [],
+          "reports_categories_can_edit": [],
+          "reports_categories_can_view": [],
+          "inventory_categories_can_edit": [],
+          "inventory_categories_can_view": [],
+          "inventory_sections_can_view": [],
+          "inventory_sections_can_edit": [],
+          "inventory_fields_can_edit": [],
+          "inventory_fields_can_view": [],
+          "flow_can_view_all_steps": [],
+          "flow_can_execute_all_steps": [
+            3
+          ],
+          "can_view_step": [],
+          "can_execute_step": []
+        },
+        "groups": [
+          {
+            "permissions": {
+              "flow_can_delete_own_cases": [],
+              "flow_can_delete_all_cases": [],
+              "create_reports_from_panel": true,
+              "updated_at": "2015-03-03T10:45:07.465-03:00",
+              "created_at": "2015-03-03T10:45:07.461-03:00",
+              "view_categories": false,
+              "edit_reports": true,
+              "edit_inventory_items": true,
+              "delete_reports": false,
+              "delete_inventory_items": false,
+              "manage_config": true,
+              "manage_inventory_formulas": true,
+              "manage_reports": true,
+              "id": 2,
+              "group_id": 2,
+              "manage_flows": true,
+              "manage_users": true,
+              "manage_inventory_categories": true,
+              "manage_inventory_items": true,
+              "manage_groups": true,
+              "manage_reports_categories": true,
+              "view_sections": false,
+              "panel_access": true,
+              "groups_can_edit": [],
+              "groups_can_view": [],
+              "reports_categories_can_edit": [],
+              "reports_categories_can_view": [],
+              "inventory_categories_can_edit": [],
+              "inventory_categories_can_view": [],
+              "inventory_sections_can_view": [],
+              "inventory_sections_can_edit": [],
+              "inventory_fields_can_edit": [],
+              "inventory_fields_can_view": [],
+              "flow_can_view_all_steps": [],
+              "flow_can_execute_all_steps": [
+                3
+              ],
+              "can_view_step": [],
+              "can_execute_step": []
+            },
+            "name": "Administradores",
+            "id": 2
+          }
+        ],
+        "name": "Hellen Armstrong Sr.",
+        "id": 1,
+        "address": "430 Danika Parkways",
+        "address_additional": "Suite 386",
+        "postal_code": "04005000",
+        "district": "Lake Elsafort",
+        "device_token": "445dcfb912fade983885d17f9aa42448",
+        "device_type": "ios",
+        "created_at": "2015-03-03T10:45:08.037-03:00",
+        "facebook_user_id": null
+      },
+      "case_step_data_fields": [
+        {
+          "case_step_data_attachments": [],
+          "case_step_data_images": [],
+          "value": "teste",
+          "field": {
+            "list_versions": [
+              {
+                "previous_field": null,
+                "created_at": "2015-03-04T00:29:36.020-03:00",
+                "updated_at": "2015-03-04T00:51:47.192-03:00",
+                "version_id": 3,
+                "active": true,
+                "values": null,
+                "id": 2,
+                "title": "Campo 1",
+                "field_type": "text",
+                "filter": null,
+                "origin_field_id": null,
+                "category_inventory": null,
+                "category_report": null,
+                "requirements": {
+                  "presence": "true"
+                }
+              }
+            ],
+            "previous_field": null,
+            "created_at": "2015-03-04T00:29:36.020-03:00",
+            "updated_at": "2015-03-04T00:51:47.192-03:00",
+            "version_id": null,
+            "active": true,
+            "values": null,
+            "id": 2,
+            "title": "Campo 1",
+            "field_type": "text",
+            "filter": null,
+            "origin_field_id": null,
+            "category_inventory": null,
+            "category_report": null,
+            "requirements": {
+              "presence": "true"
+            }
+          },
+          "id": 1
+        }
+      ],
+      "created_at": "2015-03-04T11:11:46.894-03:00",
+      "updated_at": "2015-03-04T11:21:27.267-03:00",
+      "id": 1,
+      "step_id": 5,
+      "step_version": 6,
+      "my_step": {
+        "list_versions": [
+          {
+            "created_at": "2015-03-04T00:30:06.214-03:00",
+            "updated_at": "2015-03-04T00:51:47.232-03:00",
+            "permissions": {
+              "can_execute_step": [],
+              "can_view_step": []
+            },
+            "version_id": 6,
+            "active": true,
+            "id": 5,
+            "title": "Etapa 2",
+            "conduction_mode_open": true,
+            "step_type": "form",
+            "child_flow": null,
+            "my_child_flow": null,
+            "fields": [
+              {
+                "draft": false,
+                "step_id": 5,
+                "active": true,
+                "origin_field_id": null,
+                "category_report_id": null,
+                "category_inventory_id": null,
+                "field_type": "text",
+                "title": "Campo 1",
+                "id": 3,
+                "created_at": "2015-03-04T00:30:27.297-03:00",
+                "updated_at": "2015-03-04T00:51:47.224-03:00",
+                "multiple": false,
+                "filter": null,
+                "requirements": null,
+                "values": null,
+                "user_id": 1,
+                "origin_field_version": null
+              }
+            ],
+            "my_fields": [
+              {
+                "draft": false,
+                "step_id": 5,
+                "active": true,
+                "origin_field_id": null,
+                "category_report_id": null,
+                "category_inventory_id": null,
+                "field_type": "text",
+                "title": "Campo 1",
+                "id": 3,
+                "created_at": "2015-03-04T00:30:27.297-03:00",
+                "updated_at": "2015-03-04T00:51:47.224-03:00",
+                "multiple": false,
+                "filter": null,
+                "requirements": null,
+                "values": null,
+                "user_id": 1,
+                "origin_field_version": null
+              }
+            ]
+          }
+        ],
+        "created_at": "2015-03-04T00:30:06.214-03:00",
+        "updated_at": "2015-03-04T00:51:47.232-03:00",
+        "permissions": {
+          "can_execute_step": [],
+          "can_view_step": []
+        },
+        "version_id": 6,
+        "active": true,
+        "id": 5,
+        "title": "Etapa 2",
+        "conduction_mode_open": true,
+        "step_type": "form",
+        "child_flow": null,
+        "my_child_flow": null,
+        "fields": [
+          {
+            "draft": false,
+            "step_id": 5,
+            "active": true,
+            "origin_field_id": null,
+            "category_report_id": null,
+            "category_inventory_id": null,
+            "field_type": "text",
+            "title": "Campo 1",
+            "id": 3,
+            "created_at": "2015-03-04T00:30:27.297-03:00",
+            "updated_at": "2015-03-04T00:51:47.224-03:00",
+            "multiple": false,
+            "filter": null,
+            "requirements": null,
+            "values": null,
+            "user_id": 1,
+            "origin_field_version": null
+          }
+        ],
+        "my_fields": [
+          {
+            "draft": false,
+            "step_id": 5,
+            "active": true,
+            "origin_field_id": null,
+            "category_report_id": null,
+            "category_inventory_id": null,
+            "field_type": "text",
+            "title": "Campo 1",
+            "id": 3,
+            "created_at": "2015-03-04T00:30:27.297-03:00",
+            "updated_at": "2015-03-04T00:51:47.224-03:00",
+            "multiple": false,
+            "filter": null,
+            "requirements": null,
+            "values": null,
+            "user_id": 1,
+            "origin_field_version": null
+          }
+        ]
+      },
+      "trigger_ids": [],
+      "responsible_user_id": 1,
+      "responsible_group_id": null,
+      "executed": true
+    },
     "case_steps": [
       {
-        "updated_at": "2014-06-07T23:29:30.560-03:00",
-        "created_at": "2014-06-07T22:15:46.722-03:00",
         "updated_by": {
           "google_plus_user_id": null,
           "twitter_user_id": null,
-          "facebook_user_id": null,
-          "created_at": "2014-06-05T00:35:45.743-03:00",
-          "district": "Sao Paulo",
-          "postal_code": "18000000",
-          "id": 21,
-          "name": "Fulano",
+          "document": "67392343700",
+          "phone": "11912231545",
+          "email": "euricovidal@gmail.com",
+          "groups_names": [
+            "Administradores"
+          ],
+          "permissions": {
+            "flow_can_delete_own_cases": [],
+            "flow_can_delete_all_cases": [],
+            "create_reports_from_panel": true,
+            "updated_at": "2015-03-03T10:45:07.465-03:00",
+            "created_at": "2015-03-03T10:45:07.461-03:00",
+            "view_categories": false,
+            "edit_reports": true,
+            "edit_inventory_items": true,
+            "delete_reports": false,
+            "delete_inventory_items": false,
+            "manage_config": true,
+            "manage_inventory_formulas": true,
+            "manage_reports": true,
+            "id": 2,
+            "group_id": 2,
+            "manage_flows": true,
+            "manage_users": true,
+            "manage_inventory_categories": true,
+            "manage_inventory_items": true,
+            "manage_groups": true,
+            "manage_reports_categories": true,
+            "view_sections": false,
+            "panel_access": true,
+            "groups_can_edit": [],
+            "groups_can_view": [],
+            "reports_categories_can_edit": [],
+            "reports_categories_can_view": [],
+            "inventory_categories_can_edit": [],
+            "inventory_categories_can_view": [],
+            "inventory_sections_can_view": [],
+            "inventory_sections_can_edit": [],
+            "inventory_fields_can_edit": [],
+            "inventory_fields_can_view": [],
+            "flow_can_view_all_steps": [],
+            "flow_can_execute_all_steps": [
+              3
+            ],
+            "can_view_step": [],
+            "can_execute_step": []
+          },
           "groups": [
             {
               "permissions": {
-                "view_categories": "true",
-                "view_sections": "true"
+                "flow_can_delete_own_cases": [],
+                "flow_can_delete_all_cases": [],
+                "create_reports_from_panel": true,
+                "updated_at": "2015-03-03T10:45:07.465-03:00",
+                "created_at": "2015-03-03T10:45:07.461-03:00",
+                "view_categories": false,
+                "edit_reports": true,
+                "edit_inventory_items": true,
+                "delete_reports": false,
+                "delete_inventory_items": false,
+                "manage_config": true,
+                "manage_inventory_formulas": true,
+                "manage_reports": true,
+                "id": 2,
+                "group_id": 2,
+                "manage_flows": true,
+                "manage_users": true,
+                "manage_inventory_categories": true,
+                "manage_inventory_items": true,
+                "manage_groups": true,
+                "manage_reports_categories": true,
+                "view_sections": false,
+                "panel_access": true,
+                "groups_can_edit": [],
+                "groups_can_view": [],
+                "reports_categories_can_edit": [],
+                "reports_categories_can_view": [],
+                "inventory_categories_can_edit": [],
+                "inventory_categories_can_view": [],
+                "inventory_sections_can_view": [],
+                "inventory_sections_can_edit": [],
+                "inventory_fields_can_edit": [],
+                "inventory_fields_can_view": [],
+                "flow_can_view_all_steps": [],
+                "flow_can_execute_all_steps": [
+                  3
+                ],
+                "can_view_step": [],
+                "can_execute_step": []
               },
-              "name": "Público",
-              "id": 1
+              "name": "Administradores",
+              "id": 2
             }
           ],
-          "email": "test001@mailinator.com",
-          "phone": "123456",
-          "document": "57858662775",
-          "address": "Rua",
-          "address_additional": null
+          "name": "Hellen Armstrong Sr.",
+          "id": 1,
+          "address": "430 Danika Parkways",
+          "address_additional": "Suite 386",
+          "postal_code": "04005000",
+          "district": "Lake Elsafort",
+          "device_token": "445dcfb912fade983885d17f9aa42448",
+          "device_type": "ios",
+          "created_at": "2015-03-03T10:45:08.037-03:00",
+          "facebook_user_id": null
         },
         "created_by": {
           "google_plus_user_id": null,
           "twitter_user_id": null,
-          "facebook_user_id": null,
-          "created_at": "2014-06-05T00:35:45.743-03:00",
-          "district": "Sao Paulo",
-          "postal_code": "18000000",
-          "id": 21,
-          "name": "Fulano",
+          "document": "67392343700",
+          "phone": "11912231545",
+          "email": "euricovidal@gmail.com",
+          "groups_names": [
+            "Administradores"
+          ],
+          "permissions": {
+            "flow_can_delete_own_cases": [],
+            "flow_can_delete_all_cases": [],
+            "create_reports_from_panel": true,
+            "updated_at": "2015-03-03T10:45:07.465-03:00",
+            "created_at": "2015-03-03T10:45:07.461-03:00",
+            "view_categories": false,
+            "edit_reports": true,
+            "edit_inventory_items": true,
+            "delete_reports": false,
+            "delete_inventory_items": false,
+            "manage_config": true,
+            "manage_inventory_formulas": true,
+            "manage_reports": true,
+            "id": 2,
+            "group_id": 2,
+            "manage_flows": true,
+            "manage_users": true,
+            "manage_inventory_categories": true,
+            "manage_inventory_items": true,
+            "manage_groups": true,
+            "manage_reports_categories": true,
+            "view_sections": false,
+            "panel_access": true,
+            "groups_can_edit": [],
+            "groups_can_view": [],
+            "reports_categories_can_edit": [],
+            "reports_categories_can_view": [],
+            "inventory_categories_can_edit": [],
+            "inventory_categories_can_view": [],
+            "inventory_sections_can_view": [],
+            "inventory_sections_can_edit": [],
+            "inventory_fields_can_edit": [],
+            "inventory_fields_can_view": [],
+            "flow_can_view_all_steps": [],
+            "flow_can_execute_all_steps": [
+              3
+            ],
+            "can_view_step": [],
+            "can_execute_step": []
+          },
           "groups": [
             {
               "permissions": {
-                "view_categories": "true",
-                "view_sections": "true"
+                "flow_can_delete_own_cases": [],
+                "flow_can_delete_all_cases": [],
+                "create_reports_from_panel": true,
+                "updated_at": "2015-03-03T10:45:07.465-03:00",
+                "created_at": "2015-03-03T10:45:07.461-03:00",
+                "view_categories": false,
+                "edit_reports": true,
+                "edit_inventory_items": true,
+                "delete_reports": false,
+                "delete_inventory_items": false,
+                "manage_config": true,
+                "manage_inventory_formulas": true,
+                "manage_reports": true,
+                "id": 2,
+                "group_id": 2,
+                "manage_flows": true,
+                "manage_users": true,
+                "manage_inventory_categories": true,
+                "manage_inventory_items": true,
+                "manage_groups": true,
+                "manage_reports_categories": true,
+                "view_sections": false,
+                "panel_access": true,
+                "groups_can_edit": [],
+                "groups_can_view": [],
+                "reports_categories_can_edit": [],
+                "reports_categories_can_view": [],
+                "inventory_categories_can_edit": [],
+                "inventory_categories_can_view": [],
+                "inventory_sections_can_view": [],
+                "inventory_sections_can_edit": [],
+                "inventory_fields_can_edit": [],
+                "inventory_fields_can_view": [],
+                "flow_can_view_all_steps": [],
+                "flow_can_execute_all_steps": [
+                  3
+                ],
+                "can_view_step": [],
+                "can_execute_step": []
               },
-              "name": "Público",
-              "id": 1
+              "name": "Administradores",
+              "id": 2
             }
           ],
-          "email": "test001@mailinator.com",
-          "phone": "123456",
-          "document": "57858662775",
-          "address": "Rua",
-          "address_additional": null
+          "name": "Hellen Armstrong Sr.",
+          "id": 1,
+          "address": "430 Danika Parkways",
+          "address_additional": "Suite 386",
+          "postal_code": "04005000",
+          "district": "Lake Elsafort",
+          "device_token": "445dcfb912fade983885d17f9aa42448",
+          "device_type": "ios",
+          "created_at": "2015-03-03T10:45:08.037-03:00",
+          "facebook_user_id": null
         },
-        "id": 1,
-        "case_id": 1,
-        "step_id": 1,
-        "step_version": 1,
         "case_step_data_fields": [
           {
             "case_step_data_attachments": [],
             "case_step_data_images": [],
-            "value": "10",
+            "value": "teste",
             "field": {
-              "list_versions": null,
-              "last_version_id": null,
-              "last_version": 1,
-              "updated_at": "2014-06-07T22:05:56.799-03:00",
-              "created_at": "2014-06-07T22:05:56.799-03:00",
+              "list_versions": [
+                {
+                  "previous_field": null,
+                  "created_at": "2015-03-04T00:29:36.020-03:00",
+                  "updated_at": "2015-03-04T00:51:47.192-03:00",
+                  "version_id": 3,
+                  "active": true,
+                  "values": null,
+                  "id": 2,
+                  "title": "Campo 1",
+                  "field_type": "text",
+                  "filter": null,
+                  "origin_field_id": null,
+                  "category_inventory": null,
+                  "category_report": null,
+                  "requirements": {
+                    "presence": "true"
+                  }
+                }
+              ],
+              "previous_field": null,
+              "created_at": "2015-03-04T00:29:36.020-03:00",
+              "updated_at": "2015-03-04T00:51:47.192-03:00",
+              "version_id": null,
               "active": true,
+              "values": null,
               "id": 2,
-              "title": "xxx",
-              "field_type": "integer",
+              "title": "Campo 1",
+              "field_type": "text",
               "filter": null,
-              "origin_field": null,
+              "origin_field_id": null,
               "category_inventory": null,
               "category_report": null,
               "requirements": {
-                "presence": "true",
-                "minimum": "10"
+                "presence": "true"
               }
             },
             "id": 1
           }
         ],
+        "created_at": "2015-03-04T11:11:46.894-03:00",
+        "updated_at": "2015-03-04T11:21:27.267-03:00",
+        "id": 1,
+        "step_id": 5,
+        "step_version": 6,
+        "my_step": {
+          "list_versions": [
+            {
+              "created_at": "2015-03-04T00:30:06.214-03:00",
+              "updated_at": "2015-03-04T00:51:47.232-03:00",
+              "permissions": {
+                "can_execute_step": [],
+                "can_view_step": []
+              },
+              "version_id": 6,
+              "active": true,
+              "id": 5,
+              "title": "Etapa 2",
+              "conduction_mode_open": true,
+              "step_type": "form",
+              "child_flow": null,
+              "my_child_flow": null,
+              "fields": [
+                {
+                  "draft": false,
+                  "step_id": 5,
+                  "active": true,
+                  "origin_field_id": null,
+                  "category_report_id": null,
+                  "category_inventory_id": null,
+                  "field_type": "text",
+                  "title": "Campo 1",
+                  "id": 3,
+                  "created_at": "2015-03-04T00:30:27.297-03:00",
+                  "updated_at": "2015-03-04T00:51:47.224-03:00",
+                  "multiple": false,
+                  "filter": null,
+                  "requirements": null,
+                  "values": null,
+                  "user_id": 1,
+                  "origin_field_version": null
+                }
+              ],
+              "my_fields": [
+                {
+                  "draft": false,
+                  "step_id": 5,
+                  "active": true,
+                  "origin_field_id": null,
+                  "category_report_id": null,
+                  "category_inventory_id": null,
+                  "field_type": "text",
+                  "title": "Campo 1",
+                  "id": 3,
+                  "created_at": "2015-03-04T00:30:27.297-03:00",
+                  "updated_at": "2015-03-04T00:51:47.224-03:00",
+                  "multiple": false,
+                  "filter": null,
+                  "requirements": null,
+                  "values": null,
+                  "user_id": 1,
+                  "origin_field_version": null
+                }
+              ]
+            }
+          ],
+          "created_at": "2015-03-04T00:30:06.214-03:00",
+          "updated_at": "2015-03-04T00:51:47.232-03:00",
+          "permissions": {
+            "can_execute_step": [],
+            "can_view_step": []
+          },
+          "version_id": 6,
+          "active": true,
+          "id": 5,
+          "title": "Etapa 2",
+          "conduction_mode_open": true,
+          "step_type": "form",
+          "child_flow": null,
+          "my_child_flow": null,
+          "fields": [
+            {
+              "draft": false,
+              "step_id": 5,
+              "active": true,
+              "origin_field_id": null,
+              "category_report_id": null,
+              "category_inventory_id": null,
+              "field_type": "text",
+              "title": "Campo 1",
+              "id": 3,
+              "created_at": "2015-03-04T00:30:27.297-03:00",
+              "updated_at": "2015-03-04T00:51:47.224-03:00",
+              "multiple": false,
+              "filter": null,
+              "requirements": null,
+              "values": null,
+              "user_id": 1,
+              "origin_field_version": null
+            }
+          ],
+          "my_fields": [
+            {
+              "draft": false,
+              "step_id": 5,
+              "active": true,
+              "origin_field_id": null,
+              "category_report_id": null,
+              "category_inventory_id": null,
+              "field_type": "text",
+              "title": "Campo 1",
+              "id": 3,
+              "created_at": "2015-03-04T00:30:27.297-03:00",
+              "updated_at": "2015-03-04T00:51:47.224-03:00",
+              "multiple": false,
+              "filter": null,
+              "requirements": null,
+              "values": null,
+              "user_id": 1,
+              "origin_field_version": null
+            }
+          ]
+        },
         "trigger_ids": [],
-        "responsible_user_id": 21,
-        "responsible_group_id": null
+        "responsible_user_id": 1,
+        "responsible_group_id": null,
+        "executed": true
       }
     ],
     "original_case": null,
-    "responsible_group": null,
-    "responsible_user": {
+    "get_responsible_group": null,
+    "get_responsible_user": {
       "google_plus_user_id": null,
       "twitter_user_id": null,
-      "document": "57858662775",
-      "phone": "123456",
-      "email": "test001@mailinator.com",
-      "name": "Fulano",
-      "reset_password_token": null,
-      "salt": "902ad01d9d4767543203f8cdfc99d461",
-      "encrypted_password": "db5c8156b7fa81298287f802bc13e993aa7a78ebfbab3924d2e5c6a340081d275bcec708e17eb0504e041ef721b87433fd7de605ca539dd0f68594d1d9c7e24b",
-      "id": 21,
-      "address": "Rua",
-      "address_additional": null,
-      "postal_code": "18000000",
-      "district": "Sao Paulo",
-      "password_resetted_at": null,
-      "created_at": "2014-06-05T00:35:45.743-03:00",
-      "updated_at": "2014-06-05T00:35:45.743-03:00",
+      "document": "67392343700",
+      "phone": "11912231545",
+      "email": "euricovidal@gmail.com",
+      "groups_names": [
+        "Administradores"
+      ],
+      "permissions": {
+        "flow_can_delete_own_cases": [],
+        "flow_can_delete_all_cases": [],
+        "create_reports_from_panel": true,
+        "updated_at": "2015-03-03T10:45:07.465-03:00",
+        "created_at": "2015-03-03T10:45:07.461-03:00",
+        "view_categories": false,
+        "edit_reports": true,
+        "edit_inventory_items": true,
+        "delete_reports": false,
+        "delete_inventory_items": false,
+        "manage_config": true,
+        "manage_inventory_formulas": true,
+        "manage_reports": true,
+        "id": 2,
+        "group_id": 2,
+        "manage_flows": true,
+        "manage_users": true,
+        "manage_inventory_categories": true,
+        "manage_inventory_items": true,
+        "manage_groups": true,
+        "manage_reports_categories": true,
+        "view_sections": false,
+        "panel_access": true,
+        "groups_can_edit": [],
+        "groups_can_view": [],
+        "reports_categories_can_edit": [],
+        "reports_categories_can_view": [],
+        "inventory_categories_can_edit": [],
+        "inventory_categories_can_view": [],
+        "inventory_sections_can_view": [],
+        "inventory_sections_can_edit": [],
+        "inventory_fields_can_edit": [],
+        "inventory_fields_can_view": [],
+        "flow_can_view_all_steps": [],
+        "flow_can_execute_all_steps": [
+          3
+        ],
+        "can_view_step": [],
+        "can_execute_step": []
+      },
+      "groups": [
+        {
+          "permissions": {
+            "flow_can_delete_own_cases": [],
+            "flow_can_delete_all_cases": [],
+            "create_reports_from_panel": true,
+            "updated_at": "2015-03-03T10:45:07.465-03:00",
+            "created_at": "2015-03-03T10:45:07.461-03:00",
+            "view_categories": false,
+            "edit_reports": true,
+            "edit_inventory_items": true,
+            "delete_reports": false,
+            "delete_inventory_items": false,
+            "manage_config": true,
+            "manage_inventory_formulas": true,
+            "manage_reports": true,
+            "id": 2,
+            "group_id": 2,
+            "manage_flows": true,
+            "manage_users": true,
+            "manage_inventory_categories": true,
+            "manage_inventory_items": true,
+            "manage_groups": true,
+            "manage_reports_categories": true,
+            "view_sections": false,
+            "panel_access": true,
+            "groups_can_edit": [],
+            "groups_can_view": [],
+            "reports_categories_can_edit": [],
+            "reports_categories_can_view": [],
+            "inventory_categories_can_edit": [],
+            "inventory_categories_can_view": [],
+            "inventory_sections_can_view": [],
+            "inventory_sections_can_edit": [],
+            "inventory_fields_can_edit": [],
+            "inventory_fields_can_view": [],
+            "flow_can_view_all_steps": [],
+            "flow_can_execute_all_steps": [
+              3
+            ],
+            "can_view_step": [],
+            "can_execute_step": []
+          },
+          "name": "Administradores",
+          "id": 2
+        }
+      ],
+      "name": "Hellen Armstrong Sr.",
+      "id": 1,
+      "address": "430 Danika Parkways",
+      "address_additional": "Suite 386",
+      "postal_code": "04005000",
+      "district": "Lake Elsafort",
+      "device_token": "445dcfb912fade983885d17f9aa42448",
+      "device_type": "ios",
+      "created_at": "2015-03-03T10:45:08.037-03:00",
       "facebook_user_id": null
     },
     "updated_by": {
       "google_plus_user_id": null,
       "twitter_user_id": null,
-      "facebook_user_id": null,
-      "created_at": "2014-06-05T00:35:45.743-03:00",
-      "district": "Sao Paulo",
-      "postal_code": "18000000",
-      "id": 21,
-      "name": "Fulano",
+      "document": "67392343700",
+      "phone": "11912231545",
+      "email": "euricovidal@gmail.com",
+      "groups_names": [
+        "Administradores"
+      ],
+      "permissions": {
+        "flow_can_delete_own_cases": [],
+        "flow_can_delete_all_cases": [],
+        "create_reports_from_panel": true,
+        "updated_at": "2015-03-03T10:45:07.465-03:00",
+        "created_at": "2015-03-03T10:45:07.461-03:00",
+        "view_categories": false,
+        "edit_reports": true,
+        "edit_inventory_items": true,
+        "delete_reports": false,
+        "delete_inventory_items": false,
+        "manage_config": true,
+        "manage_inventory_formulas": true,
+        "manage_reports": true,
+        "id": 2,
+        "group_id": 2,
+        "manage_flows": true,
+        "manage_users": true,
+        "manage_inventory_categories": true,
+        "manage_inventory_items": true,
+        "manage_groups": true,
+        "manage_reports_categories": true,
+        "view_sections": false,
+        "panel_access": true,
+        "groups_can_edit": [],
+        "groups_can_view": [],
+        "reports_categories_can_edit": [],
+        "reports_categories_can_view": [],
+        "inventory_categories_can_edit": [],
+        "inventory_categories_can_view": [],
+        "inventory_sections_can_view": [],
+        "inventory_sections_can_edit": [],
+        "inventory_fields_can_edit": [],
+        "inventory_fields_can_view": [],
+        "flow_can_view_all_steps": [],
+        "flow_can_execute_all_steps": [
+          3
+        ],
+        "can_view_step": [],
+        "can_execute_step": []
+      },
       "groups": [
         {
           "permissions": {
-            "view_categories": "true",
-            "view_sections": "true"
+            "flow_can_delete_own_cases": [],
+            "flow_can_delete_all_cases": [],
+            "create_reports_from_panel": true,
+            "updated_at": "2015-03-03T10:45:07.465-03:00",
+            "created_at": "2015-03-03T10:45:07.461-03:00",
+            "view_categories": false,
+            "edit_reports": true,
+            "edit_inventory_items": true,
+            "delete_reports": false,
+            "delete_inventory_items": false,
+            "manage_config": true,
+            "manage_inventory_formulas": true,
+            "manage_reports": true,
+            "id": 2,
+            "group_id": 2,
+            "manage_flows": true,
+            "manage_users": true,
+            "manage_inventory_categories": true,
+            "manage_inventory_items": true,
+            "manage_groups": true,
+            "manage_reports_categories": true,
+            "view_sections": false,
+            "panel_access": true,
+            "groups_can_edit": [],
+            "groups_can_view": [],
+            "reports_categories_can_edit": [],
+            "reports_categories_can_view": [],
+            "inventory_categories_can_edit": [],
+            "inventory_categories_can_view": [],
+            "inventory_sections_can_view": [],
+            "inventory_sections_can_edit": [],
+            "inventory_fields_can_edit": [],
+            "inventory_fields_can_view": [],
+            "flow_can_view_all_steps": [],
+            "flow_can_execute_all_steps": [
+              3
+            ],
+            "can_view_step": [],
+            "can_execute_step": []
           },
-          "name": "Público",
-          "id": 1
+          "name": "Administradores",
+          "id": 2
         }
       ],
-      "email": "test001@mailinator.com",
-      "phone": "123456",
-      "document": "57858662775",
-      "address": "Rua",
-      "address_additional": null
+      "name": "Hellen Armstrong Sr.",
+      "id": 1,
+      "address": "430 Danika Parkways",
+      "address_additional": "Suite 386",
+      "postal_code": "04005000",
+      "district": "Lake Elsafort",
+      "device_token": "445dcfb912fade983885d17f9aa42448",
+      "device_type": "ios",
+      "created_at": "2015-03-03T10:45:08.037-03:00",
+      "facebook_user_id": null
     },
-    "total_steps": 1,
-    "flow_version": 4,
-    "initial_flow_id": 1,
-    "updated_at": "2014-06-07T23:47:36.869-03:00",
-    "created_at": "2014-06-07T22:15:46.710-03:00",
-    "updated_by_id": 21,
-    "created_by_id": 21,
+    "created_by": {
+      "google_plus_user_id": null,
+      "twitter_user_id": null,
+      "document": "67392343700",
+      "phone": "11912231545",
+      "email": "euricovidal@gmail.com",
+      "groups_names": [
+        "Administradores"
+      ],
+      "permissions": {
+        "flow_can_delete_own_cases": [],
+        "flow_can_delete_all_cases": [],
+        "create_reports_from_panel": true,
+        "updated_at": "2015-03-03T10:45:07.465-03:00",
+        "created_at": "2015-03-03T10:45:07.461-03:00",
+        "view_categories": false,
+        "edit_reports": true,
+        "edit_inventory_items": true,
+        "delete_reports": false,
+        "delete_inventory_items": false,
+        "manage_config": true,
+        "manage_inventory_formulas": true,
+        "manage_reports": true,
+        "id": 2,
+        "group_id": 2,
+        "manage_flows": true,
+        "manage_users": true,
+        "manage_inventory_categories": true,
+        "manage_inventory_items": true,
+        "manage_groups": true,
+        "manage_reports_categories": true,
+        "view_sections": false,
+        "panel_access": true,
+        "groups_can_edit": [],
+        "groups_can_view": [],
+        "reports_categories_can_edit": [],
+        "reports_categories_can_view": [],
+        "inventory_categories_can_edit": [],
+        "inventory_categories_can_view": [],
+        "inventory_sections_can_view": [],
+        "inventory_sections_can_edit": [],
+        "inventory_fields_can_edit": [],
+        "inventory_fields_can_view": [],
+        "flow_can_view_all_steps": [],
+        "flow_can_execute_all_steps": [
+          3
+        ],
+        "can_view_step": [],
+        "can_execute_step": []
+      },
+      "groups": [
+        {
+          "permissions": {
+            "flow_can_delete_own_cases": [],
+            "flow_can_delete_all_cases": [],
+            "create_reports_from_panel": true,
+            "updated_at": "2015-03-03T10:45:07.465-03:00",
+            "created_at": "2015-03-03T10:45:07.461-03:00",
+            "view_categories": false,
+            "edit_reports": true,
+            "edit_inventory_items": true,
+            "delete_reports": false,
+            "delete_inventory_items": false,
+            "manage_config": true,
+            "manage_inventory_formulas": true,
+            "manage_reports": true,
+            "id": 2,
+            "group_id": 2,
+            "manage_flows": true,
+            "manage_users": true,
+            "manage_inventory_categories": true,
+            "manage_inventory_items": true,
+            "manage_groups": true,
+            "manage_reports_categories": true,
+            "view_sections": false,
+            "panel_access": true,
+            "groups_can_edit": [],
+            "groups_can_view": [],
+            "reports_categories_can_edit": [],
+            "reports_categories_can_view": [],
+            "inventory_categories_can_edit": [],
+            "inventory_categories_can_view": [],
+            "inventory_sections_can_view": [],
+            "inventory_sections_can_edit": [],
+            "inventory_fields_can_edit": [],
+            "inventory_fields_can_view": [],
+            "flow_can_view_all_steps": [],
+            "flow_can_execute_all_steps": [
+              3
+            ],
+            "can_view_step": [],
+            "can_execute_step": []
+          },
+          "name": "Administradores",
+          "id": 2
+        }
+      ],
+      "name": "Hellen Armstrong Sr.",
+      "id": 1,
+      "address": "430 Danika Parkways",
+      "address_additional": "Suite 386",
+      "postal_code": "04005000",
+      "district": "Lake Elsafort",
+      "device_token": "445dcfb912fade983885d17f9aa42448",
+      "device_type": "ios",
+      "created_at": "2015-03-03T10:45:08.037-03:00",
+      "facebook_user_id": null
+    },
+    "completed": false,
+    "steps_not_fulfilled": [
+      4
+    ],
+    "total_steps": 2,
+    "flow_version": 8,
+    "initial_flow_id": 3,
+    "updated_at": "2015-03-04T11:21:27.385-03:00",
+    "created_at": "2015-03-04T11:11:46.891-03:00",
+    "updated_by_id": 1,
+    "created_by_id": 1,
     "id": 1,
     "disabled_steps": [],
     "original_case_id": null,
@@ -971,36 +3685,12 @@ Content-Type: application/json
     "case_step_ids": [
       1
     ],
-    "next_step_id": null,
-    "responsible_user_id": 21,
+    "next_step_id": 4,
+    "responsible_user_id": 1,
     "responsible_group_id": null,
-    "created_by": {
-      "google_plus_user_id": null,
-      "twitter_user_id": null,
-      "facebook_user_id": null,
-      "created_at": "2014-06-05T00:35:45.743-03:00",
-      "district": "Sao Paulo",
-      "postal_code": "18000000",
-      "id": 21,
-      "name": "Fulano",
-      "groups": [
-        {
-          "permissions": {
-            "view_categories": "true",
-            "view_sections": "true"
-          },
-          "name": "Público",
-          "id": 1
-        }
-      ],
-      "email": "test001@mailinator.com",
-      "phone": "123456",
-      "document": "57858662775",
-      "address": "Rua",
-      "address_additional": null
-    }
+    "status": "active"
   },
-  "message": "Caso finalizado com sucesso"
+  "message": "Etapa atualizada com sucesso"
 }
 ```
 ___
@@ -1046,7 +3736,7 @@ ___
 
 ### Transferir para outro Fluxo <a name="transfer"></a>
 
-Endpoint: `/cases/:id/finish`
+Endpoint: `/cases/:id/transfer`
 
 Method: put
 
@@ -1075,243 +3765,31 @@ Status: 200
 Content-Type: application/json
 ```
 
+| Nome     | Tipo    | Descrição                             |
+|----------|---------|---------------------------------------|
+| case     | Object  | Vide CaseObject get /cases/1          |
+
 ```json
 {
   "case": {
-    "next_step": null,
-    "case_steps": [],
-    "original_case": {
-      "next_step": null,
-      "case_steps": [
-        {
-          "updated_at": "2014-06-07T23:29:30.560-03:00",
-          "created_at": "2014-06-07T22:15:46.722-03:00",
-          "updated_by": {
-            "google_plus_user_id": null,
-            "twitter_user_id": null,
-            "facebook_user_id": null,
-            "created_at": "2014-06-05T00:35:45.743-03:00",
-            "district": "Sao Paulo",
-            "postal_code": "18000000",
-            "id": 21,
-            "name": "Fulano",
-            "groups": [
-              {
-                "permissions": {
-                  "view_categories": "true",
-                  "view_sections": "true"
-                },
-                "name": "Público",
-                "id": 1
-              }
-            ],
-            "email": "test001@mailinator.com",
-            "phone": "123456",
-            "document": "57858662775",
-            "address": "Rua",
-            "address_additional": null
-          },
-          "created_by": {
-            "google_plus_user_id": null,
-            "twitter_user_id": null,
-            "facebook_user_id": null,
-            "created_at": "2014-06-05T00:35:45.743-03:00",
-            "district": "Sao Paulo",
-            "postal_code": "18000000",
-            "id": 21,
-            "name": "Fulano",
-            "groups": [
-              {
-                "permissions": {
-                  "view_categories": "true",
-                  "view_sections": "true"
-                },
-                "name": "Público",
-                "id": 1
-              }
-            ],
-            "email": "test001@mailinator.com",
-            "phone": "123456",
-            "document": "57858662775",
-            "address": "Rua",
-            "address_additional": null
-          },
-          "id": 1,
-          "case_id": 1,
-          "step_id": 1,
-          "step_version": 1,
-          "case_step_data_fields": [
-            {
-              "case_step_data_attachments": [],
-              "case_step_data_images": [],
-              "value": "10",
-              "field": {
-                "list_versions": null,
-                "last_version_id": null,
-                "last_version": 1,
-                "updated_at": "2014-06-07T22:05:56.799-03:00",
-                "created_at": "2014-06-07T22:05:56.799-03:00",
-                "active": true,
-                "id": 2,
-                "title": "xxx",
-                "field_type": "integer",
-                "filter": null,
-                "origin_field": null,
-                "category_inventory": null,
-                "category_report": null,
-                "requirements": {
-                  "presence": "true",
-                  "minimum": "10"
-                }
-              },
-              "id": 1
-            }
-          ],
-          "trigger_ids": [],
-          "responsible_user_id": 21,
-          "responsible_group_id": null
-        }
-      ],
-      "original_case": null,
-      "get_responsible_group": null,
-      "get_responsible_user": {
-        "google_plus_user_id": null,
-        "twitter_user_id": null,
-        "facebook_user_id": null,
-        "created_at": "2014-06-05T00:35:45.743-03:00",
-        "district": "Sao Paulo",
-        "postal_code": "18000000",
-        "id": 21,
-        "name": "Fulano",
-        "groups": [
-          {
-            "permissions": {
-              "view_categories": "true",
-              "view_sections": "true"
-            },
-            "name": "Público",
-            "id": 1
-          }
-        ],
-        "email": "test001@mailinator.com",
-        "phone": "123456",
-        "document": "57858662775",
-        "address": "Rua",
-        "address_additional": null
-      },
-      "updated_by": {
-        "google_plus_user_id": null,
-        "twitter_user_id": null,
-        "facebook_user_id": null,
-        "created_at": "2014-06-05T00:35:45.743-03:00",
-        "district": "Sao Paulo",
-        "postal_code": "18000000",
-        "id": 21,
-        "name": "Fulano",
-        "groups": [
-          {
-            "permissions": {
-              "view_categories": "true",
-              "view_sections": "true"
-            },
-            "name": "Público",
-            "id": 1
-          }
-        ],
-        "email": "test001@mailinator.com",
-        "phone": "123456",
-        "document": "57858662775",
-        "address": "Rua",
-        "address_additional": null
-      },
-      "total_steps": 1,
-      "flow_version": 4,
-      "initial_flow_id": 1,
-      "updated_at": "2014-06-08T00:54:39.404-03:00",
-      "created_at": "2014-06-07T22:15:46.710-03:00",
-      "updated_by_id": 21,
-      "created_by_id": 21,
-      "id": 1,
-      "disabled_steps": [],
-      "original_case_id": null,
-      "children_case_ids": [
-        3
-      ],
-      "case_step_ids": [
-        1
-      ],
-      "next_step_id": null,
-      "responsible_user_id": 21,
-      "responsible_group_id": null,
-      "created_by": {
-        "google_plus_user_id": null,
-        "twitter_user_id": null,
-        "facebook_user_id": null,
-        "created_at": "2014-06-05T00:35:45.743-03:00",
-        "district": "Sao Paulo",
-        "postal_code": "18000000",
-        "id": 21,
-        "name": "Fulano",
-        "groups": [
-          {
-            "permissions": {
-              "view_categories": "true",
-              "view_sections": "true"
-            },
-            "name": "Público",
-            "id": 1
-          }
-        ],
-        "email": "test001@mailinator.com",
-        "phone": "123456",
-        "document": "57858662775",
-        "address": "Rua",
-        "address_additional": null
-      }
-    },
-    "get_responsible_group": null,
-    "get_responsible_user": null,
-    "updated_by": null,
-    "total_steps": 0,
-    "flow_version": 1,
-    "initial_flow_id": 2,
-    "updated_at": "2014-06-08T01:15:16.253-03:00",
-    "created_at": "2014-06-08T01:15:16.253-03:00",
+    "completed": false,
+    "steps_not_fulfilled": [],
+    "total_steps": 1,
+    "flow_version": 12,
+    "initial_flow_id": 6,
+    "updated_at": "2015-03-04T12:11:21.810-03:00",
+    "created_at": "2015-03-04T12:11:21.810-03:00",
     "updated_by_id": null,
-    "created_by_id": 21,
-    "id": 13,
+    "created_by_id": 1,
+    "id": 2,
     "disabled_steps": [],
     "original_case_id": 1,
     "children_case_ids": [],
     "case_step_ids": [],
-    "next_step_id": null,
+    "next_step_id": 7,
     "responsible_user_id": null,
     "responsible_group_id": null,
-    "created_by": {
-      "google_plus_user_id": null,
-      "twitter_user_id": null,
-      "facebook_user_id": null,
-      "created_at": "2014-06-05T00:35:45.743-03:00",
-      "district": "Sao Paulo",
-      "postal_code": "18000000",
-      "id": 21,
-      "name": "Fulano",
-      "groups": [
-        {
-          "permissions": {
-            "view_categories": "true",
-            "view_sections": "true"
-          },
-          "name": "Público",
-          "id": 1
-        }
-      ],
-      "email": "test001@mailinator.com",
-      "phone": "123456",
-      "document": "57858662775",
-      "address": "Rua",
-      "address_additional": null
-    }
+    "status": "active"
   },
   "message": "Caso atualizado com sucesso"
 }
@@ -1440,7 +3918,5 @@ As permissões ficam no Grupo do usuário dentro do atributo permissions.
 | can_view_step             | ID da Etapa           | Pode visualizar uma Etapa do Caso.                                                |
 | can_execute_all_steps     | ID do Fluxo           | Pode visualizar e executar todas Etapas filhas do Fluxo (filhos diretos).         |
 | can_view_all_steps        | ID do Fluxo           | Pode visualizar todas Etapas filhas do Fluxo (filhos diretos).                    |
-| flow_can_delete_own_cases | Boolean               | Pode deletar/restaurar Casos Próprios (necessário permissão de visualizar também) |
-| flow_can_delete_all_cases | Boolean               | Pode deletar/restaurar qualquer Caso (necessário permissão de visualizar também)  |
-
-___
+| flow_can_delete_own_cases | ID do Fluxo           | Pode deletar/restaurar Casos Próprios (necessário permissão de visualizar também) |
+| flow_can_delete_all_cases | ID do Fluxo           | Pode deletar/restaurar qualquer Caso (necessário permissão de visualizar também)  |

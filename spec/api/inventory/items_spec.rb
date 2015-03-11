@@ -135,7 +135,9 @@ describe Inventory::Items::API do
       end
 
       checkbox_field = create(:inventory_field, section: category.sections.sample, kind: 'checkbox')
-      valid_params['data'][checkbox_field.id] = ['Test', 'Test2']
+      option1 = create(:inventory_field_option, field: checkbox_field, value: 'Test')
+      option2 = create(:inventory_field_option, field: checkbox_field, value: 'Test2')
+      valid_params['data'][checkbox_field.id] = [option1.id, option2.id]
 
       last_item = category.items.last
 
@@ -148,7 +150,8 @@ describe Inventory::Items::API do
       checkbox_data = category.items.last.data.find_by(inventory_field_id: checkbox_field.id)
       expect(category.items.last).to_not be_nil
       expect(category.items.last.data).to_not be_empty
-      expect(checkbox_data.content).to eq(['Test', 'Test2'])
+      expect(checkbox_data.content).to eq([option1.id, option2.id])
+      expect(checkbox_data.selected_options).to eq([option1, option2])
       expect(category.items.last.user).to_not be_nil
     end
   end
@@ -418,6 +421,8 @@ describe Inventory::Items::API do
       end
 
       it "return all inventory items ordenated and paginated" do
+        ordered_items = Inventory::Item.where(id: items.map(&:id))
+
         get '/inventory/items?page=2&per_page=3&sort=id&order=desc',
             nil, auth(user)
         expect(response.status).to eq(200)
@@ -425,7 +430,7 @@ describe Inventory::Items::API do
 
         expect(body).to include('items')
         expect(body['items'].size).to eq(2)
-        expect(body['items'][0]['id']).to eq(items[1].id)
+        expect(body['items'][0]['id']).to eq(ordered_items[1].id)
       end
     end
 

@@ -332,4 +332,31 @@ describe Users::API do
       expect(body["users"].size).to eq(1)
     end
   end
+
+  describe "GET /users/unsubscribe/:token" do
+    let(:url) { "/users/unsubscribe/#{token}" }
+
+    subject { get url }
+
+    context "with valid token" do
+      let(:user) { create(:user) }
+      let(:token) { user.unsubscribe_email_token }
+
+      it "unsubscribes user" do
+        subject
+        expect(user.reload.email_notifications).to be_falsy
+      end
+    end
+
+    context "with non-existent token" do
+      let(:token) { SecureRandom.hex }
+
+      it "returns error message" do
+        subject
+        body = parsed_body
+
+        expect(body['message']).to eq("Usuário não encontrado")
+      end
+    end
+  end
 end

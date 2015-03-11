@@ -14,39 +14,38 @@ class CaseStep < ActiveRecord::Base
   URI_FORMAT   = /(^$)|(^(http|https|ftp|udp):\/\/[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,5}(:[0-9]{1,5})?([\/].*)?$)/ix
   EMAIL_FORMAT = /^([^\s]+)((?:[-a-z0-9]\.)[a-z]{2,})$/
 
-  validate :fields_of_step
+  validates :step_id, uniqueness: {scope: :case_id}
+  validate  :fields_of_step, if: -> { case_step_data_fields.present? }
 
-  #TODO adicionar where depois do filtro de versoes
   def my_step
-    return step if step_version.blank? or step_version > step.versions.count
-    step.versions[step_version-2].try(:reify)
+    Version.reify(step_version)
+  end
+
+  def executed?
+    case_step_data_fields.present? or my_step.my_fields.select{|f| f.required? }.blank?
   end
 
   private
   def fields_of_step
-    return if self.case_step_data_fields.blank?
-    field_data = convert_field_data self.case_step_data_fields
+    field_data = convert_field_data(case_step_data_fields)
     my_step.my_fields.each do |field|
-      data_field = field_data.select{|f| f.field_id == field.id}.try(:first)
+      data_field  = field_data.select{|f| f.field_id == field.id}.try(:first)
       requirement = Hash(field.requirements)
       if data_field.present?
-        value   = convert_data(field.field_type, data_field['value'], data_field)
+        value   = convert_data(field.field_type, data_field['value'],    data_field)
         minimum = convert_data(field.field_type, requirement['minimum'], data_field)
         maximum = convert_data(field.field_type, requirement['maximum'], data_field)
       else
         value, minimum, maximum = nil
       end
-      presence = (requirement['presence'] == 'true')
+      presence = requirement['presence'] == 'true'
       custom_validations(field, value, minimum, maximum, presence)
     end
     @items_with_update.map(&:save!) if self.errors.blank? and @items_with_update.present?
   end
 
-  def custom_validations(field, value, minimum, maximum, presence, field_type=nil)
-    if value.blank?
-      errors_add(field.title, :blank) if presence
-      return
-    end
+  def custom_validations(field, value, minimum, maximum, presence, field_type = nil)
+    return presence && errors_add(field.title, :blank) if value.blank?
 
     field_type = field_type || field.try(:field_type)
     errors_add(field.title, :invalid) if field_type.blank?
@@ -60,16 +59,20 @@ class CaseStep < ActiveRecord::Base
     when 'cnpj'
       errors_add(field.title, :invalid) unless Cnpj.new(value).valido?
     when 'url'
-      errors_add(field.title, :invalid) unless value =~ URI_FORMAT
+      errors_add(field.title, :invalid) if value !~ URI_FORMAT
     when 'email'
-      errors_add(field.title, :invalid) unless value =~ EMAIL_FORMAT
+      errors_add(field.title, :invalid) if value !~ EMAIL_FORMAT
     when 'image', 'attachment'
       names = value.map{ |d| d['file_name'] }
       errors_add(field.title, :invalid) unless valid_extension_by_filter?(names, field.filter)
     when 'previous_field'
-      #TODO verify if is only for show field (not for update)
+      #nothing to do
+    when 'radio'
+      errors_add(field.title, :invalid) if (Array(value) - Array(field.values.keys)).present?
+    when 'checkbox', 'select'
+      errors_add(field.title, :inclusion) if (Array(value) - Array(field.values.keys)).present?
     when 'category_inventory'
-      errors_add(field.title, :inclusion) if (value - field.category_inventory.items.select(:id).map(&:id)).present?
+      errors_add(field.title, :inclusion) if (Array(value) - field.category_inventory.items.pluck(:id)).present?
     when 'category_inventory_field'
       inventory_field = Inventory::Field.find(field.origin_field_id)
       value   = convert_data(inventory_field.kind, value)
@@ -83,28 +86,29 @@ class CaseStep < ActiveRecord::Base
         end
       end
     when 'category_report'
-      errors_add(field.title, :inclusion) if (value - field.category_report.items.select(:id).map(&:id)).present?
+      errors_add(field.title, :inclusion) if (Array(value) - field.category_report.items.pluck(:id)).present?
     end
     if value.is_a? String or value.is_a? Array
       errors_add(field.title, :greater_than, count: minimum) if minimum.present? and value.size < minimum.to_i
-      errors_add(field.title, :less_than, count: maximum)    if maximum.present? and value.size > maximum.to_i
+      errors_add(field.title, :less_than,    count: maximum) if maximum.present? and value.size > maximum.to_i
     else
       errors_add(field.title, :greater_than, count: minimum) if minimum.present? and value < minimum
-      errors_add(field.title, :less_than, count: maximum)    if maximum.present? and value > maximum
+      errors_add(field.title, :less_than,    count: maximum) if maximum.present? and value > maximum
     end
   end
 
   def valid_extension_by_filter?(value, filter)
-    return true  if filter.blank?
     return false if value.blank?
-    Array.new(value).each do |val|
-      file_extension = val.match(/[^\.]+$/).to_s
-      return false unless filter.split(',').include? file_extension
+    if filter.present?
+      Array.new(value).each do |val|
+        file_extension = val.match(/[^\.]+$/).to_s
+        return false unless filter.split(',').include? file_extension
+      end
     end
     true
   end
 
-  def convert_data(type, value, elem=nil)
+  def convert_data(type, value, elem = nil)
     return value if value.blank?
     data_value = value.is_a?(String) ? value.squish! : value
 
@@ -125,7 +129,7 @@ class CaseStep < ActiveRecord::Base
       data_value = data_value.to_datetime
     when 'email'
       data_value = data_value.downcase
-    when 'checkbox'
+    when 'checkbox', 'select'
       data_value = convert_field_data(data_value)
     when 'image'
       data_value = convert_field_data(data_value)
@@ -136,7 +140,7 @@ class CaseStep < ActiveRecord::Base
       elem.value = ''
       elem.update_case_step_data_attachments data_value
     when 'previous_field'
-      ## TODO return value only
+      #nothing to do
     when 'category_inventory'
       @items_with_update = elem.field.category_inventory.items.where(id: eval(data_value))
       data_value = @items_with_update.map(&:id)
@@ -144,39 +148,46 @@ class CaseStep < ActiveRecord::Base
       inventory_field = Inventory::Field.find(elem.field.origin_field_id)
       data_value      = convert_data(inventory_field.kind, data_value)
     when 'category_report'
-      #not to do
+      #nothing to do
     end
     data_value
   end
 
   def convert_field_data(field)
-    field.is_a?(String) ? eval(field) : field
+    return field unless field.is_a? String
+    field =~ /^\[.*\]$/ || field =~ /^\{.*\}$/ ? eval(field) : field
   end
 
   def errors_add(name, error_type, *options)
     error = "errors.messages.#{error_type}"
-    errors.add(:fields, "#{name} #{I18n.t(error, *options)}")
+    self.errors.add(:fields, "#{name} #{I18n.t(error, *options)}")
   end
 
   class Entity < Grape::Entity
     def my_step(instance, options)
-      options.merge!(display_type: 'basic') if Array(options[:simplify_to]).include? instance.id
+      options.merge!(display_type: 'basic') if simplify_to? instance.id, options
       Step::Entity.represent(instance.my_step, options)
     end
 
+    def simplify_to?(case_step_id, options = {})
+      Array(options[:simplify_to]).include? case_step_id
+    end
+
     expose :id
-    expose :case_id, unless: lambda { |instance, options| Array(options[:simplify_to]).include? instance.id }
-    expose :step_id, unless: lambda { |instance, options| Array(options[:simplify_to]).include? instance.id }
-    expose :step_version, unless: lambda { |instance, options| Array(options[:simplify_to]).include? instance.id }
+    expose :step_id
+    expose :step_version
     expose :my_step do |instance, options| my_step(instance, options) end
-    expose :case_step_data_fields, using: CaseStepDataField::Entity, unless: lambda { |instance, options| Array(options[:simplify_to]).include? instance.id }
-    expose :trigger_ids, unless: lambda { |instance, options| Array(options[:simplify_to]).include? instance.id }
-    expose :responsible_user_id, unless: lambda { |instance, options| Array(options[:simplify_to]).include? instance.id }
-    expose :responsible_group_id, unless: lambda { |instance, options| Array(options[:simplify_to]).include? instance.id }
-    expose :created_by, using: User::Entity, unless: lambda { |instance, options| Array(options[:simplify_to]).include? instance.id }
-    expose :updated_by, using: User::Entity, unless: lambda { |instance, options| Array(options[:simplify_to]).include? instance.id }
-    expose :created_at, unless: lambda { |instance, options| Array(options[:simplify_to]).include? instance.id }
-    expose :updated_at, unless: lambda { |instance, options| Array(options[:simplify_to]).include? instance.id }
-    expose :executed do |instance, options| instance.case_step_data_fields.present? end
+    expose :trigger_ids
+    expose :responsible_user_id
+    expose :responsible_group_id
+    expose :executed?, as: :executed
+    expose :updated_at
+    expose :created_at
+    expose :case_step_data_fields, using: CaseStepDataField::Entity,
+           unless: ->(instance, options) { simplify_to? instance.id, options }
+    expose :created_by, using: User::Entity,
+           unless: ->(instance, options) { simplify_to? instance.id, options }
+    expose :updated_by, using: User::Entity,
+           unless: ->(instance, options) { simplify_to? instance.id, options }
   end
 end

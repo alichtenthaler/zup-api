@@ -43,8 +43,8 @@ module Flows::Steps::Fields
 
       desc 'Update a Field'
       params do
-        requires :title,                 type: String,  desc: 'Title of Field'
-        requires :field_type,            type: String,  desc: 'Type of Field'
+        optional :title,                 type: String,  desc: 'Title of Field'
+        optional :field_type,            type: String,  desc: 'Type of Field'
         optional :filter,                type: String,  desc: 'Filter for attachment type (ex.: *.pdf,*.txt)'
         optional :origin_field_id,       type: Integer, desc: 'If type is previous_field need to set origin_field_id'
         optional :category_inventory_id, type: Integer, desc: 'Category Inventory ID'

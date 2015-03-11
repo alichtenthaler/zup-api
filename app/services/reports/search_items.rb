@@ -6,7 +6,7 @@ class Reports::SearchItems
               :group_by_inventory_item, :sort,
               :order, :paginator, :page,
               :per_page, :address, :query,
-              :signed_user, :overdue
+              :signed_user, :overdue, :clusterize, :zoom
 
   def initialize(user, opts = {})
     @position_params = opts[:position]
@@ -27,6 +27,8 @@ class Reports::SearchItems
     @page            = opts[:page] || 1
     @per_page        = opts[:per_page] || 25
     @signed_user     = user
+    @clusterize      = opts[:clusterize] || false
+    @zoom            = opts[:zoom]
   end
 
   def search
@@ -92,42 +94,15 @@ class Reports::SearchItems
     end
 
     if position_params
-      # If it is a simple hash, transform to complex one
-      position_hash = if position_params.key?(:latitude)
-                        { 0 => position_params }
-                      else
-                        position_params
-                      end
-
-      statement = ""
-      position_hash.each do |index, p|
-        latlon = "POINT(#{p[:longitude].to_f} #{p[:latitude].to_f})"
-
-        unless statement.blank?
-          statement += " OR "
-        end
-
-        statement += <<-SQL
-          ST_DWithin(
-            ST_GeomFromText('#{latlon}', 4326)::geography,
-            reports_items.position, #{p[:distance].to_i}
-          )
-        SQL
+      if clusterize
+        position_params[:distance] = position_params[:distance].to_f * 2
       end
 
-      if address
-        statement += <<-SQL
-          OR reports_items.address ILIKE ?
-        SQL
-
-        scope = scope.where(statement, "%#{address}%")
-      else
-        scope = scope.where(statement)
-      end
-    else
-      if address
-        scope = scope.like_search(address: address)
-      end
+      scope = Reports::SearchItemsByGeolocation.new(
+        scope, position_params, address
+      ).scope_with_filters
+    elsif address
+      scope = scope.like_search(address: address)
     end
 
     if limit
@@ -154,7 +129,7 @@ class Reports::SearchItems
 
     # WTF
     sort = self.sort
-    if sort &&
+    if sort && !clusterize &&
         %w(created_at updated_at id reports_status_id user_name).include?(sort) &&
         order.downcase.in?('desc', 'asc')
 
@@ -177,12 +152,14 @@ class Reports::SearchItems
       if paginator.present?
         scope = paginator.call(scope)
       end
-    else
-      if position_params.blank?
-        scope = scope.paginate(page: page, per_page: per_page)
-      end
+    elsif position_params.blank?
+      scope = scope.paginate(page: page, per_page: per_page)
     end
 
-    scope
+    if position_params && clusterize
+      Reports::ClusterizeItems.new(scope, zoom).results
+    else
+      scope
+    end
   end
 end

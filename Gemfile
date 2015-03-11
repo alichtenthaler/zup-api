@@ -3,11 +3,11 @@ ruby '2.0.0'
 source 'https://rubygems.org'
 
 gem 'dotenv-rails', groups: [:development, :test]
-gem 'rails', '4.0.1'
+gem 'rails', '4.0.13'
 gem 'pg'
 gem 'rgeo', '0.3.20'
 gem 'activerecord-postgis-adapter'
-gem 'bcrypt-ruby', '~> 3.1.2'
+gem 'bcrypt', '~> 3.1.7'
 gem 'grape', '~> 0.7.0'
 gem 'grape-entity', '~> 0.4.2'
 gem 'grape-swagger', '~> 0.7.2'
@@ -39,6 +39,8 @@ gem 'brcpfcnpj'
 gem 'paper_trail'
 gem 'pushmeup'
 gem 'atomic_arrays'
+gem 'pr_geohash'
+gem 'parallel', require: false
 
 group :production do
   gem 'rails_12factor'
@@ -57,14 +59,20 @@ group :development, :test, :production do
 end
 
 group :development, :test do
-  gem 'rspec-rails', '~> 3.0.0.beta'
+  gem 'rspec-rails', '~> 3.2.1'
   gem 'database_cleaner'
   gem 'awesome_print'
   gem 'shoulda-matchers'
   gem 'pry', '0.9.12.2'
   gem 'pry-nav'
+  gem 'knapsack'
 end
 
 group :development do
   gem 'foreman'
+end
+
+group :test do
+  gem 'codeclimate-test-reporter', require: nil
+  gem 'rspec-nc', github: 'estevaoam/rspec-nc'
 end

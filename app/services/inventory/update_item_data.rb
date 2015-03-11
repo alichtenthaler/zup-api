@@ -1,4 +1,4 @@
-class Inventory::UpdateItemFromCategory
+class Inventory::UpdateItemData
   attr_reader :item, :item_params, :user
 
   def initialize(item, item_params, user)
@@ -13,7 +13,9 @@ class Inventory::UpdateItemFromCategory
 
     if item_representer.valid?
       item_representer.inject_to_data!
-      item_representer.item.save!
+      item_representer.save!
+
+      item_representer.create_history_entry
 
       check_formulas
     else
@@ -26,7 +28,7 @@ class Inventory::UpdateItemFromCategory
   private
 
   def check_formulas
-    updater = Inventory::UpdateStatusWithFormulas.new(item)
+    updater = Inventory::UpdateStatusWithFormulas.new(item, user)
     updater.check_and_update!
   end
 end

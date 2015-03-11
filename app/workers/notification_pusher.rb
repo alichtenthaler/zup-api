@@ -2,9 +2,8 @@ class NotificationPusher
   include Sidekiq::Worker
 
   # Send push notification for mobile clients
-  def perform(user_id, report_item_id, previous_status, count)
+  def perform(user_id, message)
     user = User.find(user_id)
-    report_item = Reports::Item.find(report_item_id)
 
     device_type = user.device_type
     device_token = user.device_token
@@ -12,9 +11,14 @@ class NotificationPusher
     if device_type == 'ios'
       APNS.send_notification(
         device_token,
-        alert: \
-          "Seu relato mudou para o status '#{report_item.status.title}'",
+        alert: message,
         badge: 1
+      )
+    elsif device_type == 'android'
+      GCM.send_notification(
+        device_token,
+        message: message,
+        user_id: user_id
       )
     end
   end

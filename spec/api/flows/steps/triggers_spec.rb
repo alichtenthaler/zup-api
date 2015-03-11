@@ -1,4 +1,4 @@
-require 'spec_helper'
+require 'rails_helper'
 
 describe Flows::Steps::Triggers::API do
   let(:user)       { create(:user) }
@@ -57,8 +57,8 @@ describe Flows::Steps::Triggers::API do
           it { expect(response.body).to be_a_success_message_with(I18n.t(:trigger_created)) }
           it { expect(parsed_body['trigger']).to be_an_entity_of(trigger) }
 
-          it 'should order number be 1' do
-            expect(trigger.order_number).to eql(1)
+          it 'should has update triggers_versions on Step' do
+            expect(step.reload.triggers_versions).to eql({trigger.id.to_s => nil})
           end
         end
       end
@@ -108,21 +108,6 @@ describe Flows::Steps::Triggers::API do
             it { expect(response.status).to be_a_not_found }
             it { expect(response.body).to be_an_error('Couldn\'t find Trigger with id=12345678 [WHERE "triggers"."step_id" = $1]') }
           end
-
-          context 'because validations fields' do
-            let(:errors) do
-              {'title'                         => [I18n.t('activerecord.errors.messages.blank')],
-               'trigger_conditions_attributes' => [I18n.t('activerecord.errors.messages.blank')],
-               'action_type'                   => [I18n.t('activerecord.errors.messages.blank')],
-               'action_values'                 => [I18n.t('activerecord.errors.messages.blank')]
-              }
-            end
-
-            before { put "/flows/#{flow.id}/steps/#{step.id}/triggers/#{@trigger.id}", {}, auth(user) }
-
-            it { expect(response.status).to be_a_bad_request }
-            it { expect(response.body).to be_an_error(errors) }
-          end
         end
 
         context 'successfully' do
@@ -133,8 +118,8 @@ describe Flows::Steps::Triggers::API do
           it { expect(response.status).to be_a_success_request }
           it { expect(response.body).to be_a_success_message_with(I18n.t(:trigger_updated)) }
 
-          it 'should order number be 1' do
-            expect(trigger.order_number).to eql(1)
+          it 'should has update triggers_versions on Step' do
+            expect(trigger.step.reload.triggers_versions).to eql({trigger.id.to_s => nil})
           end
         end
       end
@@ -261,16 +246,10 @@ describe Flows::Steps::Triggers::API do
         it { expect(response.status).to be_a_success_request }
         it { expect(response.body).to be_a_success_message_with(I18n.t(:trigger_order_updated)) }
 
-        it 'should trigger 1 order number be 3' do
-          expect(@trigger1.reload.order_number).to eql(3)
-        end
-
-        it 'should trigger 2 order number be 1' do
-          expect(@trigger2.reload.order_number).to eql(1)
-        end
-
-        it 'should trigger 3 order number be 2' do
-          expect(@trigger3.reload.order_number).to eql(2)
+        it 'should has triggers_versions on Step' do
+          expect(step.reload.triggers_versions).to eql({@trigger2.id.to_s => nil,
+                                                        @trigger3.id.to_s => nil,
+                                                        @trigger1.id.to_s => nil})
         end
       end
     end

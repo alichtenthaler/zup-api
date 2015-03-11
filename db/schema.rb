@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20150206171519) do
+ActiveRecord::Schema.define(version: 20150309132221) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -135,10 +135,10 @@ ActiveRecord::Schema.define(version: 20150206171519) do
     t.boolean  "multiple",              default: false
     t.string   "filter"
     t.hstore   "requirements"
-    t.integer  "order_number",          default: 1
-    t.integer  "last_version",          default: 1
-    t.integer  "last_version_id"
     t.hstore   "values"
+    t.integer  "user_id"
+    t.integer  "origin_field_version"
+    t.boolean  "draft",                 default: true
   end
 
   add_index "fields", ["step_id"], :name => "index_fields_on_step_id"
@@ -146,15 +146,17 @@ ActiveRecord::Schema.define(version: 20150206171519) do
   create_table "flows", force: true do |t|
     t.string   "title"
     t.text     "description"
-    t.integer  "created_by_id",                      null: false
+    t.integer  "created_by_id",                                 null: false
     t.integer  "updated_by_id"
-    t.boolean  "initial",         default: false
+    t.boolean  "initial",                    default: false
     t.datetime "created_at"
     t.datetime "updated_at"
-    t.string   "status",          default: "active"
+    t.string   "status",                     default: "active"
     t.integer  "step_id"
-    t.integer  "last_version",    default: 1
-    t.integer  "last_version_id"
+    t.integer  "current_version"
+    t.boolean  "draft",                      default: true
+    t.json     "resolution_states_versions", default: {}
+    t.json     "steps_versions",             default: {}
   end
 
   create_table "group_permissions", force: true do |t|
@@ -175,8 +177,6 @@ ActiveRecord::Schema.define(version: 20150206171519) do
     t.boolean  "view_categories",               default: false
     t.boolean  "view_sections",                 default: false
     t.boolean  "panel_access",                  default: false
-    t.boolean  "flow_can_delete_own_cases",     default: false
-    t.boolean  "flow_can_delete_all_cases",     default: false
     t.integer  "groups_can_edit",               default: [],    array: true
     t.integer  "groups_can_view",               default: [],    array: true
     t.integer  "reports_categories_can_edit",   default: [],    array: true
@@ -194,6 +194,8 @@ ActiveRecord::Schema.define(version: 20150206171519) do
     t.datetime "created_at"
     t.datetime "updated_at"
     t.boolean  "create_reports_from_panel",     default: false
+    t.integer  "flow_can_delete_all_cases",     default: [],    array: true
+    t.integer  "flow_can_delete_own_cases",     default: [],    array: true
   end
 
   add_index "group_permissions", ["group_id"], :name => "index_group_permissions_on_group_id"
@@ -239,6 +241,16 @@ ActiveRecord::Schema.define(version: 20150206171519) do
   end
 
   add_index "inventory_categories_reports_categories", ["reports_category_id", "inventory_category_id"], :name => "rep_cat_inv_cat_index"
+
+  create_table "inventory_field_options", force: true do |t|
+    t.integer  "inventory_field_id"
+    t.string   "value"
+    t.boolean  "disabled",           default: false
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  add_index "inventory_field_options", ["inventory_field_id"], :name => "index_inventory_field_options_on_inventory_field_id"
 
   create_table "inventory_fields", force: true do |t|
     t.string   "title"
@@ -299,12 +311,14 @@ ActiveRecord::Schema.define(version: 20150206171519) do
   create_table "inventory_item_data", force: true do |t|
     t.integer  "inventory_item_id"
     t.integer  "inventory_field_id"
-    t.text     "content",            array: true
+    t.text     "content",                    array: true
     t.datetime "created_at"
     t.datetime "updated_at"
+    t.integer  "inventory_field_option_ids", array: true
   end
 
   add_index "inventory_item_data", ["inventory_field_id"], :name => "index_inventory_item_data_on_inventory_field_id"
+  add_index "inventory_item_data", ["inventory_field_option_ids"], :name => "index_inventory_item_data_on_inventory_field_option_ids"
   add_index "inventory_item_data", ["inventory_item_id"], :name => "index_inventory_item_data_on_inventory_item_id"
 
   create_table "inventory_item_data_attachments", force: true do |t|
@@ -320,6 +334,21 @@ ActiveRecord::Schema.define(version: 20150206171519) do
   end
 
   add_index "inventory_item_data_images", ["inventory_item_data_id"], :name => "index_inventory_item_data_images_on_inventory_item_data_id"
+
+  create_table "inventory_item_histories", force: true do |t|
+    t.integer  "inventory_item_id"
+    t.integer  "user_id"
+    t.string   "kind"
+    t.text     "action"
+    t.string   "object_type"
+    t.integer  "objects_ids",       array: true
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  add_index "inventory_item_histories", ["inventory_item_id"], :name => "index_inventory_item_histories_on_inventory_item_id"
+  add_index "inventory_item_histories", ["kind"], :name => "index_inventory_item_histories_on_kind"
+  add_index "inventory_item_histories", ["user_id"], :name => "index_inventory_item_histories_on_user_id"
 
   create_table "inventory_items", force: true do |t|
     t.integer  "inventory_category_id"
@@ -422,6 +451,21 @@ ActiveRecord::Schema.define(version: 20150206171519) do
 
   add_index "reports_images", ["reports_item_id"], :name => "index_reports_images_on_reports_item_id"
 
+  create_table "reports_item_histories", force: true do |t|
+    t.integer  "reports_item_id"
+    t.integer  "user_id"
+    t.string   "kind"
+    t.text     "action"
+    t.string   "object_type"
+    t.integer  "objects_ids",     array: true
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  add_index "reports_item_histories", ["kind"], :name => "index_reports_item_histories_on_kind"
+  add_index "reports_item_histories", ["reports_item_id"], :name => "index_reports_item_histories_on_reports_item_id"
+  add_index "reports_item_histories", ["user_id"], :name => "index_reports_item_histories_on_user_id"
+
   create_table "reports_item_status_histories", force: true do |t|
     t.integer  "reports_item_id"
     t.integer  "previous_status_id"
@@ -439,13 +483,17 @@ ActiveRecord::Schema.define(version: 20150206171519) do
     t.integer  "inventory_item_id"
     t.datetime "created_at"
     t.datetime "updated_at"
-    t.spatial  "position",            limit: {:srid=>0, :type=>"point"}
-    t.integer  "protocol",            limit: 8
+    t.spatial  "position",             limit: {:srid=>0, :type=>"point"}
+    t.integer  "protocol",             limit: 8
     t.string   "reference"
-    t.boolean  "confidential",                                           default: false
+    t.boolean  "confidential",                                            default: false
     t.integer  "reporter_id"
-    t.boolean  "overdue",                                                default: false
-    t.integer  "comments_count",                                         default: 0
+    t.boolean  "overdue",                                                 default: false
+    t.integer  "comments_count",                                          default: 0
+    t.uuid     "uuid"
+    t.integer  "external_category_id"
+    t.boolean  "is_solicitation"
+    t.boolean  "is_report"
   end
 
   add_index "reports_items", ["inventory_item_id"], :name => "index_reports_items_on_inventory_item_id"
@@ -454,6 +502,7 @@ ActiveRecord::Schema.define(version: 20150206171519) do
   add_index "reports_items", ["reports_category_id"], :name => "index_reports_items_on_reports_category_id"
   add_index "reports_items", ["reports_status_id"], :name => "index_reports_items_on_reports_status_id"
   add_index "reports_items", ["user_id"], :name => "index_reports_items_on_user_id"
+  add_index "reports_items", ["uuid"], :name => "index_reports_items_on_uuid"
 
   create_table "reports_statuses", force: true do |t|
     t.string   "title"
@@ -484,12 +533,12 @@ ActiveRecord::Schema.define(version: 20150206171519) do
   create_table "resolution_states", force: true do |t|
     t.integer  "flow_id"
     t.string   "title"
-    t.boolean  "default",         default: false
-    t.boolean  "active",          default: true
+    t.boolean  "default",    default: false
+    t.boolean  "active",     default: true
     t.datetime "created_at"
     t.datetime "updated_at"
-    t.integer  "last_version",    default: 1
-    t.integer  "last_version_id"
+    t.boolean  "draft",      default: true
+    t.integer  "user_id"
   end
 
   add_index "resolution_states", ["flow_id"], :name => "index_resolution_states_on_flow_id"
@@ -501,43 +550,46 @@ ActiveRecord::Schema.define(version: 20150206171519) do
     t.integer  "flow_id"
     t.datetime "created_at"
     t.datetime "updated_at"
-    t.integer  "order_number"
-    t.boolean  "active",             default: true
-    t.integer  "last_version",       default: 1
-    t.integer  "last_version_id"
+    t.boolean  "active",               default: true
     t.integer  "child_flow_id"
     t.integer  "child_flow_version"
+    t.boolean  "conduction_mode_open", default: true
+    t.boolean  "draft",                default: true
+    t.integer  "user_id"
+    t.json     "fields_versions",      default: {}
+    t.json     "triggers_versions",    default: {}
   end
 
   add_index "steps", ["flow_id"], :name => "index_steps_on_flow_id"
 
   create_table "trigger_conditions", force: true do |t|
     t.integer  "field_id"
-    t.string   "condition_type",                 null: false
-    t.string   "values",                         null: false
+    t.string   "condition_type",                null: false
+    t.string   "values",                        null: false
     t.integer  "trigger_id"
     t.datetime "created_at"
     t.datetime "updated_at"
-    t.integer  "last_version",    default: 1
-    t.integer  "last_version_id"
-    t.boolean  "active",          default: true
+    t.boolean  "active",         default: true
+    t.integer  "field_version",  default: 0
+    t.boolean  "draft",          default: true
+    t.integer  "user_id"
   end
 
   add_index "trigger_conditions", ["field_id"], :name => "index_trigger_conditions_on_field_id"
   add_index "trigger_conditions", ["trigger_id"], :name => "index_trigger_conditions_on_trigger_id"
 
   create_table "triggers", force: true do |t|
-    t.string   "title",                          null: false
-    t.string   "action_type",                    null: false
-    t.string   "action_values",                  null: false
+    t.string   "title",                                      null: false
+    t.string   "action_type",                                null: false
+    t.string   "action_values",                              null: false
     t.integer  "step_id"
-    t.integer  "order_number",    default: 1
     t.datetime "created_at"
     t.datetime "updated_at"
-    t.integer  "last_version",    default: 1
-    t.integer  "last_version_id"
-    t.boolean  "active",          default: true
+    t.boolean  "active",                      default: true
     t.text     "description"
+    t.integer  "user_id"
+    t.boolean  "draft",                       default: true
+    t.json     "trigger_conditions_versions", default: {}
   end
 
   add_index "triggers", ["step_id"], :name => "index_triggers_on_step_id"
@@ -562,6 +614,8 @@ ActiveRecord::Schema.define(version: 20150206171519) do
     t.integer  "facebook_user_id"
     t.integer  "twitter_user_id"
     t.integer  "google_plus_user_id"
+    t.boolean  "email_notifications",     default: true
+    t.string   "unsubscribe_email_token"
   end
 
   create_table "versions", force: true do |t|

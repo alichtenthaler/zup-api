@@ -52,17 +52,18 @@ module Inventory::Categories
         authenticate!
         validate_permission!(:create, Inventory::Category)
 
+        params[:marker] = params[:icon]
+        params[:pin] = params[:icon]
+
+        if params[:statuses]
+          params[:statuses_attributes] = params[:statuses]
+        end
+
         category_params = safe_params.permit(
           :title, :description, :color, :plot_format,
-          :icon, :require_item_status, :private
+          :icon, :require_item_status, :private,
+          :marker, :pin, statuses_attributes: [:title, :color]
         )
-
-        category_params[:marker] = safe_params[:icon]
-        category_params[:pin] = safe_params[:icon]
-
-        if safe_params[:statuses]
-          category_params[:statuses_attributes] = safe_params[:statuses]
-        end
 
         category = Inventory::Category.new(category_params)
         category.save!

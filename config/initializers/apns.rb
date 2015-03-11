@@ -13,4 +13,4 @@ APNS.pem  = ENV['APNS_PEM_PATH']
 APNS.pass = ENV['APNS_PEM_PASS']
 # Just in case your pem need a password
 
-# GCM.key = "123abc456def"
+GCM.key = ENV['GCM_KEY']

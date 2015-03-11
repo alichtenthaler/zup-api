@@ -38,7 +38,6 @@ class CreateGroupPermissions < ActiveRecord::Migration
       t.integer :inventory_fields_can_view, array: true, default: []
       t.integer :flow_can_view_all_steps, array: true, default: []
       t.integer :flow_can_execute_all_steps, array: true, default: []
-      t.integer :flow_can_execute_all_steps, array: true, default: []
       t.integer :can_view_step, array: true, default: []
       t.integer :can_execute_step, array: true, default: []
 

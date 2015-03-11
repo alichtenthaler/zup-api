@@ -1,4 +1,4 @@
-require 'spec_helper'
+require 'rails_helper'
 
 describe Inventory::FormulaAlert do
   describe "#affected_items" do

@@ -64,7 +64,7 @@ describe Search::Reports::Items::API do
           end
 
           expect(returned_ids).to eq(items.sort_by do |item|
-            item.user.name
+            item.user.name.downcase
           end.map(&:id))
         end
       end
@@ -307,6 +307,48 @@ describe Search::Reports::Items::API do
         expect(parsed_body['reports'].map do
           |r| r['id']
         end).to match_array([correct_item_1.id, correct_item_2.id])
+      end
+    end
+
+    context "with clusterization active" do
+      let(:items) do
+        create_list(:reports_item, 3, category: category)
+      end
+      let(:latitude) { -23.5505200 }
+      let(:longitude) { -46.6333090 }
+      let(:valid_params) do
+        JSON.parse <<-JSON
+          {
+            "position": {
+              "latitude": #{latitude},
+              "longitude": #{longitude},
+              "distance": 1000
+            },
+            "clusterize": true
+          }
+        JSON
+      end
+
+      before do
+        items.each do |item|
+          item.update(
+            position: Reports::Item.rgeo_factory.point(longitude, latitude)
+          )
+        end
+      end
+
+      it "returns clusterized options" do
+        get "/search/reports/items", valid_params, auth(user)
+        body = parsed_body
+
+        expect(body['clusters'].size).to eq(1)
+        expect(response.header['Total']).to eq(3)
+
+        cluster = body['clusters'].first
+
+        expect(cluster['position']).to_not be_empty
+        expect(cluster['count']).to eq(3)
+        expect(cluster['category']).to_not be_empty
       end
     end
   end

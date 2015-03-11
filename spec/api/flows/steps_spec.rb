@@ -1,4 +1,4 @@
-require 'spec_helper'
+require 'rails_helper'
 
 describe Flows::Steps::API do
   let(:user)       { create(:user) }
@@ -49,8 +49,8 @@ describe Flows::Steps::API do
             it { expect(response.body).to be_a_success_message_with(I18n.t(:step_created)) }
             it { expect(parsed_body['step']).to be_an_entity_of(step, display_type: 'full') }
 
-            it 'should order number be 1' do
-              expect(step.order_number).to eql(1)
+            it 'should update steps_versions on flow' do
+              expect(step.flow.steps_versions).to eql({step.id.to_s => nil})
             end
            end
 
@@ -63,8 +63,8 @@ describe Flows::Steps::API do
             it { expect(response.body).to be_a_success_message_with(I18n.t(:step_created)) }
             it { expect(parsed_body['step']).to be_an_entity_of(step, display_type: 'full') }
 
-            it 'should order number be 1' do
-              expect(step.order_number).to eql(1)
+            it 'should update steps_versions on flow' do
+              expect(step.flow.steps_versions).to eql({step.id.to_s => nil})
             end
           end
         end
@@ -268,17 +268,16 @@ describe Flows::Steps::API do
         end
 
         context 'successfully' do
+          let(:reload_flow) { flow.reload }
+          let(:steps_ids)   { reload_flow.steps.pluck(:id).map(&:to_s) }
+
           before { put "/flows/#{flow.id}/steps", valid_params, auth(user) }
 
           it { expect(response.status).to be_a_success_request }
           it { expect(response.body).to be_a_success_message_with(I18n.t(:steps_order_updated)) }
 
-          it 'should first step with order number be 2' do
-            expect(flow.steps.first.reload.order_number).to eql(2)
-          end
-
-          it 'should second step with order number be 1' do
-            expect(flow.steps.second.reload.order_number).to eql(1)
+          it 'should has steps_versions on flow' do
+            expect(reload_flow.steps_versions).to eql({steps_ids.first => nil, steps_ids.last => nil})
           end
         end
       end

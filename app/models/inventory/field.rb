@@ -33,9 +33,13 @@ class Inventory::Field < Inventory::Base
 
   treat_as_boolean :location
 
-  belongs_to :section, class_name: "Inventory::Section", foreign_key: "inventory_section_id"
+  belongs_to :section, class_name: "Inventory::Section",
+                       foreign_key: "inventory_section_id"
+  has_many :field_options, class_name: "Inventory::FieldOption",
+                           foreign_key: "inventory_field_id",
+                           autosave: true
 
-  validates :title, presence: true, uniqueness: { scope: :inventory_section_id }
+  validates :title, presence: true, uniqueness: { scope: [:inventory_section_id, :disabled] }
   validates :kind,  presence: true, inclusion: { in: AVAILABLE_KINDS.keys }
   validates :position, presence: true, numericality: true
   validates :required, inclusion: { in: [true, false] }
@@ -49,6 +53,14 @@ class Inventory::Field < Inventory::Base
 
   def content_type
     AVAILABLE_KINDS[self.kind]
+  end
+
+  def available_values=(values)
+    return [] if values.blank?
+
+    values.each do |value|
+      self.field_options.build(value: value)
+    end
   end
 
   # Group permissions
@@ -68,7 +80,16 @@ class Inventory::Field < Inventory::Base
   end
 
   def disable!
-    self.update!(disabled: true)
+    update!(disabled: true)
+    field_options.each(&:disable!)
+  end
+
+  def enabled?
+    !disabled
+  end
+
+  def use_options?
+    %w(checkbox radio select).include?(kind)
   end
 
   class Entity < Grape::Entity
@@ -79,6 +100,7 @@ class Inventory::Field < Inventory::Base
     expose :size
     expose :inventory_section_id
     expose :available_values
+    expose :field_options
     expose :permissions
     expose :position
     expose :label

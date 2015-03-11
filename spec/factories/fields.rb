@@ -1,5 +1,3 @@
-# Read about factories at https://github.com/thoughtbot/factory_girl
-
 FactoryGirl.define do
   factory :field do
     title { generate(:name) }
@@ -9,5 +7,6 @@ FactoryGirl.define do
     origin_field_id 1
     active true
     step nil
+    user { User.first }
   end
 end

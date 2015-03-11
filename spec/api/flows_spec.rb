@@ -1,4 +1,4 @@
-require 'spec_helper'
+require 'rails_helper'
 
 describe Flows::API, versioning: true do
   let(:user)       { create(:user) }
@@ -74,14 +74,14 @@ describe Flows::API, versioning: true do
             before { get "/flows/#{flow.id}", {display_type: 'full'}, auth(user) }
 
             it { expect(response.status).to be_a_success_request }
-            it { expect(parsed_body['flow']).to be_an_entity_of(flow, display_type: 'full') }
+            it { expect(parsed_body['flow']).to be_an_entity_of(flow.reload, display_type: 'full') }
           end
 
           context 'when not sent display_type full' do
             before { get "/flows/#{flow.id}", {}, auth(user) }
 
             it { expect(response.status).to be_a_success_request }
-            it { expect(parsed_body['flow']).to be_an_entity_of(flow) }
+            it { expect(parsed_body['flow']).to be_an_entity_of(flow.reload) }
           end
         end
       end
@@ -127,7 +127,7 @@ describe Flows::API, versioning: true do
 
   describe 'on update' do
     let(:valid_params) { {title: 'new title test'} }
-    let(:flow)         { create(:flow, initial: true, resolution_states: [create(:resolution_state, default: false)]) }
+    let(:flow)         { create(:flow, initial: true, resolution_states: [build(:resolution_state, default: false)]) }
 
     context 'no authentication' do
       before { put "/flows/#{flow.id}", valid_params }
@@ -224,7 +224,7 @@ describe Flows::API, versioning: true do
           end
 
           it { expect(response.status).to be_a_success_request }
-          it { expect(parsed_body['flows']).to include_an_entity_of(flow) }
+          it { expect(parsed_body['flows']).to include_an_entity_of(flow.reload) }
         end
 
         context 'with two items' do
@@ -235,8 +235,8 @@ describe Flows::API, versioning: true do
           end
 
           it { expect(response.status).to be_a_success_request }
-          it { expect(parsed_body['flows']).to include_an_entity_of(flow) }
-          it { expect(parsed_body['flows']).to include_an_entity_of(other_flow) }
+          it { expect(parsed_body['flows']).to include_an_entity_of(flow.reload) }
+          it { expect(parsed_body['flows']).to include_an_entity_of(other_flow.reload) }
         end
 
         context 'with filter initial' do
@@ -247,8 +247,8 @@ describe Flows::API, versioning: true do
           end
 
           it { expect(response.status).to be_a_success_request }
-          it { expect(parsed_body['flows']).to_not include_an_entity_of(flow) }
-          it { expect(parsed_body['flows']).to include_an_entity_of(other_flow) }
+          it { expect(parsed_body['flows']).to_not include_an_entity_of(flow.reload) }
+          it { expect(parsed_body['flows']).to include_an_entity_of(other_flow.reload) }
         end
       end
     end
@@ -258,7 +258,7 @@ describe Flows::API, versioning: true do
     let!(:other_flow)  { create(:flow) }
     let!(:parent_flow) { create(:flow, initial: true) }
     let!(:flow)        { create(:flow) }
-    let!(:step)        { create(:step, flow: parent_flow, child_flow: flow) }
+    let!(:step)        { create(:step, flow: parent_flow, child_flow: flow, user: user) }
 
     context 'no authentication' do
       before { get "/flows/#{flow.id}/ancestors" }
@@ -280,9 +280,9 @@ describe Flows::API, versioning: true do
             before { get "/flows/#{flow.id}/ancestors", {display_type: 'full'}, auth(user) }
 
             it { expect(response.status).to be_a_success_request }
-            it { expect(parsed_body['flows']).to include_an_entity_of(flow) }
+            it { expect(parsed_body['flows']).to include_an_entity_of(flow.reload) }
             it { expect(parsed_body['flows']).to include_an_entity_of(parent_flow.reload) }
-            it { expect(parsed_body['flows']).to_not include_an_entity_of(other_flow) }
+            it { expect(parsed_body['flows']).to_not include_an_entity_of(other_flow.reload) }
           end
 
           context 'when not sent display_type full' do
@@ -292,6 +292,75 @@ describe Flows::API, versioning: true do
             it { expect(parsed_body['flows']).to include flow.id }
             it { expect(parsed_body['flows']).to include parent_flow.id }
             it { expect(parsed_body['flows']).to_not include other_flow.id }
+          end
+        end
+      end
+    end
+  end
+
+  describe 'on version' do
+    let!(:flow) { create(:flow, initial: true, status: 'active', steps: [build(:step_type_form)]) }
+
+    before { flow.publish(user) }
+
+    context 'no authentication' do
+      before { put "/flows/#{flow.id}/version", {new_version: 1} }
+      it     { expect(response.status).to be_an_unauthorized }
+    end
+
+    context 'with authentication' do
+      context 'and user can\'t manage flows' do
+        let(:error) { I18n.t(:permission_denied, action: I18n.t(:manage), table_name: I18n.t(:flows)) }
+
+        before { put "/flows/#{flow.id}/version", {new_version: 1}, auth(guest_user) }
+        it     { expect(response.status).to be_a_forbidden }
+        it     { expect(parsed_body).to be_an_error(error) }
+      end
+
+      context 'and user can manage flows' do
+        context 'failure' do
+          context 'when sent new_version ID is not included on Version IDs of this Flow' do
+            before { put "/flows/#{flow.id}/version", {new_version: 10}, auth(user) }
+
+            it { expect(response.status).to be_a_bad_request }
+            it { expect(parsed_body).to be_an_error(I18n.t(:version_isnt_valid)) }
+          end
+        end
+
+        context 'successfully' do
+          context 'when sent a valid new_version' do
+            let!(:old_version) { flow.versions.last.id }
+            let(:new_version)  { flow.versions.last.id }
+            let!(:kase) do
+              case_params = {step_id: flow.steps.first.id, initial_flow_id: flow.id, initial_flow_version: old_version,
+                             fields: [{id: flow.steps.first.fields.first.id, value: '1'}]}
+              user.groups.first.permission.update(can_execute_step: [case_params[:step_id]])
+              post '/cases', case_params, auth(user)
+              Case.first
+            end
+
+            before do
+              # ensuring the actual version
+              expect(flow.reload.the_version.version.id).to eql old_version
+              # set draft
+              flow.update! draft: true, updated_by: user
+              # bump version
+              flow.reload.publish(user)
+              # ensuring total versions be 2
+              expect(flow.reload.versions.size).to eql 2
+              # ensuring the current_version be empty
+              expect(flow.reload.current_version).to be_blank
+              # ensuring the_version (method) has the new version
+              expect(flow.reload.the_version.version.id).to eql new_version
+              # ensuring the old_version isnt equal to new_version
+              expect(old_version).to_not eql new_version
+              put "/flows/#{flow.id}/version", {new_version: old_version}, auth(user)
+            end
+
+            it { expect(response.status).to be_a_success_request }
+            it { expect(parsed_body).to be_a_success_message_with(I18n.t(:flow_version_updated, version: old_version)) }
+            it { expect(flow.reload.current_version).to eql old_version }
+            it { expect(flow.reload.the_version.version.id).to eql old_version }
           end
         end
       end
@@ -371,6 +440,50 @@ describe Flows::API, versioning: true do
           it { expect(response.status).to be_a_success_request }
           it { expect(response.body).to be_a_success_message_with(I18n.t(:permissions_updated)) }
           it { expect(user.groups.first.reload.permission.send(valid_params[:permission_type])).to eql [] }
+        end
+      end
+    end
+  end
+
+  describe 'POST publish' do
+    let!(:flow) { create(:flow) }
+
+    context 'no authentication' do
+      before { post "/flows/#{flow.id}/publish" }
+      it     { expect(response.status).to be_an_unauthorized }
+    end
+
+    context 'with authentication' do
+      context 'and user can\'t manage flows' do
+        let(:error) { I18n.t(:permission_denied, action: I18n.t(:manage), table_name: I18n.t(:flows)) }
+
+        before { post "/flows/#{flow.id}/publish", {}, auth(guest_user) }
+        it     { expect(response.status).to be_a_forbidden }
+        it     { expect(parsed_body).to be_an_error(error) }
+      end
+
+      context 'and user can manage flows' do
+        context 'successfully' do
+          context 'first version' do
+            before { post "/flows/#{flow.id}/publish", {}, auth(user) }
+
+            it { expect(response.status).to be_a_requisition_created }
+            it { expect(response.body).to be_a_success_message_with(I18n.t(:flow_published)) }
+            it { expect(flow.reload.draft).to be false }
+            it { expect(flow.versions.size).to eql 1 }
+          end
+
+          context 'second version (and first version no have Case)' do
+            before do
+              flow.update! draft: true, updated_by: user
+              post "/flows/#{flow.id}/publish", {}, auth(user)
+            end
+
+            it { expect(response.status).to be_a_requisition_created }
+            it { expect(response.body).to be_a_success_message_with(I18n.t(:flow_published)) }
+            it { expect(flow.reload.draft).to be false }
+            it { expect(flow.versions.size).to eql 1 }
+          end
         end
       end
     end

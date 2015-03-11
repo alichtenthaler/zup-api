@@ -1,5 +1,7 @@
 # encoding: utf-8
 class UserMailer < ZupMailer
+  helper :application
+
   RESTRICT_ACTIONS = {
     notify_report_creation: :report_created,
     notify_report_status_update: :report_changed_status
@@ -11,6 +13,7 @@ class UserMailer < ZupMailer
   #   en.user.send_password_recovery_instructions.subject
   #
   def send_password_recovery_instructions(user)
+    @user = user
     @token = user.reset_password_token
     mail to: user.email, subject: "Pedido de Recuperação de Senha"
   end

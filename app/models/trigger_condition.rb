@@ -1,88 +1,82 @@
 class TriggerCondition < ActiveRecord::Base
+  has_paper_trail only: :just_with_build!, on: :update
   serialize :values
-  attr_accessor :user
-  has_paper_trail only: :last_version, on: :update
 
-  KEYS_TO_CREATE_VERSION = %w{condition_type values active}
-
+  belongs_to :user
   belongs_to :trigger
   belongs_to :field
 
-  scope :active, -> { where(active: true) }
+  scope :active, -> { where.not(status: :inactive) }
 
-  validates :values, presence: true
+  validates :values,         presence: true
   validates :condition_type, inclusion: {in: %w{== != > < inc}}, presence: true
 
-  after_validation :set_last_version, if: :need_create_version_by_keys?
-  after_save       :call_bump_on_initial_flow, if: :need_create_version_by_keys?
-  after_save       :update_last_version_id!, unless: :last_version_id_changed?
+  after_create   :add_condition_on_trigger
+  before_update  :set_draft, unless: :draft_changed?
+  before_update  :remove_condition_on_trigger, if: -> { active_changed? and not active }
+  before_destroy :remove_condition_on_trigger
 
   def inactive!
-    get_flow.try(:verify_if_need_create_version?) ? self.update!(active: false) : self.destroy!
+    versions.present? ? update!(active: false) : destroy!
   end
 
   def my_field
-    return field if last_version.blank? or last_version > versions.count
-    @my_field ||= field.versions[last_version-2].try(:reify)
-  end
-
-  protected
-  def list_versions
-    self.versions.map(&:reify) if self.versions.present?
+    field_version.zero? ? field : Version.reify(field_version)
   end
 
   private
-  def set_last_version
-    return if self.changes.blank? or self.last_version_changed? or self.last_version_id_changed?
-    self.increment :last_version
+  def add_condition_on_trigger
+    condition_versions = trigger.trigger_conditions_versions.dup
+    condition_versions.merge!(id.to_s => nil)
+    trigger.update! user: user, trigger_conditions_versions: {}
+    trigger.update! user: user, trigger_conditions_versions: condition_versions
   end
 
-  def update_last_version_id!
-    return if self.reload.versions.blank? or self.reload.last_version_id == self.reload.versions.last.id
-    self.reload.update! last_version_id: self.versions.last.id
+  def set_draft
+    get_flow.update! updated_by: user, draft: true
+    self.draft = true
   end
 
-  def call_bump_on_initial_flow
-    get_flow.try(:bump_version_cascade!, self)
+  def remove_condition_on_trigger
+    condition_versions = trigger.trigger_conditions_versions.dup
+    condition_versions.delete(id.to_s)
+    trigger.update! user: user, trigger_conditions_versions: {}
+    trigger.update! user: user, trigger_conditions_versions: condition_versions
   end
 
   def get_flow(object=nil)
-    if object.blank?
-      return if self.try(:trigger).try(:step).try(:flow).blank?
-      object = self.trigger.step.flow
-    end
-    @get_flow ||= object
+    @get_flow ||= object || trigger.step.flow
   end
 
-  def need_create_version_by_keys?
-    need = false
-    need = true if get_flow.try(:verify_if_need_create_version?)
-    need = self.changes.keys.select{|key| KEYS_TO_CREATE_VERSION.include? key }.present? if self.persisted?
-    need
+  # used on Entity
+  def list_versions
+    versions.map(&:reify) if versions.present?
+  end
+
+  def version_id
+    version.try(:id)
   end
 
   class EntityVersion < Grape::Entity
     expose :id
-    expose :field, using: Field::Entity
     expose :my_field, using: Field::Entity
     expose :condition_type
     expose :values
-    expose :last_version
-    expose :last_version_id
-    expose :created_at
+    expose :active
+    expose :version_id
     expose :updated_at
+    expose :created_at
   end
 
   class Entity < Grape::Entity
     expose :id
-    expose :field, using: Field::Entity
     expose :my_field, using: Field::Entity
     expose :condition_type
     expose :values
-    expose :last_version
-    expose :last_version_id
-    expose :created_at
+    expose :active
+    expose :version_id
     expose :updated_at
+    expose :created_at
     expose :list_versions, using: TriggerCondition::EntityVersion
   end
 end

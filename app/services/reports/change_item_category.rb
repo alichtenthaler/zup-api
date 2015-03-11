@@ -1,11 +1,12 @@
 module Reports
   class ChangeItemCategory
-    attr_reader :item, :new_category, :new_status
+    attr_reader :item, :new_category, :new_status, :user
 
-    def initialize(item, new_category, new_status)
+    def initialize(item, new_category, new_status, user)
       @item = item
       @new_category = new_category
       @new_status = new_status
+      @user = user
     end
 
     def process!

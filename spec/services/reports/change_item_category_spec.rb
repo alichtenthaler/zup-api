@@ -1,11 +1,12 @@
 require "spec_helper"
 
 describe Reports::ChangeItemCategory do
+  let(:user) { create(:user) }
   let(:item) { create(:reports_item) }
   let(:new_category) { create(:reports_category_with_statuses) }
   let(:new_status) { new_category.statuses.first }
 
-  subject { described_class.new(item, new_category, new_status) }
+  subject { described_class.new(item, new_category, new_status, user) }
 
   describe "#process!" do
     before do

@@ -18,6 +18,7 @@ module Inventory::Formulas
             requires :inventory_status_id, type: Integer
             requires :conditions, type: Array
             optional :groups_to_alert, type: Array
+            optional :run_formula, type: Boolean, desc: 'Should this run for existent items? Default: false'
           end
           post do
             authenticate!
@@ -46,6 +47,10 @@ module Inventory::Formulas
             formula.groups_to_alert = params[:groups_to_alert].map(&:to_i)
             formula.conditions_attributes = params[:conditions]
             formula.save!
+
+            if params[:run_formula] == true
+              ExecuteFormulaForCategory.perform_async(current_user.id, formula.id)
+            end
 
             present formula, using: Inventory::Formula::Entity
           end

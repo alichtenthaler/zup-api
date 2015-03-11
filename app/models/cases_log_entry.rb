@@ -10,8 +10,8 @@ class CasesLogEntry < ActiveRecord::Base
   belongs_to :after_group,  class_name: 'Group', foreign_key: :after_group_id
   belongs_to :child_case,   class_name: 'Case',  foreign_key: :child_case_id
 
-  ACTION_TYPES = %w{create_case next_step update_step removed_case_step finished
-                    transfer_case transfer_flow delete_case restored_case started_step}
+  ACTION_TYPES = %w{create_case next_step update_step removed_case_step finished transfer_case
+                    transfer_flow delete_case restored_case started_step not_satisfied}
 
   validates :action, inclusion: {in: ACTION_TYPES}, presence: true
 

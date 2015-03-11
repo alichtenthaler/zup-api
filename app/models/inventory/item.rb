@@ -11,7 +11,23 @@ class Inventory::Item < Inventory::Base
   has_many :data, class_name: "Inventory::ItemData",
                   foreign_key: "inventory_item_id",
                   autosave: true,
-                  include: [:field]
+                  include: [:field],
+                  dependent: :destroy
+
+  has_many :fields, class_name: "Inventory:Field",
+                    through: :category
+
+  has_many :field_options, class_name: "Inventory::FieldOption",
+                     through: :fields
+
+  has_many :selected_options, class_name: "Inventory::FieldOption",
+                     through: :data,
+                     source: :option
+  has_many :histories, class_name: "Inventory::ItemHistory",
+                       foreign_key: "inventory_item_id",
+                       dependent: :destroy
+  has_many :images, class_name: "Inventory::ItemDataImage",
+                    through: :data
 
   before_validation :update_position_from_data
   before_validation :generate_title
@@ -31,8 +47,10 @@ class Inventory::Item < Inventory::Base
                  [item_data.field.title.to_sym, item_data.content]
                end
     ]
+
     @location[:latitude] = @location[:latitude].to_f
     @location[:longitude] = @location[:longitude].to_f
+
     @location
   end
 
@@ -71,7 +89,7 @@ class Inventory::Item < Inventory::Base
       objects = object.data
       permissions = UserAbility.new(user)
 
-      unless permissions.can? :manage, Inventory::Item
+      unless permissions.can?(:manage, Inventory::Item)
         ids = permissions.inventory_fields_visible
         objects = objects.where(inventory_field_id: ids)
       end
@@ -99,6 +117,7 @@ class Inventory::Item < Inventory::Base
       end
     end
 
+    # TODO: This should be in the representer class
     def update_position_from_data
       latitude, longitude, dynamic_address = nil
 

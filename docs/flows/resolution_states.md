@@ -81,18 +81,29 @@ Status: 201
 Content-Type: application/json
 ```
 
+###### ResolutionStateObject
+| Nome                  | Tipo       | Descrição                                                                        |
+|-----------------------|------------|----------------------------------------------------------------------------------|
+| id                    | Interger   | ID do objeto.                                                                    |
+| list_versions         | Array      | Array contento todas as versões do objeto.                                       |
+| created_at            | DateTime   | Data e horário da criação do objeto.                                             |
+| updated_at            | DateTime   | Data e horário da última atualização do objeto.                                  |
+| title                 | String     | Título do Objeto.                                                                |
+| active                | Boolean    | Se o objeto esta ativo.                                                          |
+| default               | Boolean    | Se é o Estado de Resolução padrão ou não (apenas um padrão por Fluxo)            |
+| version_id            | Interger   | ID da Versão do objeto.                                                          |
+
 ```json
 {
   "resolution_state": {
     "list_versions": null,
-    "id": 2,
-    "title": "Titulo",
-    "default": false,
-    "last_version": 1,
-    "last_version_id": null,
-    "created_at": "2014-05-16T17:39:39.628-03:00",
-    "updated_at": "2014-05-16T17:39:39.628-03:00",
-    "active": true
+    "created_at": "2015-03-04T02:08:10.302-03:00",
+    "updated_at": "2015-03-04T02:08:10.302-03:00",
+    "version_id": null,
+    "active": true,
+    "default": true,
+    "title": "Resolução 1",
+    "id": 1
   },
   "message": "Estado de Resolução criado com sucesso"
 }

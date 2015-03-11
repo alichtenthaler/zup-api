@@ -62,6 +62,36 @@ describe Inventory::CreateFormForCategory do
       expect(field.options).to_not be_blank
     end
 
+    context "creating values for fields" do
+      let(:form_params) do
+        {
+          "sections" => [{
+            "title" => "Dados técnicos",
+            "permissions" => {},
+            "position" => 2,
+            "required" => false,
+            "fields" => [{
+              "title" => "latitude",
+              "kind" => "text",
+              "size" => "M",
+              "permissions" => {},
+              "available_values" => ["Option 1", "Option 2"],
+              "label" => "Latitude",
+              "position" => 0
+            }]
+          }]
+        }
+      end
+
+      it "creates specific field options" do
+        described_class.new(category, form_params).create!
+        created_section = category.reload.sections.last
+        created_field = created_section.fields.first
+
+        expect(created_field.field_options.pluck(:value)).to match_array(['Option 1', 'Option 2'])
+      end
+    end
+
     context "deleting sections" do
       it "delete the section if it has the 'destroy' attribute on it" do
         section = category.sections.create(title: generate(:name))

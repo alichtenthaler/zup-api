@@ -92,25 +92,10 @@ Esse id da imagem é retornado quando você obtém informações sobre o item.
 
 ### checkbox e radio
 
-Campos desse tipo podem ter vários valores disponíveis para selecionar, basta passar um array de valores disponíveis (string) no atributo `available_values` do campo:
-
-    {
-      "sections": [
-        "fields": [
-          {
-            "kind": "radio",
-            "available_values": ["Sim", "Não", "Talvez"]
-          }
-        ]
-      ]
-    }
-
-### checkbox
-
-Quando utilizar um campo do tipo `checkbox`, você pode passar um array de valores no conteúdo do campo para o item de inventário:
+Quando utilizar um campo do tipo `checkbox` ou `radio`, você precisa passar um array com os ids de escolha de campo no `content`:
 
     {
       "data": {
-        "id do campo": ["Sim", "Não"]
+        "id do campo": [13, 24]
       }
     }

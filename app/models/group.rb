@@ -16,9 +16,9 @@ class Group < ActiveRecord::Base
                   :inventory_fields_can_edit,     :inventory_fields_can_view,
                   :flow_can_view_all_steps,       :flow_can_execute_all_steps,
                   :flow_can_delete_own_cases,     :flow_can_delete_all_cases,
-                  :flow_can_execute_all_steps,    :can_view_step,
-                  :can_execute_step,              :panel_access,
-                  :edit_reports, :delete_reports
+                  :can_view_step,                 :can_execute_step,
+                  :panel_access,                  :edit_reports,
+                  :delete_reports
 
   # Hstore getters
   treat_as_array  :groups_can_edit,               :groups_can_view,
@@ -26,20 +26,18 @@ class Group < ActiveRecord::Base
                   :inventory_categories_can_edit, :inventory_categories_can_view,
                   :inventory_sections_can_view,   :inventory_sections_can_edit,
                   :flow_can_view_all_steps,       :flow_can_execute_all_steps,
-                  :flow_can_delete_own_cases,     :can_view_step,
-                  :can_execute_step,
+                  :flow_can_delete_all_cases,     :flow_can_delete_own_cases,
+                  :can_view_step,                 :can_execute_step,
                   :inventory_fields_can_edit,     :inventory_fields_can_view
 
-  treat_as_boolean  :manage_users,   :manage_inventory_categories,
-                    :manage_flows,   :manage_inventory_items,
-                    :manage_groups,  :manage_reports_categories,
-                    :manage_reports, :manage_inventory_formulas,
-                    :flow_can_delete_all_cases, :flow_can_delete_own_cases,
-                    :manage_config,
-                    :edit_inventory_items, :delete_inventory_items,
-                    :edit_reports, :delete_reports,
-                    :view_categories, :view_sections,
-                    :panel_access
+  treat_as_boolean  :manage_users,           :manage_inventory_categories,
+                    :manage_flows,           :manage_inventory_items,
+                    :manage_groups,          :manage_reports_categories,
+                    :manage_reports,         :manage_inventory_formulas,
+                    :manage_config,          :edit_inventory_items,
+                    :delete_inventory_items, :edit_reports,
+                    :delete_reports,         :view_categories,
+                    :view_sections,          :panel_access
 
   has_and_belongs_to_many :users
   has_one :permission, class_name: 'GroupPermission', autosave: true
@@ -78,7 +76,7 @@ class Group < ActiveRecord::Base
       typed_permissions = {}
 
       GroupPermission.permissions_columns.each do |c|
-        typed_permissions[c.name] = permission.send(c.name)
+        typed_permissions[c] = permission.send(c)
       end
 
       return typed_permissions.with_indifferent_access

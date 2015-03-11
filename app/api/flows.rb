@@ -28,12 +28,15 @@ module Flows
 
       resource ':id' do
         desc 'Show a flow'
-        params { optional :display_type, type: String, desc: 'Display type for Flow' }
+        params do
+          optional :display_type, type: String,  desc: 'Display type for Flow'
+          optional :version,      type: Integer, desc: 'Version ID (last version by default)'
+        end
         get do
           authenticate!
           validate_permission!(:view, Flow)
 
-          { flow: Flow::Entity.represent(Flow.find(safe_params[:id]), display_type: safe_params[:display_type]) }
+          { flow: Flow::Entity.represent(Flow.find(safe_params[:id]).the_version(safe_params[:version]), display_type: safe_params[:display_type]) }
         end
 
         desc 'Delete a flow'
@@ -41,15 +44,17 @@ module Flows
           authenticate!
           validate_permission!(:delete, Flow)
 
-          Flow.find(safe_params[:id]).inactive!
+          flow = Flow.find(safe_params[:id])
+          flow.user = current_user
+          flow.inactive!
           { message: I18n.t(:flow_deleted) }
         end
 
         desc 'Update a flow'
         params do
-          requires :title      , type: String , desc: 'Title of flow'
-          optional :description, type: String , desc: 'Description of flow'
-          optional :initial    , type: Boolean, desc: 'If flow is initial'
+          requires :title,       type: String,  desc: 'Title of flow'
+          optional :description, type: String,  desc: 'Description of flow'
+          optional :initial,     type: Boolean, desc: 'If flow is initial'
         end
         put do
           authenticate!
@@ -71,6 +76,19 @@ module Flows
           { flows: (safe_params[:display_type] == 'full') ? Flow::Entity.represent(ancestors) : ancestors.map(&:id) }
         end
 
+        desc 'Change the useful version of Flow'
+        params { requires :new_version, type: Integer, desc: 'New Version ID to Default' }
+        put 'version' do
+          authenticate!
+          validate_permission!(:manage, Flow)
+
+          flow = Flow.find(safe_params[:id])
+          error!(I18n.t(:version_isnt_valid), 400) if flow.versions.size.zero? or not flow.versions.pluck(:id).include? safe_params[:new_version].to_i
+          flow.update! current_version: safe_params[:new_version].to_i
+
+          { message: I18n.t(:flow_version_updated, version: safe_params[:new_version]) }
+        end
+
         desc 'Set Permissions to Flow of Case'
         params do
           requires :group_ids,       type: Array,  desc: 'Array of Group IDs'
@@ -79,22 +97,14 @@ module Flows
         put 'permissions' do
           authenticate!
           validate_permission!(:manage, Flow)
-          permission_type          = safe_params[:permission_type]
-          permission_types_array   = %w{flow_can_execute_all_steps flow_can_view_all_steps}
-          permission_types_boolean = %w{flow_can_delete_own_cases flow_can_delete_all_cases}
-          types = permission_types_array + permission_types_boolean
-          error!(I18n.t(:permission_type_not_included), 400) unless types.include? permission_type
+          permission_type  = safe_params[:permission_type]
+          permission_types = %w{flow_can_execute_all_steps flow_can_view_all_steps flow_can_delete_own_cases flow_can_delete_all_cases}
+          error!(I18n.t(:permission_type_not_included), 400) unless permission_types.include? permission_type
 
           safe_params[:group_ids].each do |group_id|
-            group = Group.find(group_id)
-
-            if permission_types_array.include? permission_type
-              permissions = group.permission.send(permission_type)
-              group.permission.send("#{permission_type}=", permissions + [safe_params[:id].to_i])
-            else
-              group.permission.send("#{permission_type}=", true)
-            end
-
+            group       = Group.find(group_id)
+            permissions = group.permission.send(permission_type)
+            group.permission.send("#{permission_type}=", permissions + [safe_params[:id].to_i])
             group.save!
           end
 
@@ -109,24 +119,28 @@ module Flows
         delete 'permissions' do
           authenticate!
           validate_permission!(:manage, Flow)
-          permission_type          = safe_params[:permission_type]
-          permission_types_array   = %w{flow_can_execute_all_steps flow_can_view_all_steps}
-          permission_types_boolean = %w{flow_can_delete_own_cases flow_can_delete_all_cases}
-          types = permission_types_array + permission_types_boolean
-          error!(I18n.t(:permission_type_not_included), 400) unless types.include? permission_type
+          permission_type  = safe_params[:permission_type]
+          permission_types = %w{flow_can_execute_all_steps flow_can_view_all_steps flow_can_delete_own_cases flow_can_delete_all_cases}
+          error!(I18n.t(:permission_type_not_included), 400) unless permission_types.include? permission_type
 
           safe_params[:group_ids].each do |group_id|
-            group = Group.find(group_id)
-            if permission_types_array.include? permission_type
-              permissions = group.permission.send(permission_type)
-              group.permission.send("#{permission_type}=", permissions - [safe_params[:id].to_i])
-            else
-              group.permission.send("#{permission_type}=", true)
-            end
+            group       = Group.find(group_id)
+            permissions = group.permission.send(permission_type)
+            group.permission.send("#{permission_type}=", permissions - [safe_params[:id].to_i])
             group.save!
           end
 
           { message: I18n.t(:permissions_updated) }
+        end
+
+        desc 'Publish the flow'
+        post 'publish' do
+          authenticate!
+          validate_permission!(:manage, Flow)
+
+          Flow.find(safe_params[:id]).publish(current_user)
+
+          { message: I18n.t(:flow_published) }
         end
       end
 

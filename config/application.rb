@@ -6,7 +6,7 @@ require 'sprockets/railtie'
 
 # Require the gems listed in Gemfile, including any gems
 # you've limited to :test, :development, or :production.
-Bundler.require(:default, Rails.env)
+Bundler.require(*Rails.groups)
 
 class ActiveRecordOverrideRailtie < Rails::Railtie
   initializer 'active_record.initialize_database.override' do |app|
@@ -53,5 +53,15 @@ module ZupApi
         resource '*', :headers => :any, :methods => [:get, :post, :put, :delete, :patch], :expose => ['Link', 'Total']
       end
     end
+
+    ActionMailer::Base.smtp_settings = {
+      :address        => ENV['SMTP_ADDRESS'],
+      :port           => ENV['SMTP_PORT'],
+      :authentication => ENV['SMTP_AUTH'] || :plain,
+      :user_name      => ENV['SMTP_USER'],
+      :password       => ENV['SMTP_PASS'],
+      :domain         => ENV['WEB_DOMAIN'] || 'zup.cognita.ntxdev.com.br',
+      :enable_starttls_auto => (ENV['SMTP_TTLS'] == 'true')
+    }
   end
 end

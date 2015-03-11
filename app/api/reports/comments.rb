@@ -37,7 +37,11 @@ module Reports::Comments
         comment_params[:reports_item_id] = report.id
 
         comment = Reports::Comment.new(comment_params)
-        comment.save
+        comment.save!
+
+        unless comment.visibility == Reports::Comment::INTERNAL
+          Reports::NotifyUser.new(report).notify_new_comment!
+        end
 
         {
           comment: Reports::Comment::Entity.represent(comment)

@@ -73,7 +73,20 @@ Um exemplo de resposta
       }
     }
 
-### Campos com `kind` igual `images`
+## Campos com escolhas (kind igual a `checkbox`, `select` e `radio`)
+
+Para campos onde o usuário tem que escolher dentre uma lista de opções (veja `docs/inventory/field_options.md),
+o `content` deve ser o id das opções que deseja escolher:
+
+    {
+      "data": {
+        "1": [12, 32]
+      }
+    }
+
+Onde `12` e `32` são os ids das opções que deseja selecionar para o campo.
+
+## Campos com `kind` igual `images`
 
 Para campos do tipo `images`, um exemplo de requisição seria:
 
@@ -87,7 +100,7 @@ Para campos do tipo `images`, um exemplo de requisição seria:
 
 Você deve passar um __array__ com as imagens encodadas em base64.
 
-## Removendo uma imagem
+### Removendo uma imagem
 
 Para remover uma imagem, você precisa passar um atributo `destroy` como `true`
 no array, assim como o 'id´ da imagem (retornada na listagem do item)

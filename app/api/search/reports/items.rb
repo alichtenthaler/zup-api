@@ -3,8 +3,8 @@ module Search::Reports::Items
     desc "Search for report items"
     paginate per_page: 25
     params do
-      optional :begin_date, type: String
-      optional :end_date, type: String
+      optional :begin_date, type: DateTime
+      optional :end_date, type: DateTime
       optional :query, type: String, desc: "Query for name of the user, title and protocol"
       optional :statuses_ids, type: String,
                desc: 'Statuses ids, format: "3,5,7"'
@@ -23,13 +23,17 @@ module Search::Reports::Items
                desc: 'The order, can be `desc` or `asc`'
       optional :display_type, type: String,
                desc: "Could be 'full'"
+      optional :clusterize, type: String,
+               desc: 'Should clusterize the results or not'
+      optional :zoom, type: Integer,
+               desc: 'Zooming level of the map'
     end
     get "reports/items" do
       authenticate!
 
       search_params = safe_params.permit(
-        :begin_date, :end_date, :address, :query, :overdue,
-        :position => [:latitude, :longitude, :distance]
+        :begin_date, :end_date, :address, :query, :overdue, :clusterize,
+        :zoom, :position => [:latitude, :longitude, :distance]
       )
 
       search_params[:paginator] = method(:paginate)
@@ -60,13 +64,24 @@ module Search::Reports::Items
       search_params[:sort] = safe_params[:sort]
       search_params[:order] = safe_params[:order]
 
-      reports = Reports::SearchItems.new(current_user, search_params).search
+      results = Reports::SearchItems.new(current_user, search_params).search
 
-      {
-        reports: Reports::Item::Entity.represent(reports,
-                                                 display_type: safe_params[:display_type],
-                                                 user: current_user)
-      }
+      if safe_params[:clusterize]
+        header('Total', results[:total])
+
+        {
+          reports: Reports::Item::Entity.represent(results[:reports]),
+          clusters: Reports::Cluster::Entity.represent(results[:clusters])
+        }
+      else
+        {
+          reports: Reports::Item::Entity.represent(results,
+                                                  display_type: safe_params[:display_type],
+                                                  user: current_user)
+        }
+      end
+
+
     end
 
     desc "Search for report items on given category and status"

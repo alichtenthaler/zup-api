@@ -110,6 +110,18 @@ describe Inventory::ItemDataRepresenter do
             expect(subject.errors).to include(random_field.title.to_sym)
           end
         end
+
+        context "if it's not required" do
+          before do
+            random_field.update(kind: 'integer', minimum: 30, required: false)
+            subject.attributes = { random_field.id => '' }
+          end
+
+          it "returns true and no error" do
+            subject.inject_to_data!
+            expect(subject.errors).to_not include(random_field.title.to_sym)
+          end
+        end
       end
 
       context "with float type" do
@@ -138,7 +150,6 @@ describe Inventory::ItemDataRepresenter do
           end
         end
       end
-
 
       context "with string type" do
         let(:test_data) { "estevao.am@gmail.com" }

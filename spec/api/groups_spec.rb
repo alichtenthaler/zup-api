@@ -62,6 +62,15 @@ describe Groups::API do
       expect(body["group"]["name"]).to eq("Cool group")
       expect(body["group"]["permissions"]["groups_can_edit"]).to be_kind_of(Array)
     end
+
+    it "can create a group without permission" do
+      valid_params.delete("permissions")
+      post "/groups", valid_params, auth(user)
+      expect(response.status).to eq(201)
+
+      last_created_group = Group.last
+      expect(last_created_group.permission).to be_present
+    end
   end
 
   context "GET /groups/:id" do
@@ -221,6 +230,29 @@ describe Groups::API do
 
       expect(body).to include("groups")
       expect(body["groups"].last["id"]).to eq(group.id)
+    end
+
+    context "user can see only a few groups" do
+      let(:groups_can_view) { groups.first(3) }
+      let(:group) { create(:group) }
+
+      before do
+        group.permission.update(groups_can_view: groups_can_view.map(&:id))
+        user.groups = [group]
+        user.save!
+      end
+
+      it "only return those groups" do
+        get "/groups", nil, auth(user)
+
+        expect(response.status).to eq(200)
+        body = parsed_body
+
+        expect(body).to include("groups")
+        expect(body["groups"].map do |g|
+          g["id"]
+        end).to match_array(groups_can_view.map(&:id))
+      end
     end
   end
 

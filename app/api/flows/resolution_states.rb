@@ -3,24 +3,26 @@ module Flows::ResolutionStates
     resources ':flow_id/resolution_states' do
       desc 'Create a Resolution State'
       params do
-        requires :title,   type: String, desc: 'Title of resolution state'
+        requires :title,   type: String,  desc: 'Title of resolution state'
         optional :default, type: Boolean, desc: 'If is default state (only one)'
       end
       post do
         authenticate!
         validate_permission!(:create, ResolutionState)
 
+        flow        = Flow.find(safe_params[:flow_id])
         parameters  = safe_params.permit(:title, :default).merge(user: current_user)
-        old_default = Flow.find(safe_params[:flow_id]).resolution_states.find_by_default(true)
+
+        old_default = flow.resolution_states.find_by_default(true)
         old_default.update!(default: false, user: current_user) if safe_params[:default] and old_default.present?
-        resolution = Flow.find(safe_params[:flow_id]).resolution_states.create!(parameters)
+        resolution = flow.resolution_states.create!(parameters)
 
         { message: I18n.t(:resolution_state_created), resolution_state: ResolutionState::Entity.represent(resolution) }
       end
 
       desc 'Update a Resolution State'
       params do
-        requires :title,   type: String, desc: 'Title of resolution state'
+        requires :title,   type: String,  desc: 'Title of resolution state'
         optional :default, type: Boolean, desc: 'If is default state (only one)'
       end
       put ':id' do

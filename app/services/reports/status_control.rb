@@ -22,8 +22,8 @@ module Reports
       category = item.category
       relation = category.status_categories.with_status(item.status)
 
-      # Status can't be initial or final
-      return false if relation.final? || relation.initial?
+      # Status can't be final
+      return false if relation.final?
 
       # Initial status
       initial_status = item.status_history.first

@@ -1,8 +1,10 @@
 class Inventory::UpdateStatusWithFormulas
-  attr_reader :item, :formulas
+  attr_reader :item, :user, :formulas
 
-  def initialize(item)
+  def initialize(item, user, formulas = nil)
     @item = item
+    @user = user
+    @formulas = formulas
   end
 
   # Updates an item status
@@ -17,6 +19,11 @@ class Inventory::UpdateStatusWithFormulas
 
         alert = formula.alerts.create(groups_alerted: formula.groups_to_alert)
         formula.histories.create(item: item, alert: alert)
+
+        Inventory::CreateHistoryEntry.new(item, user)
+                                     .create('status',
+                                             'Fórmula mudou o estatus do item.',
+                                             formula)
       end
     end
   end

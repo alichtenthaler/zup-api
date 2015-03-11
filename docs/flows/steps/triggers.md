@@ -37,10 +37,6 @@ Method: get
 
 #### Parâmetros de Entrada
 
-| Nome          | Tipo    | Obrigatório | Descrição                                      |
-|---------------|---------|-------------|------------------------------------------------|
-| display_type  | String  | Não         | Para retornar todos os valores utilize 'full'. |
-
 #### Status HTTP
 
 | Código | Descrição                          |
@@ -56,38 +52,79 @@ Status: 200
 Content-Type: application/json
 ```
 
+##### TriggerObject
+| Nome          | Tipo     | Descrição                                      |
+|---------------|----------|------------------------------------------------|
+| id            | Interger | ID do objeto.                                  |
+| list_versions | Array    | Array contento todas as versões do objeto.     |
+| created_at    | DateTime | Data e horário da criação do objeto.           |
+| updated_at    | DateTime | Data e horário da última atualização do objeto.|
+| title         | String   | Título do Objeto.                              |
+| action_type   | String   | Tipo da ação do Gatilho (enable_steps disable_steps finish_flow transfer_flow) |
+| action_values | Array    | Array de ID(s) conforme o tipo da ação do Gatilho (step=ID da Etapa, flow=ID do Fluxo) |
+| active        | Boolean  | Se o objeto esta ativo.                        |
+| version_id    | Interger | ID da Versão do objeto.                        |
+| trigger_conditions    | Array | Array de Condições do Gatilho (vide TriggerConditionObject) |
+| my_trigger_conditions | Array | Array de Condições do Gatilho cuja versão é correspondente a Gatilho (vide TriggerConditionObject) |
+
+##### TriggerConditionObject
+| Nome          | Tipo     | Descrição                                      |
+|---------------|----------|------------------------------------------------|
+| id            | Interger | ID do objeto.                                  |
+| list_versions | Array    | Array contento todas as versões do objeto.     |
+| created_at    | DateTime | Data e horário da criação do objeto.           |
+| updated_at    | DateTime | Data e horário da última atualização do objeto.|
+| condition_type | String  | Tipo da condição (== != > < inc)               |
+| values        | Array    | IDs de valor(es) que devem conferir para a condição ser válida (mais de um valor apenas quando for "inc") |
+| active        | Boolean  | Se o objeto esta ativo.                        |
+| version_id    | Interger | ID da Versão do objeto.                        |
+| my_field      | Object   | Campo utilizado na condição do Gatilho.        |
+
 ```json
 {
   "triggers": [
     {
       "list_versions": null,
-      "last_version_id": null,
-      "last_version": 1,
-      "updated_at": "2014-05-16T21:02:20.360-03:00",
+      "created_at": "2015-03-03T11:08:12.193-03:00",
+      "updated_at": "2015-03-03T11:08:12.193-03:00",
       "id": 1,
-      "title": "Titulo",
+      "title": "Gatilho 1",
       "trigger_conditions": [
         {
           "list_versions": null,
           "id": 1,
-          "field": null,
+          "my_field": null,
           "condition_type": "==",
           "values": [
             1
           ],
-          "last_version": 1,
-          "last_version_id": null,
-          "created_at": "2014-05-16T21:02:20.384-03:00",
-          "updated_at": "2014-05-16T21:02:20.384-03:00"
+          "active": true,
+          "version_id": null,
+          "updated_at": "2015-03-03T11:08:12.200-03:00",
+          "created_at": "2015-03-03T11:08:12.200-03:00"
+        }
+      ],
+      "my_trigger_conditions": [
+        {
+          "list_versions": null,
+          "id": 1,
+          "my_field": null,
+          "condition_type": "==",
+          "values": [
+            1
+          ],
+          "active": true,
+          "version_id": null,
+          "updated_at": "2015-03-03T11:08:12.200-03:00",
+          "created_at": "2015-03-03T11:08:12.200-03:00"
         }
       ],
       "action_type": "disable_steps",
       "action_values": [
-        1
+        2
       ],
-      "order_number": 1,
       "active": true,
-      "created_at": "2014-05-16T21:02:20.360-03:00"
+      "version_id": null
     }
   ]
 }
@@ -183,6 +220,11 @@ Method: post
 ```
 
 ##### Response
+
+| Nome          | Tipo    | Descrição                                   |
+|---------------|---------|---------------------------------------------|
+| trigger       | Object  | Vide TriggerObject (get /triggers)          |
+
 ```
 Status: 201
 Content-Type: application/json
@@ -192,33 +234,46 @@ Content-Type: application/json
 {
   "trigger": {
     "list_versions": null,
-    "last_version_id": null,
-    "last_version": 1,
-    "updated_at": "2014-05-16T21:02:20.360-03:00",
+    "created_at": "2015-03-03T11:08:12.193-03:00",
+    "updated_at": "2015-03-03T11:08:12.193-03:00",
     "id": 1,
-    "title": "Titulo",
+    "title": "Gatilho 1",
     "trigger_conditions": [
       {
         "list_versions": null,
         "id": 1,
-        "field": null,
+        "my_field": null,
         "condition_type": "==",
         "values": [
           1
         ],
-        "last_version": 1,
-        "last_version_id": null,
-        "created_at": "2014-05-16T21:02:20.384-03:00",
-        "updated_at": "2014-05-16T21:02:20.384-03:00"
+        "active": true,
+        "version_id": null,
+        "updated_at": "2015-03-03T11:08:12.200-03:00",
+        "created_at": "2015-03-03T11:08:12.200-03:00"
+      }
+    ],
+    "my_trigger_conditions": [
+      {
+        "list_versions": null,
+        "id": 1,
+        "my_field": null,
+        "condition_type": "==",
+        "values": [
+          1
+        ],
+        "active": true,
+        "version_id": null,
+        "updated_at": "2015-03-03T11:08:12.200-03:00",
+        "created_at": "2015-03-03T11:08:12.200-03:00"
       }
     ],
     "action_type": "disable_steps",
     "action_values": [
-      1
+      2
     ],
-    "order_number": 1,
     "active": true,
-    "created_at": "2014-05-16T21:02:20.360-03:00"
+    "version_id": null
   },
   "message": "Gatilho criado com sucesso"
 }
@@ -235,10 +290,10 @@ Method: put
 
 | Nome                          | Tipo    | Obrigatório | Descrição                                                            |
 |-------------------------------|---------|-------------|----------------------------------------------------------------------|
-| title                         | String  | Sim         | Título. (até 100 caracteres)                                         |
-| action_type                   | String  | Sim         | Tipo da ação. (enable_steps disable_steps finish_flow transfer_flow) |
-| action_values                 | Array   | Sim         | Array com ids variando conforme o action_type                        |
-| trigger_conditions_attributes | Array   | Sim         | Condições do Gatilho (vide TriggerConditionsAttributes)              |
+| title                         | String  | Não         | Título. (até 100 caracteres)                                         |
+| action_type                   | String  | Não         | Tipo da ação. (enable_steps disable_steps finish_flow transfer_flow) |
+| action_values                 | Array   | Não         | Array com ids variando conforme o action_type                        |
+| trigger_conditions_attributes | Array   | Não         | Condições do Gatilho (vide TriggerConditionsAttributes)              |
 
 
 ##### TriggerConditionsAttributes
@@ -280,14 +335,14 @@ Content-Type: application/json
 ```
 ___
 
-### Deleção da Etapa <a name="delete"></a>
+### Deleção <a name="delete"></a>
 
-Endpoint: `/flows/:flow_id/steps/:id`
+Endpoint: `/flows/:flow_id/steps/:id/triggers/:id`
 
 Method: delete
 
-Se houver algum Caso criado para o Fluxo pai dessa Etapa (pode ver com a opção GET do Fluxo e o atributo "total_cases")
-a Etapa não poderá ser apagada e será inativada, caso não possua Casos será excluido fisicamente.
+Se houver algum Caso criado para o Fluxo pai (pode ver com a opção GET do Fluxo e o atributo "total_cases")
+o Gatilho não poderá ser apagada e será inativada, caso não possua Casos será excluido fisicamente.
 
 #### Parâmetros de Entrada
 
@@ -298,8 +353,8 @@ Nenhum parâmetro de entrada, apenas o **id** na url.
 | Código | Descrição                           |
 |--------|-------------------------------------|
 | 401    | Acesso não autorizado.              |
-| 404    | Etapa não existe.                   |
-| 200    | Se a Etapa foi apagada com sucesso. |
+| 404    | Não existe.                         |
+| 200    | Apagado com sucesso.                |
 
 #### Exemplo
 
@@ -311,66 +366,6 @@ Content-Type: application/json
 
 ```json
 {
-  "message": "Etapa apagada com sucesso"
-}
-```
-___
-
-### Exibir Etapa <a name="show"></a>
-
-Endpoint: `/flows/:flow_id/steps/:id`
-
-Method: get
-
-#### Parâmetros de Entrada
-
-| Nome          | Tipo    | Obrigatório | Descrição                                      |
-|---------------|---------|-------------|------------------------------------------------|
-| display_type  | String  | Não         | Para retornar todos os valores utilize 'full'. |
-
-#### Status HTTP
-
-| Código | Descrição              |
-|--------|------------------------|
-| 401    | Acesso não autorizado. |
-| 404    | Etapa não existe.      |
-| 200    | Exibe a Etapa buscada. |
-
-#### Exemplo
-
-##### Response
-```
-Status: 200
-Content-Type: application/json
-```
-
-```json
-{
-  "step": {
-    "list_versions": null,
-    "last_version_id": null,
-    "last_version": 1,
-    "id": 3,
-    "title": "Titulo da Etapa 4",
-    "step_type": "flow",
-    "child_flow": {
-      "last_version_id": null,
-      "last_version": 1,
-      "step_id": null,
-      "status": "active",
-      "id": 5,
-      "title": "Novo Titulo 2",
-      "description": "Agora com descrição",
-      "created_by_id": 308,
-      "updated_by_id": null,
-      "initial": false,
-      "created_at": "2014-04-11T17:45:24.829-03:00",
-      "updated_at": "2014-04-11T17:45:24.829-03:00"
-    },
-    "order_number": 3,
-    "active": true,
-    "created_at": "2014-05-16T17:01:54.699-03:00",
-    "updated_at": "2014-05-16T17:01:54.699-03:00"
-  }
+  "message": "Gatilho apagado com sucesso"
 }
 ```

@@ -36,7 +36,9 @@ module Reports::Statuses
         status_params = safe_params.permit(:title, :color, :initial, :final, :active)
 
         category = load_category
-        status = category.statuses.create!(status_params)
+        status = Reports::Status.find_or_create_by!(status_params)
+
+        category.status_categories.create!(status: status)
 
         {
           status: Reports::Status::Entity.represent(status)

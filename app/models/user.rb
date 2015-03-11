@@ -1,6 +1,9 @@
 class User < ActiveRecord::Base
   include PasswordAuthenticable
   include LikeSearchable
+  include Unsubscribeable
+
+  attr_accessor :from_webhook
 
   has_many :access_keys
   has_many :reports, class_name: "Reports::Item", foreign_key: "user_id"
@@ -11,13 +14,16 @@ class User < ActiveRecord::Base
   has_many :cases_log_entries
 
   validates :email, presence: true, uniqueness: true
-  validates :encrypted_password, presence: true
-  validates :phone, presence: true
-  validates :document, presence: true
-  validates :address, presence: true
-  validates :postal_code, presence: true
   validates :name, presence: true, length: { in: 4..64 }
-  validates :district, presence: true
+
+  with_options unless: :from_webhook do |u|
+    u.validates :encrypted_password, presence: true
+    u.validates :phone, presence: true
+    u.validates :document, presence: true
+    u.validates :address, presence: true
+    u.validates :postal_code, presence: true
+    u.validates :district, presence: true
+  end
 
   before_create :generate_access_key!
 
@@ -60,15 +66,14 @@ class User < ActiveRecord::Base
 
     self.groups.each do |group|
       GroupPermission.permissions_columns.each do |c|
-        key = c.name
-        value = group.permission.send(key)
+        value = group.permission.send(c)
 
         if value.is_a?(Array)
-          perms[key] ||= []
-          perms[key] += value
-          perms[key] = perms[key].uniq
+          perms[c] ||= []
+          perms[c] += value
+          perms[c] = perms[c].uniq
         else
-          perms[key] = value unless perms[key] === true
+          perms[c] = value unless perms[c] === true
         end
       end
     end
@@ -82,6 +87,10 @@ class User < ActiveRecord::Base
     else
       []
     end
+  end
+
+  def push_notification_available?
+    device_type && device_token
   end
 
   class Entity < Grape::Entity

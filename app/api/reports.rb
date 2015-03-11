@@ -7,6 +7,8 @@ module Reports
       mount Reports::Feedbacks::API
       mount Reports::Statuses::API
       mount Reports::Comments::API
+      mount Reports::Webhooks::API
+      mount Reports::ItemHistories::API
     end
   end
 end
