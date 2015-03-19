@@ -67,15 +67,15 @@ module Search::Reports::Items
       results = Reports::SearchItems.new(current_user, search_params).search
 
       if safe_params[:clusterize]
-        header('Total', results[:total])
+        header('Total', results[:total].to_s)
 
         {
-          reports: Reports::Item::Entity.represent(results[:reports]),
+          reports: Reports::Item::Entity.represent(results[:reports], only: return_fields, display_type: safe_params[:display_type]),
           clusters: Reports::Cluster::Entity.represent(results[:clusters])
         }
       else
         {
-          reports: Reports::Item::Entity.represent(results,
+          reports: Reports::Item::Entity.represent(results, only: return_fields,
                                                   display_type: safe_params[:display_type],
                                                   user: current_user)
         }

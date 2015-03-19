@@ -33,14 +33,11 @@ module Groups
           search_query = search_query.merge(id: user_permissions.groups_visible)
         end
 
-        if search_query.empty?
-          groups = paginate(Group.includes(:users).all)
-        else
-          # TODO: Fix the pagination for this query
-          # it's an incompatibility between
-          # will_paginate and textacular.
-          groups = Group.includes(:users)
+        groups = Group.includes(:users, :permission)
 
+        if search_query.empty?
+          groups = paginate(groups.all)
+        else
           if (visible_ids = search_query.delete(:id))
             groups = groups.where(id: visible_ids)
           end
@@ -162,16 +159,12 @@ module Groups
       desc "Updates group's permissions"
       params do
         # Managing
-        optional :manage_users, type: Boolean, desc: "Can manage users"
-        optional :manage_groups, type: Boolean, desc: "Can manage groups"
-        optional :manage_inventory_categories, type: Boolean, desc: "Can inventory categories"
-        optional :manage_inventory_items, type: Boolean, desc: "Can manage inventory items"
-        optional :manage_reports_categories, type: Boolean, desc: "Can manage inventory categories"
-        optional :edit_reports, type: Boolean, desc: "Can edit reports"
-        optional :delete_reports, type: Boolean, desc: "Can delete reports"
-        optional :manage_users, type: Boolean, desc: "Can manage users"
+        optional :users_full_access, type: Boolean, desc: "Can manage users"
+        optional :groups_full_access, type: Boolean, desc: "Can manage groups"
+        optional :inventories_full_access, type: Boolean, desc: "Can inventory categories"
+        optional :reports_full_access, type: Boolean, desc: "Can manage inventory categories"
         optional :manage_flows, type: Boolean, desc: "Can manage flows"
-        optional :manage_inventory_formulas, type: Boolean, desc: "Can manage formulas"
+        optional :inventories_formulas_full_access, type: Boolean, desc: "Can manage formulas"
 
         # Flows
         optional :flow_can_view_all_steps, type: Array[Integer],
@@ -189,31 +182,43 @@ module Groups
         optional :can_execute_step, type: Array[Integer],
                  desc: "Step ids that can be executed by the group"
 
-        # Categories and sections
-        optional :view_categories, type: Boolean, desc: "Can view inventory categories"
-        optional :view_sections, type: Boolean, desc: "Can view sections"
-
         # Panel access
         optional :panel_access, type: Boolean, desc: "Can access panel"
         optional :create_reports_from_panel, type: Boolean, desc: "Can create reports while on panel"
 
         # Groups
-        optional :groups_can_edit, type: Array[Integer],
+        optional :groups_edit, type: Array[Integer],
                  desc: "Groups ids that can be edited by the group"
-        optional :groups_can_view, type: Array[Integer],
+        optional :groups_read_only, type: Array[Integer],
                  desc: "Groups ids that can be viewed by the group"
 
         # Reports Categories
-        optional :reports_categories_can_edit, type: Array[Integer],
+        optional :reports_categories_edit, type: Array[Integer],
                  desc: "Reports categories ids that can be edited by the group"
-        optional :reports_categories_can_view, type: Array[Integer],
-                 desc: "Reports categories ids that can be viewed by the group"
 
         # Inventory Categories
-        optional :inventory_categories_can_edit, type: Array[Integer],
+        optional :inventories_categories_edit, type: Array[Integer],
                  desc: "Inventory categories ids that can be edited by the group"
-        optional :inventory_categories_can_view, type: Array[Integer],
-                 desc: "Inventory sections ids that can be viewed by the group"
+
+        # Inventory Items
+        optional :inventories_items_read_only, type: Array[Integer],
+                 desc: "Inventory categories ids that group can see and view items"
+        optional :inventories_items_create, type: Array[Integer],
+                 desc: "Inventory categories ids that group can create items"
+        optional :inventories_items_edit, type: Array[Integer],
+                 desc: "Inventory categories ids that group can edit items"
+        optional :inventories_items_delete, type: Array[Integer],
+                 desc: "Inventory categories ids that group can delete items"
+
+        # Reports Items
+        optional :reports_items_read_only, type: Array[Integer],
+                 desc: "Reports categories ids that group can see and view items"
+        optional :reports_items_create, type: Array[Integer],
+                 desc: "Reports categories ids that group can create items"
+        optional :reports_items_edit, type: Array[Integer],
+                 desc: "Reports categories ids that group can edit items"
+        optional :reports_items_delete, type: Array[Integer],
+                 desc: "Reports categories ids that group can delete items"
 
         # Inventory Sections
         optional :inventory_sections_can_view, type: Array[Integer],
@@ -233,21 +238,28 @@ module Groups
         validate_permission!(:edit, group)
 
         permission_params = safe_params.permit(
-          :manage_users,                :manage_inventory_categories,
-          :manage_inventory_items,      :manage_groups,
-          :manage_reports_categories,   :manage_reports,
-          :manage_flows,                :view_categories,
-          :manage_inventory_formulas,   :edit_reports, :delete_reports,
+          :users_full_access,           :inventories_full_access,
+          :groups_full_access,          :manage_reports_categories,
+          :reports_full_access,
+          :manage_flows,
+          :inventories_formulas_full_access,
           :create_reports_from_panel,   :panel_access,
-          :view_sections,               :groups_can_edit => [],
+          :groups_edit => [],
           :inventory_sections_can_view => [], :inventory_sections_can_edit => [],
           :inventory_categories_can_view => [], :inventory_categories_can_edit => [],
           :inventory_fields_can_view => [], :inventory_fields_can_edit => [],
-          :groups_can_view => [],             :reports_categories_can_edit => [],
-          :reports_categories_can_view => [], :inventory_categories_can_edit => [],
-          :reports_categories_can_view => [], :flow_can_view_all_steps => [],
+          :groups_read_only => [],             :reports_categories_edit => [],
+          :reports_categories_can_view => [], :inventory_categories_edit => [],
           :flow_can_execute_all_steps => [], :flow_can_delete_own_cases => [],
-          :step_view_all_case => [],          :step_execute_all_case => []
+          :step_view_all_case => [],          :step_execute_all_case => [],
+          :inventories_items_read_only => [],
+          :inventories_items_edit => [],
+          :inventories_items_create => [],
+          :inventories_items_delete => [],
+          :reports_items_read_only => [],
+          :reports_items_edit => [],
+          :reports_items_create => [],
+          :reports_items_delete => []
         )
 
         unless permission_params.empty?

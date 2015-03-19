@@ -11,7 +11,7 @@ describe UserAbility do
       let(:other_user) { create(:user) }
       let(:group) do
         g = create(:group)
-        g.permission.update(manage_users: true)
+        g.permission.update(users_full_access: true)
         g.save
         g
       end
@@ -36,7 +36,7 @@ describe UserAbility do
       before { user.groups << group }
 
       it "can manage the given group" do
-        group.permission.groups_can_edit = [other_group.id]
+        group.permission.group_edit = [other_group.id]
         group.save!
         expect(subject.can?(:edit, other_group)).to be_truthy
       end

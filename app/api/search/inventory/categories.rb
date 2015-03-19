@@ -12,7 +12,7 @@ module Search::Inventory::Categories
       categories = paginate(categories)
 
       {
-        categories: Inventory::Category::Entity.represent(categories, user: current_user)
+        categories: Inventory::Category::Entity.represent(categories, only: return_fields, user: current_user)
       }
     end
   end

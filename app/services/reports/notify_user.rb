@@ -8,7 +8,7 @@ module Reports
     end
 
     def notify_report_creation!
-      UserMailer.delay.notify_report_creation(self)
+      UserMailer.delay.notify_report_creation(item)
     end
 
     def notify_status_update!(new_status)
@@ -18,7 +18,8 @@ module Reports
 
       if user.push_notification_available?
         NotificationPusher.perform_async(user.id,
-          "Seu relato mudou para o status '#{new_status.title}'"
+          "Seu relato mudou para o status '#{new_status.title}'",
+          item.id, "report"
         )
       end
     end
@@ -26,7 +27,8 @@ module Reports
     def notify_new_comment!
       if user.push_notification_available?
         NotificationPusher.perform_async(user.id,
-          "Existe um novo comentário da prefeitura para um relato que você realizou"
+          "Existe um novo comentário da prefeitura para um relato que você realizou",
+          item.id, "report"
         )
       end
     end

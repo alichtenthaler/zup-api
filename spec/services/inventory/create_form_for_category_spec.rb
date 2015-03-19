@@ -75,7 +75,7 @@ describe Inventory::CreateFormForCategory do
               "kind" => "text",
               "size" => "M",
               "permissions" => {},
-              "available_values" => ["Option 1", "Option 2"],
+              "field_options" => ["Option 1", "Option 2"],
               "label" => "Latitude",
               "position" => 0
             }]

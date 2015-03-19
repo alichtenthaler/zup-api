@@ -25,7 +25,7 @@ module Search::Users
       users = paginate(users)
 
       {
-        users: User::Entity.represent(users, display_type: 'full')
+        users: User::Entity.represent(users, only: return_fields, display_type: 'full')
       }
     end
 
@@ -58,7 +58,7 @@ module Search::Users
 
 
       {
-        users: User::Entity.represent(users, display_type: 'full')
+        users: User::Entity.represent(users, only: return_fields, display_type: 'full')
       }
     end
   end

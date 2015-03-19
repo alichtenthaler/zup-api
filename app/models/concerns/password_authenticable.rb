@@ -3,7 +3,7 @@ module PasswordAuthenticable
 
   included do
     attr_accessor :current_password, :password, :password_confirmation,
-                  :resetting_password, :old_encrypted_password
+                  :resetting_password, :old_encrypted_password, :user_changing_password
 
     before_validation :encrypt_password
     after_create :clear_password_attributes
@@ -68,7 +68,7 @@ module PasswordAuthenticable
   end
 
   def presence_of_current_password
-    permissions = UserAbility.new(self)
+    permissions = UserAbility.new(user_changing_password || self)
 
     # If is an existent record
     # and the password attribute is present
@@ -91,7 +91,7 @@ module PasswordAuthenticable
   module ClassMethods
     # Authenticates email and password
     def authenticate(email, password)
-      if (user = find_by(email: email))
+      if (user = enabled.find_by(email: email))
         if user.check_password(password)
           user.generate_access_key!
           return user.reload

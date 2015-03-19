@@ -7,8 +7,9 @@ class Inventory::RenderCategoryFormData
   end
 
   def render
+    sections = category.sections.includes(fields: :field_options)
     {
-      sections: Inventory::Section::Entity.represent(category.sections, user: user)
+      sections: Inventory::Section::Entity.represent(sections, user: user)
     }
   end
 end

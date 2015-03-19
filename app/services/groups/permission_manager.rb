@@ -33,14 +33,16 @@ module Groups
           klass = GroupPermission::TYPES_CLASSES[permission_type]
 
           if klass
-            object = klass.find(object_id)
-          end
+            object = klass.find_by(id: object_id)
 
-          data << {
-            permission_type: permission_type,
-            object: klass::Entity.represent(object),
-            permission_names: names
-          }
+            if object
+              data << {
+                permission_type: permission_type,
+                object: klass::Entity.represent(object),
+                permission_names: names
+              }
+            end
+          end
         end
       end
 

@@ -142,7 +142,6 @@ describe Cases::API, versioning: true do
       before do
         add_permision_to_user(user, flow.steps.first.id)
         post '/cases', valid_params, auth(user)
-        puts
       end
 
       it { expect(response.status).to be_a_requisition_created }

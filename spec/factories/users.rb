@@ -17,6 +17,10 @@ FactoryGirl.define do
     device_type 'ios'
 
     groups { [Group.find_by(name: 'Admins') || create(:group_for_admin, name: 'Admins')] }
+
+    trait :disabled do
+      disabled true
+    end
   end
 
   factory :guest_user, parent: :user do

@@ -66,17 +66,17 @@ module Search::Inventory::Items
       results = Inventory::SearchItems.new(current_user, search_params).search
 
       if safe_params[:clusterize]
-        header('Total', results[:total])
+        header('Total', results[:total].to_s)
 
         {
-          items: Inventory::Item::Entity.represent(results[:items], display_type: params[:display_type]),
+          items: Inventory::Item::Entity.represent(results[:items], only: return_fields, display_type: params[:display_type]),
           clusters: Inventory::Cluster::Entity.represent(results[:clusters])
         }
       else
         results = paginate(results)
 
         {
-          items: Inventory::Item::Entity.represent(results, display_type: params[:display_type])
+          items: Inventory::Item::Entity.represent(results, only: return_fields, display_type: params[:display_type])
         }
       end
     end

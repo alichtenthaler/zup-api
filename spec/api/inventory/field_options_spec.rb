@@ -59,6 +59,7 @@ describe Inventory::FieldOptions::API do
       it "creates the field option" do
         expect(response.status).to eq(201)
         expect(field.field_options.map(&:value)).to match_array(['Option 1', 'Option 2'])
+        expect(parsed_body['field_options']).to match(an_instance_of(Array))
       end
     end
   end

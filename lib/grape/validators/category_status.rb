@@ -1,5 +1,5 @@
 # Validator for CategoryStatus
-class CategoryStatus < Grape::Validations::Validator
+class CategoryStatus < Grape::Validations::Base
   # Validator classes
   class String
     def self.valid?(content)
@@ -39,8 +39,10 @@ class CategoryStatus < Grape::Validations::Validator
     params[attr_name].each do |k, status|
       if k.nil? || k.kind_of?(Hash)
         errors << Grape::Exceptions::Validation.new(
-          param: @scope.full_name(attr_name), message: "must be a valid hash")
-          return false
+          params: [@scope.full_name(attr_name)], message: "must be a valid hash"
+        )
+
+        return false
       end
 
       status = status.symbolize_keys
@@ -57,7 +59,7 @@ class CategoryStatus < Grape::Validations::Validator
 
         if message
           errors << Grape::Exceptions::Validation.new(
-            param: @scope.full_name(name), message: message
+            params: [@scope.full_name(name)], message: message
           )
         end
       end

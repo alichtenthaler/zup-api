@@ -33,7 +33,7 @@ describe Flows::Steps::Triggers::TriggerConditions::API do
             before { delete "/flows/#{flow.id}/steps/#{step.id}/triggers/#{trigger.id}/trigger_conditions/12345678", {}, auth(user) }
 
             it { expect(response.status).to be_a_not_found }
-            it { expect(response.body).to be_an_error('Couldn\'t find TriggerCondition with id=12345678 [WHERE "trigger_conditions"."trigger_id" = $1]') }
+            it { expect(parsed_body).to be_an_error('Couldn\'t find TriggerCondition with id=12345678 [WHERE "trigger_conditions"."trigger_id" = $1]') }
           end
         end
 

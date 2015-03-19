@@ -1,6 +1,7 @@
 class Reports::Item < Reports::Base
   include EncodedImageUploadable
   include LikeSearchable
+  include BoundaryValidation
 
   accepts_multiple_images_for :images
 
@@ -37,6 +38,7 @@ class Reports::Item < Reports::Base
   after_create :generate_protocol
 
   validates :description, length: { maximum: 800 }
+  validate_in_boundary :position
 
   accepts_nested_attributes_for :comments
 
@@ -83,11 +85,9 @@ class Reports::Item < Reports::Base
   end
 
   def images_structure
-    structure = self.images.map do |image|
+    images.map do |image|
       self.fetch_image_versions(image.image).merge(original: image.url)
     end
-
-    structure
   end
 
   def status_history_for_user
@@ -145,10 +145,11 @@ class Reports::Item < Reports::Base
 
     # With display_type different to full
     with_options(unless: { display_type: 'full' }) do
-      expose :reports_status_id, as: 'status_id'
-      expose :reports_category_id, as: 'category_id'
       expose :inventory_item_id
     end
+
+    expose :reports_status_id, as: :status_id
+    expose :reports_category_id, as: :category_id
 
     expose :images_structure, as: :images
     expose :inventory_item_category_id

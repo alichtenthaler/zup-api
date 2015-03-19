@@ -11,7 +11,7 @@ module Inventory
     end
 
     def search
-      scope = Inventory::ItemHistory
+      scope = Inventory::ItemHistory.includes(:user)
 
       if item_id
         scope = scope.where(inventory_item_id: item_id)

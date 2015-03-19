@@ -9,6 +9,56 @@ describe Reports::Item do
       expect(report.save).to eq(false)
       expect(report.errors).to include(:description)
     end
+
+    context "validations for boundary" do
+      let(:item) { build(:reports_item) }
+      let(:latitude) { -46.32341 }
+      let(:longitude) { -23.134234 }
+
+      before do
+        item.position = Reports::Item.rgeo_factory.point(longitude, latitude)
+      end
+
+      context "validation for boundary is enabled" do
+        before do
+          allow(CityShape).to receive(:validation_enabled?).and_return(true)
+        end
+
+        context "position in boundaries" do
+          before do
+            allow(CityShape).to receive(:contains?)
+            .and_return(true)
+          end
+
+          it "is valid" do
+            expect(item.valid?).to be_truthy
+          end
+        end
+
+        context "position not in boundaries" do
+          before do
+            allow(CityShape).to receive(:contains?)
+                            .and_return(false)
+          end
+
+          it "is valid" do
+            expect(item.valid?).to be_falsy
+          end
+        end
+      end
+
+      context "validation for boundary is disabled" do
+        before do
+          allow(CityShape).to receive(:validation_enabled?).and_return(false)
+        end
+
+        context "position not in boundaries" do
+          it "is valid" do
+            expect(item.valid?).to be_truthy
+          end
+        end
+      end
+    end
   end
 
   it "has relationship with inventory category through category" do

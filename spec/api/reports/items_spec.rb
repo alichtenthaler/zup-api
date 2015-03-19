@@ -127,7 +127,7 @@ describe Reports::Items::API do
 
       context "user doesn't have permission to create from panel" do
         before do
-          GroupPermission.where(group_id: user.groups.pluck(:id)).update_all(create_reports_from_panel: false, manage_reports: false)
+          GroupPermission.where(group_id: user.groups.pluck(:id)).update_all(create_reports_from_panel: false, reports_full_access: false)
         end
 
         it "disallows creation of the report" do
@@ -275,7 +275,7 @@ describe Reports::Items::API do
       end
 
       it "return all reports ordenated and paginated" do
-        get '/reports/items?page=2&per_page=15&sort=id&order=asc',
+        get '/reports/items?page=2&per_page=15&sort=id&order=asc&return_fields=id',
             nil, auth(user)
         expect(response.status).to eq(200)
         body = parsed_body
@@ -320,7 +320,7 @@ describe Reports::Items::API do
       end
 
       it "returns all reports for user" do
-        get '/reports/items', valid_params, auth(user)
+        get '/reports/items?return_fields=id', valid_params, auth(user)
         expect(response.status).to eq(200)
         body = parsed_body
 
@@ -353,7 +353,7 @@ describe Reports::Items::API do
       end
 
       it "returns all reports for category" do
-        get '/reports/items', valid_params, auth(user)
+        get '/reports/items?return_fields=category_id', valid_params, auth(user)
         expect(response.status).to eq(200)
         body = parsed_body
 
@@ -368,7 +368,7 @@ describe Reports::Items::API do
     context "date filter" do
       let!(:reports) do
         reports = create_list(
-          :reports_item_with_images, 3,
+          :reports_item_with_images, 3
         )
 
         reports.each do |report|
@@ -390,7 +390,7 @@ describe Reports::Items::API do
       end
 
       it "returns all reports in the date range" do
-        get '/reports/items', valid_params, auth(user)
+        get '/reports/items?return_fields=id', valid_params, auth(user)
         expect(response.status).to eq(200)
         body = parsed_body
 
@@ -431,7 +431,7 @@ describe Reports::Items::API do
         end
 
         it "returns all reports in the date range" do
-          get '/reports/items', valid_params, auth(user)
+          get '/reports/items?return_fields=id', valid_params, auth(user)
           expect(response.status).to eq(200)
           body = parsed_body
 
@@ -468,7 +468,7 @@ describe Reports::Items::API do
       end
 
       it "returns all reports with correct statuses" do
-        get "/reports/items", valid_params, auth(user)
+        get "/reports/items?return_fields=id", valid_params, auth(user)
         expect(response.status).to eq(200)
         body = parsed_body
 
@@ -479,7 +479,7 @@ describe Reports::Items::API do
       it "accepts only one id as argument" do
         valid_params["statuses"] = status.id
 
-        get "/reports/items", valid_params, auth(user)
+        get "/reports/items?return_fields=id", valid_params, auth(user)
         expect(response.status).to eq(200)
         body = parsed_body
 
@@ -512,7 +512,7 @@ describe Reports::Items::API do
       end
 
       it "returns all reports for category" do
-        get '/reports/items', valid_params, auth(user)
+        get '/reports/items?return_fields=id', valid_params, auth(user)
         expect(response.status).to eq(200)
         body = parsed_body
 
@@ -541,13 +541,13 @@ describe Reports::Items::API do
 
       before do
         Group.guest.each do |group|
-          group.permission.reports_categories_can_view = [category.id]
+          group.permission.reports_items_read_only = [category.id]
           group.save!
         end
       end
 
       it "only can see the category it has the permission" do
-        get "/reports/items"
+        get "/reports/items?return_fields=id"
         expect(response.status).to eq(200)
         body = parsed_body
 
@@ -587,7 +587,7 @@ describe Reports::Items::API do
       let(:item) { create(:reports_item_with_images, :with_feedback, user: user) }
 
       it "shows the protocol" do
-        get "/reports/items/#{item.id}", nil, auth(user)
+        get "/reports/items/#{item.id}?return_fields=id,protocol", nil, auth(user)
         expect(response.status).to eq(200)
         report = parsed_body['report']
 
@@ -604,7 +604,7 @@ describe Reports::Items::API do
       end
 
       it "doesn't show the protocol" do
-        get "/reports/items/#{item.id}", nil, auth(user)
+        get "/reports/items/#{item.id}?return_fields=id,protocol", nil, auth(user)
         expect(response.status).to eq(200)
         report = parsed_body['report']
 
@@ -621,7 +621,7 @@ describe Reports::Items::API do
       end
 
       it "does show the protocol" do
-        get "/reports/items/#{item.id}", nil, auth(user)
+        get "/reports/items/#{item.id}?return_fields=id,protocol", nil, auth(user)
         expect(response.status).to eq(200)
         report = parsed_body['report']
 
@@ -711,7 +711,7 @@ describe Reports::Items::API do
         expect(empty_category.reports.count).to eq(8)
         expect(empty_category.reports.map(&:position)).to_not include(nil)
 
-        get '/reports/items', valid_params
+        get '/reports/items?return_fields=id', valid_params
 
         expect(response.status).to eq(200)
         body = parsed_body

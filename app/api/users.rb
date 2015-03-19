@@ -74,16 +74,20 @@ module Users
     desc "Shows authenticated info"
     get :me do
       authenticate!
+
+      current_user.groups.includes(:permission)
+
       { user: User::Entity.represent(current_user,
-                                     display_type: 'full',
-                                     display_groups: true
+                                     only: return_fields,
+                                     display_type: 'full'
                                     ) }
     end
 
     desc "Destroy current user account"
     delete :me do
       authenticate!
-      current_user.destroy
+      current_user.disable!
+
       { message: "Conta deletada com sucesso." }
     end
 
@@ -106,7 +110,8 @@ module Users
         groups_ids = search_params.delete(:groups)
 
         search_query = {}
-        users = User
+        users = User.enabled
+
         if name
           search_query = search_query.merge(name: name)
         end
@@ -224,7 +229,7 @@ module Users
           :device_token, :device_type, :email_notifications
         )
 
-        user.update!(user_params)
+        user.update!(user_params.merge(user_changing_password: current_user))
         { message: "Conta alterada com sucesso." }
       end
 
@@ -233,7 +238,9 @@ module Users
         authenticate!
         user = User.find(safe_params[:id])
         validate_permission!(:delete, user)
-        user.destroy
+
+        user.disable!
+
         { message: "Conta deletada com sucesso." }
       end
 

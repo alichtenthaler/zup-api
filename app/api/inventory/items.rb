@@ -50,7 +50,7 @@ module Inventory::Items
         end
 
         garner.bind(Inventory::ItemCacheControl.new(items)).options(expires_in: 15.minutes) do
-          { items: Inventory::Item::Entity.represent(items, display_type: safe_params[:display_type], user: current_user, serializable: true) }
+          { items: Inventory::Item::Entity.represent(items, display_type: safe_params[:display_type], user: current_user, serializable: true, only: return_fields) }
         end
       end
 
@@ -58,7 +58,7 @@ module Inventory::Items
       get ':id' do
         item = Inventory::Item.find(safe_params[:id])
 
-        { item: Inventory::Item::Entity.represent(item, user: current_user) }
+        { item: Inventory::Item::Entity.represent(item, user: current_user, only: return_fields) }
       end
     end
 
@@ -101,7 +101,7 @@ module Inventory::Items
             category = load_category
             item = category.items.find(safe_params[:id])
 
-            { item: Inventory::Item::Entity.represent(item, user: current_user) }
+            { item: Inventory::Item::Entity.represent(item, user: current_user, only: return_fields) }
           end
 
           desc "Destroy item"

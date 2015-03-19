@@ -4,10 +4,6 @@ module Reports
 
     attr_accessor :reports_ids, :reports_category_id, :count, :geohash
 
-    def category
-      Reports::Category.find_by(id: reports_category_id)
-    end
-
     def position
       GeoHash.decode(geohash)[0]
     end
@@ -15,7 +11,7 @@ module Reports
     class Entity < Grape::Entity
       expose :reports_ids
       expose :position
-      expose :category, using: Reports::Category::Entity
+      expose :reports_category_id, as: :category_id
       expose :count
     end
   end

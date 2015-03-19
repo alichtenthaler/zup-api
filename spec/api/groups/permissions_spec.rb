@@ -9,9 +9,9 @@ describe Groups::Permissions::API do
 
     before do
       group.permission.update(
-        inventory_categories_can_edit: [inventory_category.id],
-        inventory_categories_can_view: [inventory_category.id],
-        manage_reports: true
+        inventories_items_edit: [inventory_category.id],
+        inventories_items_read_only: [inventory_category.id],
+        reports_full_access: true
       )
     end
 
@@ -31,7 +31,7 @@ describe Groups::Permissions::API do
 
     context 'array permissions' do
       let(:objects_ids) { [1,2] }
-      let(:permissions) { ['reports_categories_can_edit', 'reports_categories_can_view'] }
+      let(:permissions) { ['reports_items_edit', 'reports_items_read_only'] }
 
       let(:valid_params) do
         {
@@ -45,13 +45,13 @@ describe Groups::Permissions::API do
         expect(response.status).to eq(201)
 
         group.permission.reload
-        expect(group.permission.reports_categories_can_edit).to match_array([1,2])
-        expect(group.permission.reports_categories_can_view).to match_array([1,2])
+        expect(group.permission.reports_items_edit).to match_array([1,2])
+        expect(group.permission.reports_items_read_only).to match_array([1,2])
       end
     end
 
     context 'boolean permissions' do
-      let(:permissions) { ['manage_reports', 'manage_reports_categories'] }
+      let(:permissions) { ['reports_full_access'] }
 
       let(:valid_params) do
         {
@@ -64,8 +64,7 @@ describe Groups::Permissions::API do
         expect(response.status).to eq(201)
 
         group.permission.reload
-        expect(group.permission.manage_reports).to be_truthy
-        expect(group.permission.manage_reports_categories).to be_truthy
+        expect(group.permission.reports_full_access).to be_truthy
       end
     end
   end
@@ -76,7 +75,7 @@ describe Groups::Permissions::API do
 
     context 'permission with object id' do
       let(:object_id) { 1 }
-      let(:permission) { 'reports_categories_can_edit' }
+      let(:permission) { 'reports_items_edit' }
 
       let(:valid_params) do
         {
@@ -96,26 +95,25 @@ describe Groups::Permissions::API do
         expect(response.status).to eq(200)
 
         group.permission.reload
-        expect(group.permission.reports_categories_can_edit).to_not include(object_id)
+        expect(group.permission.reports_items_edit).to_not include(object_id)
       end
     end
 
     context 'boolean permissions' do
-      let(:permissions) { ['manage_reports', 'manage_reports_categories'] }
+      let(:permission) { 'reports_full_access' }
 
       let(:valid_params) do
         {
-          permissions: permissions
+          permission: permission
         }
       end
 
-      it "sets the permissions as true" do
-        post url, valid_params, auth(user)
-        expect(response.status).to eq(201)
+      it "sets the permissions as false" do
+        delete url, valid_params, auth(user)
+        expect(response.status).to eq(200)
 
         group.permission.reload
-        expect(group.permission.manage_reports).to be_truthy
-        expect(group.permission.manage_reports_categories).to be_truthy
+        expect(group.permission.reports_full_access).to be_falsy
       end
     end
   end

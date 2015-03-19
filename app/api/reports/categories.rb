@@ -79,7 +79,7 @@ module Reports::Categories
 
           {
             category: Reports::Category::Entity.represent(
-              category, display_type: :full
+              category, display_type: :full, only: return_fields
             )
           }
         end
@@ -95,7 +95,7 @@ module Reports::Categories
         validate_permission!(:view, report_category)
 
         display_type = params[:display_type].nil? ? :full : params[:display_type].to_s.to_sym
-        { category: Reports::Category::Entity.represent(report_category, display_type: display_type) }
+        { category: Reports::Category::Entity.represent(report_category, display_type: display_type, only: return_fields) }
       end
 
       desc 'Returns list of all reports category'
@@ -107,6 +107,7 @@ module Reports::Categories
       get do
         display_type = params[:display_type] == 'full' ? :full : :default
         categories_scope = Reports::Category.active.main
+                                            .includes(:inventory_categories, :statuses, subcategories: [:inventory_categories, :statuses, :subcategories])
         permissions = UserAbility.new(current_user)
 
         unless permissions.can?(:manage, Reports::Category)
@@ -116,7 +117,8 @@ module Reports::Categories
         {
           categories: Reports::Category::Entity.represent(
             paginate(categories_scope),
-            display_type: display_type
+            display_type: display_type,
+            only: return_fields
           )
         }
       end
@@ -148,6 +150,7 @@ module Reports::Categories
         validate_permission!(:create, category)
 
         Reports::Category.transaction do
+          old_color = category.color
           category.update!(category_params)
 
           unless params[:statuses].nil?
@@ -160,7 +163,7 @@ module Reports::Categories
             category.update_statuses!(statuses)
           end
 
-          if safe_params[:icon] || safe_params[:marker] || safe_params[:color]
+          if safe_params[:icon] || safe_params[:marker] || (safe_params[:color] && safe_params[:color] != old_color)
             category.icon.recreate_versions!
             category.marker.recreate_versions!
             category.save!

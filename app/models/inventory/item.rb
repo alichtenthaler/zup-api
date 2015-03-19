@@ -1,5 +1,6 @@
 class Inventory::Item < Inventory::Base
   include LikeSearchable
+  include BoundaryValidation
 
   set_rgeo_factory_for_column(:position, RGeo::Geographic.simple_mercator_factory)
 
@@ -36,6 +37,8 @@ class Inventory::Item < Inventory::Base
   validates :user, presence: true
   validates :title, presence: true
   validates :status, presence: true, if: :must_have_status?
+
+  validate_in_boundary :position
 
   scope :locked, -> { where(locked: true) }
 
@@ -77,7 +80,7 @@ class Inventory::Item < Inventory::Base
       expose :category, using: Inventory::Category::Entity
     end
 
-    expose :inventory_category_id, unless: { display_type: 'full' }
+    expose :inventory_category_id
     expose :data, unless: { display_type: 'basic' }
     expose :created_at
     expose :updated_at
@@ -86,7 +89,9 @@ class Inventory::Item < Inventory::Base
 
     def data
       user = options[:user]
-      objects = object.data
+      objects = object.data.preload(field: :field_options)
+                      .joins(:field).merge(Inventory::Field.enabled)
+
       permissions = UserAbility.new(user)
 
       unless permissions.can?(:manage, Inventory::Item)

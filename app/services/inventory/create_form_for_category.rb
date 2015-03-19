@@ -7,6 +7,7 @@ class Inventory::CreateFormForCategory
 
   def create!
     create_or_update_sections
+    category
   end
 
   private
@@ -144,7 +145,7 @@ class Inventory::CreateFormForCategory
       title = field.delete("title")
       position = field.delete("position")
       kind = field.delete("kind")
-      available_values = field.delete("available_values")
+      available_values = field.delete("field_options")
       maximum = field.delete("maximum")
       minimum = field.delete("minimum")
       required = field.delete("required")

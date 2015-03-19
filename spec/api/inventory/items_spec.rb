@@ -421,7 +421,7 @@ describe Inventory::Items::API do
       end
 
       it "return all inventory items ordenated and paginated" do
-        ordered_items = Inventory::Item.where(id: items.map(&:id))
+        ordered_items = Inventory::Item.where(id: items.map(&:id)).order(id: :asc)
 
         get '/inventory/items?page=2&per_page=3&sort=id&order=desc',
             nil, auth(user)
@@ -514,7 +514,7 @@ describe Inventory::Items::API do
 
       before do
         Group.guest.each do |group|
-          group.permission.inventory_categories_can_view = [other_category.id]
+          group.permission.inventories_items_read_only = [other_category.id]
           group.save!
         end
       end

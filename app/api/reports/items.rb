@@ -57,7 +57,7 @@ module Reports::Items
 
         if params[:inventory_item_id]
           report.inventory_item = Inventory::Item.find(params[:inventory_item_id])
-        elsif params[:latitude] and params[:longitude] and params[:address]
+        elsif params[:latitude] && params[:longitude] && params[:address]
           report.position = Reports::Item.rgeo_factory.point(params[:longitude], params[:latitude])
           report.address = params[:address]
         else
@@ -78,7 +78,7 @@ module Reports::Items
           Reports::NotifyUser.new(report).notify_report_creation!
         end
 
-        { report: Reports::Item::Entity.represent(report, display_type: 'full', user: current_user) }
+        { report: Reports::Item::Entity.represent(report, display_type: 'full', user: current_user, only: return_fields) }
       end
     end
 
@@ -274,6 +274,7 @@ module Reports::Items
             reports,
             display_type: safe_params[:display_type],
             user: current_user,
+            only: return_fields,
             serializable: true
           )
         }
@@ -294,6 +295,7 @@ module Reports::Items
         report: Reports::Item::Entity.represent(
           report,
           user: current_user,
+          only: return_fields,
           display_type: 'full'
         )
       }
@@ -350,6 +352,7 @@ module Reports::Items
         reports: Reports::Item::Entity.represent(
           reports,
           user: current_user,
+          only: return_fields,
           display_type: safe_params[:display_type]
         )
       }
@@ -385,6 +388,7 @@ module Reports::Items
         reports: Reports::Item::Entity.represent(
           reports,
           user: current_user,
+          only: return_fields,
           display_type: safe_params[:display_type]
         )
       }
@@ -417,6 +421,7 @@ module Reports::Items
         reports: Reports::Item::Entity.represent(
           reports,
           user: current_user,
+          only: return_fields,
           display_type: 'full'
         ),
         total_reports_by_user: total_reports_by_user
@@ -450,6 +455,7 @@ module Reports::Items
       {
         reports: Reports::Item::Entity.represent(
           reports,
+          only: return_fields,
           user: current_user,
           display_type: 'full'
         ),

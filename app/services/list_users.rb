@@ -14,7 +14,7 @@ class ListUsers
     @sort = opts[:sort]
 
     @search_params = {}
-    @scope = User.all
+    @scope = User.enabled
   end
 
   def fetch

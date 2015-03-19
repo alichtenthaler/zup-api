@@ -46,7 +46,7 @@ describe Inventory::Categories::API do
         valid_params['permissions'] = {
           'groups_can_view' => [group.id]
         }
-        expect(group.permission.inventory_categories_can_view).to be_empty
+        expect(group.permission.inventories_items_read_only).to be_empty
 
         post "/inventory/categories", valid_params, auth(user)
         expect(response.status).to eq(201)
@@ -54,7 +54,7 @@ describe Inventory::Categories::API do
         group.reload
 
         last_category = Inventory::Category.last
-        expect(group.permission.inventory_categories_can_view).to eq([last_category.id])
+        expect(group.permission.inventories_items_read_only).to eq([last_category.id])
       end
     end
   end
@@ -105,7 +105,7 @@ describe Inventory::Categories::API do
 
       before do
         group.permission.update(
-          inventory_categories_can_view: [category.id],
+          inventories_items_read_only: [category.id],
           inventory_sections_can_edit: [field.section.id],
           inventory_fields_can_edit: [field.id]
         )
@@ -164,7 +164,7 @@ describe Inventory::Categories::API do
         valid_params['permissions'] = {
           'groups_can_view' => [group.id]
         }
-        expect(group.permission.inventory_categories_can_view).to be_empty
+        expect(group.permission.inventories_items_read_only).to be_empty
 
         put "/inventory/categories/#{category.id}", valid_params, auth(user)
         expect(response.status).to eq(200)
@@ -172,7 +172,7 @@ describe Inventory::Categories::API do
         group.reload
 
         last_category = Inventory::Category.last
-        expect(group.permission.inventory_categories_can_view).to eq([last_category.id])
+        expect(group.permission.inventories_items_read_only).to eq([last_category.id])
       end
     end
   end
@@ -244,7 +244,7 @@ describe Inventory::Categories::API do
       let(:allowed_category) { categories.sample }
 
       before do
-        group.permission.inventory_categories_can_view = [allowed_category.id]
+        group.permission.inventories_items_read_only = [allowed_category.id]
         group.save!
         user.groups = [group]
         user.save!

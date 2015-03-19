@@ -21,6 +21,7 @@ module Inventory
         items: [],
         total: 0
       }
+      items_ids = []
 
       entities.each do |entity|
         if entity.number_of_items > 1
@@ -32,11 +33,13 @@ module Inventory
 
           data[:total] += entity.number_of_items
         else
-          data[:items] << Inventory::Item.find(entity.item_id)
+          items_ids << entity.item_id
           data[:total] += 1
         end
       end
 
+      data[:items] = Inventory::Item.where(id: items_ids)
+                                    .includes(:user)
       data
     end
 

@@ -21,6 +21,7 @@ module Reports
         reports: [],
         total: 0
       }
+      items_ids = []
 
       entities.each do |entity|
         if entity.number_of_items > 1
@@ -32,11 +33,13 @@ module Reports
 
           data[:total] += entity.number_of_items
         else
-          data[:reports] << Reports::Item.find(entity.item_id)
+          items_ids << entity.item_id
           data[:total] += 1
         end
       end
 
+      data[:items] = Reports::Item.where(id: items_ids)
+                                  .includes(:user)
       data
     end
 
@@ -51,13 +54,31 @@ module Reports
     end
 
     def zoom_to_chars
-      chars = (zoom.to_f / 2).round
+      @zoom_map ||= {
+          '0' => 2,
+          '1' => 2,
+          '2' => 2,
+          '3' => 2,
+          '4' => 2,
+          '5' => 2,
+          '6' => 3,
+          '7' => 3,
+          '8' => 4,
+          '9' => 5,
+          '10' => 5,
+          '11' => 5,
+          '12' => 5,
+          '13' => 6,
+          '14' => 6,
+          '15' => 6,
+          '16' => 7,
+          '17' => 7,
+          '18' => 8,
+          '19' => 9,
+          '20' => 10
+      }
 
-      if chars < 3
-        chars = 3
-      end
-
-      chars
+      @zoom_map[zoom.to_s] || 5
     end
 
     def changed_scope

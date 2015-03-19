@@ -16,6 +16,15 @@ GIT
       terminal-notifier (~> 1.6.2)
 
 GIT
+  remote: git://github.com/ntxcode/grape-entity.git
+  revision: e9a2590f0c0454988fdc3af2ddbaa7461e881297
+  branch: select-fields
+  specs:
+    grape-entity (0.4.6)
+      activesupport
+      multi_json (>= 1.3.2)
+
+GIT
   remote: https://github.com/carrierwaveuploader/carrierwave.git
   revision: 17399e692d3b29ec7c2e609308c6e2ec7c622694
   ref: 17399e692d3b29ec7c2e609308c6e2ec7c622694
@@ -57,9 +66,9 @@ GEM
       activesupport (= 4.0.13)
       arel (~> 4.0.0)
     activerecord-deprecated_finders (1.0.3)
-    activerecord-postgis-adapter (2.0.1)
-      activerecord (~> 4.0)
-      rgeo-activerecord (~> 1.0.0)
+    activerecord-postgis-adapter (2.2.1)
+      activerecord (>= 4.0.0, < 4.2.0)
+      rgeo-activerecord (~> 1.2)
     activesupport (4.0.13)
       i18n (~> 0.6, >= 0.6.9)
       minitest (~> 4.2)
@@ -68,7 +77,7 @@ GEM
       tzinfo (~> 0.3.37)
     api-pagination (2.1.1)
     arel (4.0.2)
-    armor (0.0.2)
+    armor (0.0.3)
     atomic_arrays (1.1.0)
       activerecord (>= 4.0)
     awesome_print (1.2.0)
@@ -81,7 +90,7 @@ GEM
       actionpack (>= 3.0.0)
       activesupport (>= 3.0.0)
     builder (3.1.4)
-    cancan (1.6.10)
+    cancancan (1.10.1)
     celluloid (0.15.2)
       timers (~> 1.1.0)
     clipboard (1.0.5)
@@ -100,7 +109,10 @@ GEM
     connection_pool (2.0.0)
     cpf_faker (1.3.0)
       clipboard
+    daemons (1.2.1)
     database_cleaner (1.2.0)
+    dbf (2.0.9)
+      fastercsv (~> 1.5)
     descendants_tracker (0.0.4)
       thread_safe (~> 0.3, >= 0.3.1)
     diff-lcs (1.2.5)
@@ -110,6 +122,7 @@ GEM
       dotenv (= 0.10.0)
     equalizer (0.0.9)
     erubis (2.7.0)
+    eventmachine (1.0.7)
     excon (0.13.4)
     execjs (2.0.2)
     factory_girl (4.3.0)
@@ -119,6 +132,7 @@ GEM
       railties (>= 3.0.0)
     faraday (0.8.9)
       multipart-post (~> 1.2.0)
+    fastercsv (1.5.5)
     ffaker (1.22.1)
     fog (1.3.1)
       builder
@@ -139,38 +153,34 @@ GEM
       json
       multi_json (>= 1.3.0)
       rack
-    grape (0.7.0)
+    grape (0.11.0)
       activesupport
       builder
-      hashie (>= 1.2.0)
+      hashie (>= 2.1.0)
       multi_json (>= 1.3.2)
       multi_xml (>= 0.5.2)
       rack (>= 1.3.0)
       rack-accept
       rack-mount
       virtus (>= 1.0.0)
-    grape-entity (0.4.2)
-      activesupport
-      multi_json (>= 1.3.2)
     grape-swagger (0.7.2)
       grape (>= 0.2.0)
       grape-entity (>= 0.3.0)
       kramdown (>= 1.3.1)
-    hashie (2.1.1)
+    hashie (2.1.2)
     hike (1.2.3)
     httparty (0.13.3)
       json (~> 1.8)
       multi_xml (>= 0.5.2)
     httpauth (0.2.0)
     i18n (0.7.0)
-    ice_nine (0.11.0)
+    ice_nine (0.11.1)
     jquery-rails (3.0.4)
       railties (>= 3.0, < 5.0)
       thor (>= 0.14, < 2.0)
     json (1.8.1)
     jwt (0.1.10)
       multi_json (>= 1.5)
-    kgio (2.8.1)
     knapsack (1.0.3)
     kramdown (1.5.0)
     mail (2.6.3)
@@ -180,16 +190,13 @@ GEM
     mini_magick (3.7.0)
       subexec (~> 0.2.1)
     minitest (4.7.5)
-    multi_json (1.10.1)
+    multi_json (1.11.0)
     multi_xml (0.5.5)
     multipart-post (1.2.0)
     net-scp (1.0.4)
       net-ssh (>= 1.99.1)
     net-ssh (2.9.1)
-    newrelic-grape (1.3.1)
-      grape
-      newrelic_rpm
-    newrelic_rpm (3.7.2.195)
+    newrelic_rpm (3.10.0.279)
     nokogiri (1.5.11)
     oauth (0.4.7)
     oauth2 (0.8.1)
@@ -198,6 +205,8 @@ GEM
       jwt (~> 0.1.4)
       multi_json (~> 1.0)
       rack (~> 1.2)
+    oj (2.12.1)
+    oj_mimic_json (1.0.1)
     omniauth (1.1.4)
       hashie (>= 1.2, < 3)
       rack
@@ -219,7 +228,7 @@ GEM
       activerecord (>= 3.0, < 5.0)
       activesupport (>= 3.0, < 5.0)
     parallel (1.4.1)
-    pg (0.17.1)
+    pg (0.18.1)
     polyamorous (0.6.4)
       activerecord (>= 3.0)
     pr_geohash (1.0.0)
@@ -260,15 +269,17 @@ GEM
       activesupport (= 4.0.13)
       rake (>= 0.8.7)
       thor (>= 0.18.1, < 2.0)
-    raindrops (0.12.0)
     rake (10.4.2)
     redis (3.0.7)
     redis-namespace (1.4.1)
       redis (~> 3.0.4)
     rgeo (0.3.20)
-    rgeo-activerecord (1.0.0)
+    rgeo-activerecord (1.2.0)
       activerecord (~> 4.0)
-      rgeo (~> 0.3.20)
+      rgeo (~> 0.3)
+    rgeo-shapefile (0.2.3)
+      dbf (>= 1.7.0)
+      rgeo (>= 0.3.3)
     rspec (3.2.0)
       rspec-core (~> 3.2.0)
       rspec-expectations (~> 3.2.0)
@@ -338,8 +349,12 @@ GEM
     terminal-notifier (1.6.2)
     textacular (3.1.0)
       activerecord (>= 3.0, < 4.1)
+    thin (1.6.3)
+      daemons (~> 1.0, >= 1.0.9)
+      eventmachine (~> 1.0)
+      rack (~> 1.0)
     thor (0.19.1)
-    thread_safe (0.3.4)
+    thread_safe (0.3.5)
     tilt (1.4.1)
     timers (1.1.0)
     turbolinks (2.2.0)
@@ -348,18 +363,13 @@ GEM
     uglifier (2.4.0)
       execjs (>= 0.3.0)
       json (>= 1.8.0)
-    unicorn (4.8.0)
-      kgio (~> 2.6)
-      rack
-      raindrops (~> 0.7)
     uuidtools (2.1.5)
-    virtus (1.0.2)
+    virtus (1.0.4)
       axiom-types (~> 0.1)
       coercible (~> 1.0)
       descendants_tracker (~> 0.0, >= 0.0.3)
       equalizer (~> 0.0, >= 0.0.9)
     will_paginate (3.0.7)
-    yajl-ruby (1.2.1)
 
 PLATFORMS
   ruby
@@ -372,7 +382,7 @@ DEPENDENCIES
   awesome_print
   bcrypt (~> 3.1.7)
   brcpfcnpj
-  cancan
+  cancancan (~> 1.10)
   carrierwave (~> 0.9.0)!
   codeclimate-test-reporter
   coffee-rails (~> 4.0.0)
@@ -384,15 +394,16 @@ DEPENDENCIES
   fog (~> 1.3.1)
   foreman
   garner
-  grape (~> 0.7.0)
-  grape-entity (~> 0.4.2)
+  grape (~> 0.11.0)
+  grape-entity!
   grape-swagger (~> 0.7.2)
   grape-swagger-rails (~> 0.0.10)!
   jquery-rails
   knapsack
   mini_magick
-  newrelic-grape
   newrelic_rpm
+  oj
+  oj_mimic_json
   omniauth
   omniauth-facebook
   omniauth-google-oauth2
@@ -408,6 +419,7 @@ DEPENDENCIES
   rails (= 4.0.13)
   rails_12factor
   rgeo (= 0.3.20)
+  rgeo-shapefile
   rspec-nc!
   rspec-rails (~> 3.2.1)
   sass-rails (~> 4.0.0)
@@ -419,8 +431,7 @@ DEPENDENCIES
   sinatra (>= 1.3.0)
   squeel
   textacular (~> 3.0)
+  thin
   turbolinks
   uglifier (>= 1.3.0)
-  unicorn
   will_paginate
-  yajl-ruby

@@ -13,7 +13,7 @@ class User < ActiveRecord::Base
   has_many :cases, class_name: 'Case', foreign_key: :created_by_id
   has_many :cases_log_entries
 
-  validates :email, presence: true, uniqueness: true
+  validates :email, presence: true, uniqueness: { scope: [:disabled] }
   validates :name, presence: true, length: { in: 4..64 }
 
   with_options unless: :from_webhook do |u|
@@ -26,6 +26,8 @@ class User < ActiveRecord::Base
   end
 
   before_create :generate_access_key!
+
+  scope :enabled, -> { where(disabled: false) }
 
   def self.authorize(token)
     if ak = AccessKey.active.find_by(key: token)
@@ -60,25 +62,31 @@ class User < ActiveRecord::Base
     false
   end
 
+  def disable!
+    update!(disabled: true)
+  end
+
   # Compile all user permissions from group
   def permissions
-    perms = {}
+    if @permissions.nil? || @permissions.to_h.blank?
+      @permissions = OpenStruct.new
 
-    self.groups.each do |group|
-      GroupPermission.permissions_columns.each do |c|
-        value = group.permission.send(c)
+      groups.joins(:permission).each do |group|
+        GroupPermission.permissions_columns.each do |c|
+          value = group.permission.send(c)
 
-        if value.is_a?(Array)
-          perms[c] ||= []
-          perms[c] += value
-          perms[c] = perms[c].uniq
-        else
-          perms[c] = value unless perms[c] === true
+          if value.is_a?(Array)
+            @permissions[c] ||= []
+            @permissions[c] += value
+            @permissions[c] = @permissions[c].uniq
+          else
+            @permissions[c] = value unless @permissions[c] === true
+          end
         end
       end
     end
 
-    perms
+    @permissions
   end
 
   def groups_names
@@ -96,6 +104,7 @@ class User < ActiveRecord::Base
   class Entity < Grape::Entity
     expose :id
     expose :name
+    expose :disabled
     expose :groups, with: Group::Entity, unless: { collection: true }
     expose :permissions
     expose :groups_names
@@ -115,6 +124,15 @@ class User < ActiveRecord::Base
       expose :twitter_user_id
       expose :google_plus_user_id
     end
+
+    def permissions
+      object.permissions.to_h
+    end
+  end
+
+  class ListingEntity < Grape::Entity
+    expose :id
+    expose :name
   end
 
   class Guest < User

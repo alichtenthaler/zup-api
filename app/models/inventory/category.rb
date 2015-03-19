@@ -58,11 +58,11 @@ class Inventory::Category < Inventory::Base
   end
 
   def groups_can_view
-    Group.that_includes_permission(:inventory_categories_can_view, self.id).map(&:id)
+    Group.that_includes_permission(:inventories_items_read_only, self.id).map(&:id)
   end
 
   def groups_can_edit
-    Group.that_includes_permission(:inventory_categories_can_edit, self.id).map(&:id)
+    Group.that_includes_permission(:inventories_categories_edit, self.id).map(&:id)
   end
 
   class Entity < Grape::Entity
@@ -93,16 +93,20 @@ class Inventory::Category < Inventory::Base
       # permission to view.
       if options[:user]
         user_permissions = UserAbility.new(options[:user])
+        sections = object.sections.preload(fields: :field_options)
 
-        if user_permissions.can?(:manage, Inventory::Item) || user_permissions.can?(:edit, object)
-          sections = object.sections
-        else
-          sections = object.sections.where(id: user_permissions.inventory_sections_visible)
+        unless user_permissions.can?(:manage, Inventory::Item) || user_permissions.can?(:edit, object)
+          sections = sections.where(id: user_permissions.inventory_sections_visible)
         end
 
         Inventory::Section::Entity.represent(sections, user: options[:user])
       end
     end
+  end
+
+  class ListingEntity < Grape::Entity
+    expose :id
+    expose :title
   end
 
   protected

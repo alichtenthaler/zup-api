@@ -49,7 +49,7 @@ class Inventory::Field < Inventory::Base
   scope :required, -> { where(required: true) }
   scope :location, -> { where("options -> 'location' = 'true'") }
   scope :disabled, -> { where(disabled: true) }
-  scope :enabled, -> { where(disabled: false) }
+  scope :enabled, -> { where(inventory_fields: { disabled: false }) }
 
   def content_type
     AVAILABLE_KINDS[self.kind]

@@ -37,16 +37,20 @@ module Inventory::FieldOptions
             unless safe_params[:value].is_a?(Array)
               field_option_params = safe_params.permit(:value)
               field_option = field.field_options.create!(field_option_params)
+
+              {
+                field_option: Inventory::FieldOption::Entity.represent(field_option)
+              }
             else
               safe_params[:value].each do |value|
                 field.field_options.build(value: value)
                 field.save!
               end
-            end
 
-            {
-              field_option: Inventory::FieldOption::Entity.represent(field_option)
-            }
+              {
+                field_options: Inventory::FieldOption::Entity.represent(field.field_options)
+              }
+            end
           end
 
           route_param :id do

@@ -55,6 +55,7 @@ RSpec.configure do |config|
 
   config.after(:each) do
     DatabaseCleaner.clean
+    Group.clear_cache!
   end
 
   config.before(:all) do

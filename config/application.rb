@@ -1,8 +1,9 @@
 require File.expand_path('../boot', __FILE__)
 
 require 'rails/all'
-require 'yajl/json_gem'
 require 'sprockets/railtie'
+require 'oj'
+require 'oj_mimic_json'
 
 # Require the gems listed in Gemfile, including any gems
 # you've limited to :test, :development, or :production.
@@ -32,6 +33,11 @@ end
 
 module ZupApi
   class Application < Rails::Application
+    # Configure Oj float precision
+    oj_default_opts = Oj.default_options
+    oj_default_opts[:float_precision] = 17
+    Oj.default_options = oj_default_opts
+
     # Settings in config/environments/* take precedence over those specified here.
     # Application configuration should go into files in config/initializers
     # -- all .rb files in that directory are automatically loaded.

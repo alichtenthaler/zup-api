@@ -24,7 +24,7 @@ class Inventory::SearchItems
   end
 
   def search
-    scope = Inventory::Item.includes(:data)
+    scope = Inventory::Item.includes(:category, :user, data: [{ field: :field_options }, :images, :attachments])
     permissions = UserAbility.new(user)
 
     sort = self.sort
@@ -118,27 +118,31 @@ class Inventory::SearchItems
     end
 
     if created_at && (created_at[:begin] || created_at[:end])
-      begin_date = DateTime.parse(created_at[:begin])
-      end_date = DateTime.parse(created_at[:end])
+      if created_at[:begin] && created_at[:end]
+        begin_date = DateTime.parse(created_at[:begin])
+        end_date = DateTime.parse(created_at[:end])
 
-      if begin_date && end_date
         scope = scope.where(inventory_items: { created_at: begin_date..end_date })
-      elsif begin_date
+      elsif created_at[:begin]
+        begin_date = DateTime.parse(created_at[:begin])
         scope = scope.where("inventory_items.created_at >= ?", begin_date)
-      elsif end_date
+      elsif created_at[:end]
+        end_date = DateTime.parse(created_at[:end])
         scope = scope.where("inventory_items.created_at <= ?", end_date)
       end
     end
 
     if updated_at && (updated_at[:begin] || updated_at[:end])
-      begin_date = updated_at[:begin]
-      end_date = updated_at[:end]
+      if updated_at[:begin] && updated_at[:end]
+        begin_date = DateTime.parse(updated_at[:begin])
+        end_date = DateTime.parse(updated_at[:end])
 
-      if begin_date && end_date
         scope = scope.where(updated_at: begin_date..end_date)
-      elsif begin_date
+      elsif updated_at[:begin]
+        begin_date = DateTime.parse(updated_at[:begin])
         scope = scope.where("updated_at >= ?", begin_date)
-      elsif end_date
+      elsif updated_at[:end]
+        end_date = DateTime.parse(updated_at[:end])
         scope = scope.where("updated_at <= ?", end_date)
       end
     end

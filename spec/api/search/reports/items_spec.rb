@@ -39,6 +39,25 @@ describe Search::Reports::Items::API do
   describe "GET /search/reports/items" do
     let(:category) { create(:reports_category_with_statuses) }
 
+    context "specifing the fields" do
+      let!(:items) { create_list(:reports_item, 3, category: category) }
+
+      it "returns only specified fields" do
+        get "/search/reports/items?return_fields=id,protocol,address,user.name&display_type=full", nil, auth(user)
+        expect(response.status).to eq(200)
+
+        body = parsed_body['reports']
+        expect(body.first).to match(
+          "id" => a_value,
+          "protocol" => a_value,
+          "address" => an_instance_of(String),
+          "user" => {
+            "name" => an_instance_of(String)
+          }
+        )
+      end
+    end
+
     context "sorting" do
       context "by user name" do
         let!(:users) { create_list(:user, 5) }
@@ -324,7 +343,8 @@ describe Search::Reports::Items::API do
               "longitude": #{longitude},
               "distance": 1000
             },
-            "clusterize": true
+            "clusterize": true,
+            "zoom": 13
           }
         JSON
       end
@@ -342,13 +362,13 @@ describe Search::Reports::Items::API do
         body = parsed_body
 
         expect(body['clusters'].size).to eq(1)
-        expect(response.header['Total']).to eq(3)
+        expect(response.header['Total']).to eq('3')
 
         cluster = body['clusters'].first
 
         expect(cluster['position']).to_not be_empty
         expect(cluster['count']).to eq(3)
-        expect(cluster['category']).to_not be_empty
+        expect(cluster['category_id']).to be_present
       end
     end
   end

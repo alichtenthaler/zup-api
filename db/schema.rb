@@ -11,13 +11,14 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20150309132221) do
+ActiveRecord::Schema.define(version: 20150318055535) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
-  enable_extension "postgis"
   enable_extension "hstore"
   enable_extension "pg_trgm"
+  enable_extension "postgis"
+  enable_extension "postgis_topology"
 
   create_table "access_keys", force: true do |t|
     t.integer  "user_id"
@@ -161,44 +162,78 @@ ActiveRecord::Schema.define(version: 20150309132221) do
 
   create_table "group_permissions", force: true do |t|
     t.integer  "group_id"
-    t.boolean  "manage_flows",                  default: false
-    t.boolean  "manage_users",                  default: false
-    t.boolean  "manage_inventory_categories",   default: false
-    t.boolean  "manage_inventory_items",        default: false
-    t.boolean  "manage_groups",                 default: false
-    t.boolean  "manage_reports_categories",     default: false
-    t.boolean  "manage_reports",                default: false
-    t.boolean  "manage_inventory_formulas",     default: false
-    t.boolean  "manage_config",                 default: false
-    t.boolean  "delete_inventory_items",        default: false
-    t.boolean  "delete_reports",                default: false
-    t.boolean  "edit_inventory_items",          default: false
-    t.boolean  "edit_reports",                  default: false
-    t.boolean  "view_categories",               default: false
-    t.boolean  "view_sections",                 default: false
-    t.boolean  "panel_access",                  default: false
-    t.integer  "groups_can_edit",               default: [],    array: true
-    t.integer  "groups_can_view",               default: [],    array: true
-    t.integer  "reports_categories_can_edit",   default: [],    array: true
-    t.integer  "reports_categories_can_view",   default: [],    array: true
-    t.integer  "inventory_categories_can_edit", default: [],    array: true
-    t.integer  "inventory_categories_can_view", default: [],    array: true
-    t.integer  "inventory_sections_can_view",   default: [],    array: true
-    t.integer  "inventory_sections_can_edit",   default: [],    array: true
-    t.integer  "inventory_fields_can_edit",     default: [],    array: true
-    t.integer  "inventory_fields_can_view",     default: [],    array: true
-    t.integer  "flow_can_view_all_steps",       default: [],    array: true
-    t.integer  "flow_can_execute_all_steps",    default: [],    array: true
-    t.integer  "can_view_step",                 default: [],    array: true
-    t.integer  "can_execute_step",              default: [],    array: true
+    t.boolean  "manage_flows",                         default: false
+    t.boolean  "manage_users",                         default: false
+    t.boolean  "manage_inventory_categories",          default: false
+    t.boolean  "manage_inventory_items",               default: false
+    t.boolean  "manage_groups",                        default: false
+    t.boolean  "manage_reports_categories",            default: false
+    t.boolean  "manage_reports",                       default: false
+    t.boolean  "manage_inventory_formulas",            default: false
+    t.boolean  "manage_config",                        default: false
+    t.boolean  "delete_inventory_items",               default: false
+    t.boolean  "delete_reports",                       default: false
+    t.boolean  "edit_inventory_items",                 default: false
+    t.boolean  "edit_reports",                         default: false
+    t.boolean  "view_categories",                      default: false
+    t.boolean  "view_sections",                        default: false
+    t.boolean  "panel_access",                         default: false
+    t.integer  "groups_can_edit",                      default: [],    array: true
+    t.integer  "groups_can_view",                      default: [],    array: true
+    t.integer  "reports_categories_can_edit",          default: [],    array: true
+    t.integer  "reports_categories_can_view",          default: [],    array: true
+    t.integer  "inventory_categories_can_edit",        default: [],    array: true
+    t.integer  "inventory_categories_can_view",        default: [],    array: true
+    t.integer  "inventory_sections_can_view",          default: [],    array: true
+    t.integer  "inventory_sections_can_edit",          default: [],    array: true
+    t.integer  "inventory_fields_can_edit",            default: [],    array: true
+    t.integer  "inventory_fields_can_view",            default: [],    array: true
+    t.integer  "flow_can_view_all_steps",              default: [],    array: true
+    t.integer  "flow_can_execute_all_steps",           default: [],    array: true
+    t.integer  "can_view_step",                        default: [],    array: true
+    t.integer  "can_execute_step",                     default: [],    array: true
     t.datetime "created_at"
     t.datetime "updated_at"
-    t.boolean  "create_reports_from_panel",     default: false
-    t.integer  "flow_can_delete_all_cases",     default: [],    array: true
-    t.integer  "flow_can_delete_own_cases",     default: [],    array: true
+    t.boolean  "create_reports_from_panel",            default: false
+    t.integer  "flow_can_delete_all_cases",            default: [],    array: true
+    t.integer  "flow_can_delete_own_cases",            default: [],    array: true
+    t.boolean  "users_full_access",                    default: false
+    t.boolean  "groups_full_access",                   default: false
+    t.boolean  "reports_full_access",                  default: false
+    t.boolean  "inventories_full_access",              default: false
+    t.boolean  "inventories_formulas_full_access",     default: false
+    t.integer  "group_edit",                           default: [],    array: true
+    t.integer  "group_read_only",                      default: [],    array: true
+    t.integer  "reports_items_read_only",              default: [],    array: true
+    t.integer  "reports_items_create",                 default: [],    array: true
+    t.integer  "reports_items_edit",                   default: [],    array: true
+    t.integer  "reports_items_delete",                 default: [],    array: true
+    t.integer  "reports_categories_edit",              default: [],    array: true
+    t.integer  "inventories_items_read_only",          default: [],    array: true
+    t.integer  "inventories_items_create",             default: [],    array: true
+    t.integer  "inventories_items_edit",               default: [],    array: true
+    t.integer  "inventories_items_delete",             default: [],    array: true
+    t.integer  "inventories_categories_edit",          default: [],    array: true
+    t.integer  "inventories_category_manage_triggers", default: [],    array: true
   end
 
+  add_index "group_permissions", ["can_execute_step"], :name => "index_group_permissions_on_can_execute_step"
+  add_index "group_permissions", ["can_view_step"], :name => "index_group_permissions_on_can_view_step"
+  add_index "group_permissions", ["flow_can_delete_all_cases"], :name => "index_group_permissions_on_flow_can_delete_all_cases"
+  add_index "group_permissions", ["flow_can_delete_own_cases"], :name => "index_group_permissions_on_flow_can_delete_own_cases"
+  add_index "group_permissions", ["flow_can_execute_all_steps"], :name => "index_group_permissions_on_flow_can_execute_all_steps"
+  add_index "group_permissions", ["flow_can_view_all_steps"], :name => "index_group_permissions_on_flow_can_view_all_steps"
   add_index "group_permissions", ["group_id"], :name => "index_group_permissions_on_group_id"
+  add_index "group_permissions", ["groups_can_edit"], :name => "index_group_permissions_on_groups_can_edit"
+  add_index "group_permissions", ["groups_can_view"], :name => "index_group_permissions_on_groups_can_view"
+  add_index "group_permissions", ["inventory_categories_can_edit"], :name => "index_group_permissions_on_inventory_categories_can_edit"
+  add_index "group_permissions", ["inventory_categories_can_view"], :name => "index_group_permissions_on_inventory_categories_can_view"
+  add_index "group_permissions", ["inventory_fields_can_edit"], :name => "index_group_permissions_on_inventory_fields_can_edit"
+  add_index "group_permissions", ["inventory_fields_can_view"], :name => "index_group_permissions_on_inventory_fields_can_view"
+  add_index "group_permissions", ["inventory_sections_can_edit"], :name => "index_group_permissions_on_inventory_sections_can_edit"
+  add_index "group_permissions", ["inventory_sections_can_view"], :name => "index_group_permissions_on_inventory_sections_can_view"
+  add_index "group_permissions", ["reports_categories_can_edit"], :name => "index_group_permissions_on_reports_categories_can_edit"
+  add_index "group_permissions", ["reports_categories_can_view"], :name => "index_group_permissions_on_reports_categories_can_view"
 
   create_table "groups", force: true do |t|
     t.string   "name"
@@ -213,7 +248,7 @@ ActiveRecord::Schema.define(version: 20150309132221) do
     t.integer "user_id"
   end
 
-  add_index "groups_users", ["group_id", "user_id"], :name => "index_groups_users_on_group_id_and_user_id"
+  add_index "groups_users", ["group_id", "user_id"], :name => "index_groups_users_on_group_id_and_user_id", :unique => true
   add_index "groups_users", ["user_id"], :name => "index_groups_users_on_user_id"
 
   create_table "groups_users_tables", force: true do |t|
@@ -367,6 +402,8 @@ ActiveRecord::Schema.define(version: 20150309132221) do
 
   add_index "inventory_items", ["inventory_category_id"], :name => "index_inventory_items_on_inventory_category_id"
   add_index "inventory_items", ["inventory_status_id"], :name => "index_inventory_items_on_inventory_status_id"
+  add_index "inventory_items", ["sequence"], :name => "sequence_idx"
+  add_index "inventory_items", ["title"], :name => "title_idx"
   add_index "inventory_items", ["user_id"], :name => "index_inventory_items_on_user_id"
 
   create_table "inventory_sections", force: true do |t|
@@ -616,6 +653,7 @@ ActiveRecord::Schema.define(version: 20150309132221) do
     t.integer  "google_plus_user_id"
     t.boolean  "email_notifications",     default: true
     t.string   "unsubscribe_email_token"
+    t.boolean  "disabled",                default: false
   end
 
   create_table "versions", force: true do |t|

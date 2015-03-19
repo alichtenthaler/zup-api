@@ -213,7 +213,7 @@ describe Users::API do
 
     it "destroys current user" do
       delete "/me", nil, auth(user)
-      expect(User.find_by(id: user.id)).to eq(nil)
+      expect(User.find_by(id: user.id)).to be_disabled
     end
   end
 
@@ -262,6 +262,22 @@ describe Users::API do
 
         expect(user.reload.encrypted_password).to_not eq(old_password_hash)
       end
+
+      context "user manager changing the password" do
+        let(:manager) { create(:user, groups: []) }
+        let(:group) { create(:group) }
+
+        before do
+          group.permission.update!(users_full_access: true)
+          manager.groups << group
+          manager.save!
+        end
+
+        it "doesn't need current_password if a manager is changing" do
+          put "/users/#{user.id}", valid_params, auth(manager)
+          expect(response.status).to eq(200)
+        end
+      end
     end
   end
 
@@ -272,11 +288,11 @@ describe Users::API do
     it "destroys user's account" do
       delete "/users/#{user.id}", nil, auth(user)
       expect(response.status).to eq(200)
-      expect(User.find_by(id: user.id)).to be_nil
+      expect(User.find_by(id: user.id)).to be_disabled
     end
 
     it "can't destroy user account if it doesn't have permission to" do
-      user.groups.first.permission.update(manage_users: false)
+      user.groups.first.permission.update(users_full_access: false)
       delete "/users/#{other_user.id}", nil, auth(user)
       expect(response.status).to eq(403)
     end

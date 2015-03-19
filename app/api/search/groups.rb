@@ -12,7 +12,7 @@ module Search::Groups
       groups = paginate(groups)
 
       {
-        groups: Group::Entity.represent(groups)
+        groups: Group::Entity.represent(groups, only: return_fields)
       }
     end
   end

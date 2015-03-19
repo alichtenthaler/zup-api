@@ -22,9 +22,14 @@ module ArrayRelate
           return [] if #{ids_column}.blank? || #{polymorphic_column}.blank?
 
           klass = #{polymorphic_column}.constantize
-          #{ids_column}.map do |object_id|
-            klass.find(object_id)
+
+          scope = klass.where(id: #{ids_column})
+
+          if klass == Inventory::Field
+            scope = scope.includes(:field_options)
           end
+
+          scope
         end
       METHOD
     end

@@ -4,10 +4,6 @@ module Inventory
 
     attr_accessor :items_ids, :inventory_category_id, :count, :geohash
 
-    def category
-      Inventory::Category.find_by(id: inventory_category_id)
-    end
-
     def position
       GeoHash.decode(geohash)[0]
     end
@@ -15,7 +11,7 @@ module Inventory
     class Entity < Grape::Entity
       expose :items_ids
       expose :position
-      expose :category, using: Inventory::Category::Entity
+      expose :inventory_category_id, as: :category_id
       expose :count
     end
   end

@@ -43,6 +43,25 @@ describe Inventory::FormulaValidator do
         item.reload.represented_data
         expect(subject.valid?).to eq(false)
       end
+
+      context "field with selected option" do
+        let(:field_option) do
+          create(:inventory_field_option, value: "test")
+        end
+
+        before do
+          field.update(
+            kind: "radio",
+            field_options: [field_option]
+          )
+        end
+
+        it "returns true if content is equal" do
+          item.data.find_by(field: field).update(selected_options: [field_option])
+          item.reload.represented_data
+          expect(subject.valid?).to eq(true)
+        end
+      end
     end
 
     context "greater_than" do

@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v1.1.1-p6
+
+* Correções para campos de inventário com múltipla escolha
+* Correção para permissões de grupo com referências inválidas
+* Atualização de dependência para aumento de performance geral nos endpoints
+
 ## v1.1.1-p2
 
 * Correções de ambiente de variáveis

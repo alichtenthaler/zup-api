@@ -9,11 +9,9 @@ describe Groups::API do
         {
           "name": "Cool group",
           "permissions": {
-            "view_categories": false,
-            "view_sections": true,
-            "manage_inventory_categories": true,
-            "groups_can_edit": [1, 2],
-            "groups_can_view": [99]
+            "inventories_full_access": true,
+            "group_edit": [1, 2],
+            "group_read_only": [99]
           },
           "users": ["#{user.id}"]
         }
@@ -32,18 +30,16 @@ describe Groups::API do
 
       last_created_group = Group.last
       expect(last_created_group.name).to eq("Cool group")
-      expect(last_created_group.permission.view_categories).to eq(false)
-      expect(last_created_group.permission.view_sections).to eq(true)
-      expect(last_created_group.permission.manage_inventory_categories).to eq(true)
-      expect(last_created_group.permission.groups_can_edit).to match_array([1,2])
-      expect(last_created_group.permission.groups_can_view).to match_array([99])
+      expect(last_created_group.permission.inventories_full_access).to eq(true)
+      expect(last_created_group.permission.group_edit).to match_array([1,2])
+      expect(last_created_group.permission.group_read_only).to match_array([99])
       expect(last_created_group.users).to include(user)
 
       expect(body).to include("message")
       expect(body).to include("group")
       expect(body["group"]["name"]).to eq("Cool group")
-      expect(body["group"]["permissions"]["groups_can_edit"]).to match_array([1, 2])
-      expect(body["group"]["permissions"]["groups_can_view"]).to match_array([99])
+      expect(body["group"]["permissions"]["group_edit"]).to match_array([1, 2])
+      expect(body["group"]["permissions"]["group_read_only"]).to match_array([99])
     end
 
     it "can create a group without users" do
@@ -54,13 +50,12 @@ describe Groups::API do
 
       last_created_group = Group.last
       expect(last_created_group.name).to eq("Cool group")
-      expect(last_created_group.permission.view_categories).to eq(false)
       expect(last_created_group.users).to be_empty
 
       expect(body).to include("message")
       expect(body).to include("group")
       expect(body["group"]["name"]).to eq("Cool group")
-      expect(body["group"]["permissions"]["groups_can_edit"]).to be_kind_of(Array)
+      expect(body["group"]["permissions"]["group_edit"]).to be_kind_of(Array)
     end
 
     it "can create a group without permission" do
@@ -126,7 +121,7 @@ describe Groups::API do
           "name": "An awesome name!",
           "users": [#{other_user.id}],
           "permissions": {
-            "manage_users": true
+            "users_full_access": true
           }
         }
       JSON
@@ -142,7 +137,7 @@ describe Groups::API do
       expect(changed_group.name).to eq("An awesome name!")
       expect(changed_group.users).to include(other_user, user)
       expect(changed_group.users.count).to eq(2)
-      expect(changed_group.permission.manage_users).to be_truthy
+      expect(changed_group.permission.users_full_access).to be_truthy
     end
   end
 
@@ -237,7 +232,7 @@ describe Groups::API do
       let(:group) { create(:group) }
 
       before do
-        group.permission.update(groups_can_view: groups_can_view.map(&:id))
+        group.permission.update(group_read_only: groups_can_view.map(&:id))
         user.groups = [group]
         user.save!
       end
@@ -287,21 +282,21 @@ describe Groups::API do
       let(:valid_params) do
         JSON.parse <<-JSON
         {
-          "manage_users": true,
-          "manage_groups": true
+          "users_full_access": true,
+          "groups_full_access": true
         }
         JSON
       end
 
       it "updates the group permission" do
-        expect(group.permission.manage_users).to eq(false)
+        expect(group.permission.users_full_access).to eq(false)
         put "/groups/#{group.id}/permissions", valid_params, auth(user)
         expect(response.status).to eq(200)
         body = parsed_body
 
         expect(body).to include("group")
         group.reload
-        expect(group.permission.manage_users).to eq(true)
+        expect(group.permission.users_full_access).to eq(true)
         expect(body['group']['permissions']).to_not be_empty
       end
     end

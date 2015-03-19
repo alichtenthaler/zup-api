@@ -25,13 +25,13 @@ class GroupPermission < ActiveRecord::Base
     },
 
     user: {
-      "manage_users" => Boolean,
+      "users_full_access" => Boolean
     },
 
     group: {
-      "groups_can_edit" => Array,
-      "groups_can_view" => Array,
-      "manage_groups" => Boolean
+      "group_edit" => Array,
+      "group_read_only" => Array,
+      "groups_full_access" => Boolean
     },
 
     other: {
@@ -42,33 +42,62 @@ class GroupPermission < ActiveRecord::Base
     },
 
     inventory: {
-      "inventory_categories_can_edit" => Array,
-      "inventory_categories_can_view" => Array,
-      # "inventory_sections_can_view" => Array,
-      # "inventory_sections_can_edit" => Array,
-      # "inventory_fields_can_edit" => Array,
-      # "inventory_fields_can_view" => Array,
-      "delete_inventory_items" => Boolean,
-      "edit_inventory_items" => Boolean,
-      "manage_inventory_formulas" => Boolean,
-      "manage_inventory_categories" => Boolean,
-      "manage_inventory_items" => Boolean
+      "inventories_items_create" => Array,
+      "inventories_items_edit" => Array,
+      "inventories_items_delete" => Array,
+      "inventories_items_read_only" => Array,
+      "inventories_categories_edit" => Array,
+      "inventories_formulas_full_access" => Boolean,
+      "inventories_full_access" => Boolean
     },
 
     report: {
-      "delete_reports" => Boolean,
-      "edit_reports" => Boolean,
-      "reports_categories_can_edit" => Array,
-      "reports_categories_can_view" => Array,
-      "create_reports_from_panel" => Boolean,
-      "manage_reports_categories" => Boolean,
-      "manage_reports" => Boolean
+      "reports_items_read_only" => Array,
+      "reports_items_create" => Array,
+      "reports_items_edit" => Array,
+      "reports_items_delete" => Array,
+      "reports_categories_edit" => Array,
+      "reports_full_access" => Boolean
     }
   }
 
   belongs_to :group
 
   def self.permissions_columns
-    self.column_names - %w(id group_id)
+    %w(
+      panel_access
+      create_reports_from_panel
+      users_full_access
+      groups_full_access
+      reports_full_access
+      inventories_full_access
+      inventories_formulas_full_access
+      group_edit
+      group_read_only
+      reports_items_read_only
+      reports_items_create
+      reports_items_edit
+      reports_items_delete
+      reports_categories_edit
+      inventories_items_read_only
+      inventories_items_create
+      inventories_items_edit
+      inventories_items_delete
+      inventories_categories_edit
+      inventories_category_manage_triggers
+      inventory_fields_can_edit
+      inventory_fields_can_view
+      inventory_sections_can_edit
+      inventory_sections_can_view
+      flow_can_execute_all_steps
+      flow_can_delete_own_cases
+      flow_can_delete_all_cases
+      flow_can_view_all_steps
+      can_view_step
+      can_execute_step
+      manage_flows
+      manage_config
+      create_reports_from_panel
+    )
   end
 end

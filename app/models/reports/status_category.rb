@@ -29,7 +29,7 @@ class Reports::StatusCategory < Reports::Base
 
   scope :in_progress, -> {
     where(table_name => {
-      initial: false, final: false
+      final: false
     })
   }
 

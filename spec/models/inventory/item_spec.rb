@@ -24,6 +24,56 @@ describe Inventory::Item do
       expect(item.position.longitude).to eq(-0.1276250)
       expect(item.address).to eq("Cool Street")
     end
+
+    context "validations for boundary" do
+      let(:item) { build(:inventory_item) }
+      let(:latitude) { -46.32341 }
+      let(:longitude) { -23.134234 }
+
+      before do
+        item.position = Inventory::Item.rgeo_factory.point(longitude, latitude)
+      end
+
+      context "validation for boundary is enabled" do
+        before do
+          allow(CityShape).to receive(:validation_enabled?).and_return(true)
+        end
+
+        context "position in boundaries" do
+          before do
+            allow(CityShape).to receive(:contains?)
+            .and_return(true)
+          end
+
+          it "is valid" do
+            expect(item.valid?).to be_truthy
+          end
+        end
+
+        context "position not in boundaries" do
+          before do
+            allow(CityShape).to receive(:contains?)
+                            .and_return(false)
+          end
+
+          it "is valid" do
+            expect(item.valid?).to be_falsy
+          end
+        end
+      end
+
+      context "validation for boundary is disabled" do
+        before do
+          allow(CityShape).to receive(:validation_enabled?).and_return(false)
+        end
+
+        context "position not in boundaries" do
+          it "is valid" do
+            expect(item.valid?).to be_truthy
+          end
+        end
+      end
+    end
   end
 
   context "validations" do

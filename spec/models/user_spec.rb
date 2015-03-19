@@ -84,25 +84,30 @@ describe User do
 
     describe "#check_password" do
       it "returns true if the passwords checks" do
-        expect(user.check_password('123456')).to be(true)
+        expect(user.check_password('123456')).to be_truthy
       end
 
       it "returns false if the passwords are different" do
-        expect(user.check_password('wrongpassword')).to be(false)
+        expect(user.check_password('wrongpassword')).to be_falsy
       end
     end
 
     describe ".authenticate" do
       it "returns true if the authentication is successful" do
-        User.authenticate(user.email, '123456').should == user
+        User.authenticate(user.email, '123456').should eq(user)
       end
 
       it "returns false if the password is wrong" do
-        User.authenticate(user.email, 'wrongpass').should == false
+        User.authenticate(user.email, 'wrongpass').should be_falsy
       end
 
       it "returns false if the username is wrong" do
-        User.authenticate('wronguseremail', '123456').should == false
+        User.authenticate('wronguseremail', '123456').should be_falsy
+      end
+
+      it "returns false if the user is disabled" do
+        user.disable!
+        User.authenticate(user.email, '123456').should be_falsy
       end
     end
   end
@@ -235,20 +240,20 @@ describe User do
   describe 'permissions' do
     let(:group1) do
       group = create(:group)
-      group.permission.update(inventory_categories_can_edit: [1,3], manage_users: 'true')
+      group.permission.update(inventories_categories_edit: [1,3], users_full_access: true)
       group
     end
     let(:group2) do
       group = create(:group)
-      group.permission.update(inventory_categories_can_edit: [3,9], manage_users: 'false')
+      group.permission.update(inventories_categories_edit: [3,9], users_full_access: false)
       group
     end
     let(:user) { create(:user, groups: [group1, group2]) }
 
     it "merge all user group's permissions" do
-      expect(user.permissions).to include(
-        "inventory_categories_can_edit" => [1,3,9],
-        "manage_users" => true
+      expect(user.permissions.to_h).to include(
+        inventories_categories_edit: [1,3,9],
+        users_full_access: true
       )
     end
   end

@@ -1,7 +1,8 @@
 require 'grape-swagger'
 require "garner/mixins/rack"
-require 'yajl'
+require 'oj'
 require 'will_paginate/array'
+require 'return_fields_params'
 
 module ZUP
   class API < Grape::API
@@ -12,7 +13,7 @@ module ZUP
     format :json
     default_format :json
     formatter :json, -> (object, env) {
-      Yajl::Encoder.encode(object)
+      Oj.dump(object)
     }
 
     rescue_from :all do |e|
@@ -33,7 +34,7 @@ module ZUP
       end
 
       e.errors.each do |field_name, error|
-        res[:error].merge!({ field_name => error.map(&:to_s) })
+        res[:error].merge!({ field_name[0] => error.map(&:to_s) })
       end
 
       rack_response(res.to_json, 400)
@@ -96,6 +97,11 @@ module ZUP
       def safe_params
         ActionController::Parameters.new(params)
       end
+
+      # This should go to a middleware
+      def return_fields
+        ReturnFieldsParams.new(params[:return_fields]).to_array
+      end
     end
 
     mount Users::API
@@ -106,6 +112,7 @@ module ZUP
     mount Flows::API
     mount Cases::API
     mount FeatureFlags::API
+    mount Utils::API
 
     namespace :settings do
       desc "Return the app settings"

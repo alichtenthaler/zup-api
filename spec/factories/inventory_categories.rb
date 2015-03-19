@@ -14,7 +14,7 @@ FactoryGirl.define do
 
     after(:create) do |category, _|
       Group.guest.each do |group|
-        group.permission.inventory_categories_can_view += [category.id]
+        group.permission.inventories_items_read_only += [category.id]
         group.save!
       end
     end

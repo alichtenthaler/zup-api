@@ -8,23 +8,19 @@ module Inventory
     end
 
     def scope_with_filters
-      scope.distinct.joins(:data).joins(join_statement)
-           .where(build_fields_statement)
+      build_fields_query(
+        scope.distinct.joins(:data).joins(join_statement)
+      )
     end
 
     private
 
-    def join_statement
-      <<-SQL
-        LEFT JOIN inventory_field_options
-        ON inventory_field_options.id = ANY(inventory_item_data.inventory_field_option_ids)
-      SQL
-    end
-
-    def build_fields_statement
-      statement = ""
+    def build_fields_query(s)
+      queries = []
 
       fields.each do |field_id, filters|
+        statement = ""
+
         # Filters could be a hash like this:
         # filters = {
         #   lesser_than: 30,
@@ -74,9 +70,20 @@ module Inventory
             statement += build_condition_for_array(field_id, content, 'NOT')
           end
         end
+
+        queries << s.dup.where(statement)
       end
 
-      statement
+      if queries.size > 1
+        queries = queries.map do |query|
+          Inventory::Item.from(Arel.sql("(#{query.to_sql}) as inventory_items"))
+        end
+
+        intersection = queries.inject(queries.shift) { |inter, q| inter.intersect(q) }
+        Inventory::Item.find_by_sql(intersection.to_sql)
+      else
+        Inventory::Item.from(Arel.sql("(#{queries.first.to_sql}) as inventory_items"))
+      end
     end
 
     def build_condition(field_id, content_statement)
@@ -124,6 +131,13 @@ module Inventory
               ) OR #{option_operator} inventory_item_data.content @> #{content_statement}::text[]
             )
         )
+      SQL
+    end
+
+    def join_statement
+      <<-SQL
+        LEFT JOIN inventory_field_options
+        ON inventory_field_options.id = ANY(inventory_item_data.inventory_field_option_ids)
       SQL
     end
   end

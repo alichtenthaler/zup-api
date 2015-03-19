@@ -42,6 +42,10 @@ class Inventory::FormulaValidator
     field = condition.field
     content = item.represented_data.send(field.title)
 
+    if !content.blank? && field.use_options?
+      content = Inventory::FieldOption.find(content[0]).value
+    end
+
     OPERATIONS[operator].call(content, condition.content)
   end
 

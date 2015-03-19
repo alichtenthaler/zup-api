@@ -33,7 +33,11 @@ class Inventory::ItemData < Inventory::Base
     elsif field && field.kind == "attachments"
       Inventory::ItemDataAttachment::Entity.represent(self.attachments)
     elsif field && field.use_options?
-      selected_options.map(&:id)
+      if selected_options.blank?
+        nil
+      else
+        selected_options.map(&:id)
+      end
     elsif !read_attribute(:content).nil? && (self.field && self.field.content_type != Array)
       super.first
     else
@@ -48,9 +52,7 @@ class Inventory::ItemData < Inventory::Base
     if inventory_field_option_ids.blank?
       []
     else
-      inventory_field_option_ids.map do |field_option_id|
-        Inventory::FieldOption.find_by(id: field_option_id)
-      end.compact
+      Inventory::FieldOption.where(id: inventory_field_option_ids).includes(:field)
     end
   end
 

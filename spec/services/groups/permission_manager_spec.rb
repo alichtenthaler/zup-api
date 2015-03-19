@@ -6,17 +6,17 @@ describe Groups::PermissionManager do
   subject { described_class.new(group) }
 
   describe "#add_with_objects" do
-    let(:permission_name) { :inventory_categories_can_view }
+    let(:permission_name) { :inventories_items_read_only }
     let(:object) { create(:inventory_category) }
 
     it "adds the id of the object to the permissions" do
       subject.add_with_objects(permission_name, [object.id])
-      expect(group.permission.reload.inventory_categories_can_view).to include(object.id)
+      expect(group.permission.reload.inventories_items_read_only).to include(object.id)
     end
   end
 
   describe "#remove_with_objects" do
-    let(:permission_name) { :inventory_categories_can_view }
+    let(:permission_name) { :inventories_items_read_only }
     let(:object) { create(:inventory_category) }
 
     before do
@@ -25,7 +25,7 @@ describe Groups::PermissionManager do
 
     it "removes the id of the object from the permission" do
       subject.remove_with_objects(permission_name, [object.id])
-      expect(group.permission.reload.inventory_categories_can_view).to_not include(object.id)
+      expect(group.permission.reload.inventories_items_read_only).to_not include(object.id)
     end
   end
 
@@ -59,9 +59,9 @@ describe Groups::PermissionManager do
     let(:inventory_category) { create(:inventory_category) }
     before do
       group.permission.update(
-        inventory_categories_can_edit: [inventory_category.id],
-        inventory_categories_can_view: [inventory_category.id],
-        manage_reports: true
+        inventories_items_edit: [inventory_category.id],
+        inventories_items_read_only: [inventory_category.id],
+        reports_full_access: true
       )
     end
 
@@ -72,11 +72,11 @@ describe Groups::PermissionManager do
         {
           permission_type: :inventory,
           object: an_instance_of(Inventory::Category::Entity),
-          permission_names: ["inventory_categories_can_edit", "inventory_categories_can_view"]
+          permission_names: ["inventories_items_edit", "inventories_items_read_only"]
         },
         {
           permission_type: :report,
-          permission_names: "manage_reports"
+          permission_names: "reports_full_access"
         }
       ])
     end

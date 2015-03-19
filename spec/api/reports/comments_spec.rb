@@ -58,8 +58,7 @@ describe Reports::Comments do
     context "user has permission to view and edit report" do
       before do
         group = create(:group)
-        group.permission.update(reports_categories_can_view: [item.category.id],
-                                reports_categories_can_edit: [item.category.id])
+        group.permission.update(reports_items_edit: [item.category.id])
         user.groups = [group]
         user.save!
       end

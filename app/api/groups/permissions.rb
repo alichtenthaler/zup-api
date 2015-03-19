@@ -45,6 +45,7 @@ module Groups::Permissions
             permission_class = GroupPermission::TYPES[permissions_type][permission_name]
             next unless permission_class
 
+
             if permission_class == Array
               objects_ids = params[:objects_ids].map(&:to_i)
               permissions.add_with_objects(permission_name, objects_ids)

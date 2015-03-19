@@ -8,6 +8,25 @@ describe Search::Inventory::Items::API do
 
     let(:category) { create(:inventory_category_with_sections) }
 
+    context "specifing the fields" do
+      let!(:items) { create_list(:inventory_item, 3, category: category) }
+
+      it "returns only specified fields" do
+        get "/search/inventory/items?return_fields=id,title,address,user.name&display_type=full", nil, auth(user)
+        expect(response.status).to eq(200)
+
+        body = parsed_body['items']
+        expect(body.first).to match(
+          "id" => a_value,
+          "title" => an_instance_of(String),
+          "address" => an_instance_of(String),
+          "user" => {
+            "name" => an_instance_of(String)
+          }
+        )
+      end
+    end
+
     context "filtered by permission" do
       let!(:items) { create_list(:inventory_item, 3, category: category) }
       let!(:other_category) { create(:inventory_category_with_sections) }
@@ -15,7 +34,7 @@ describe Search::Inventory::Items::API do
       let!(:group) { create(:group) }
 
       before do
-        group.permission.inventory_categories_can_view = [other_category.id]
+        group.permission.inventories_items_read_only = [other_category.id]
         group.save!
         user.groups = [group]
         user.save!
@@ -275,13 +294,13 @@ describe Search::Inventory::Items::API do
         body = parsed_body
 
         expect(body['clusters'].size).to eq(1)
-        expect(response.header['Total']).to eq(3)
+        expect(response.header['Total']).to eq('3')
 
         cluster = body['clusters'].first
 
         expect(cluster['position']).to_not be_empty
         expect(cluster['count']).to eq(3)
-        expect(cluster['category']).to_not be_empty
+        expect(cluster['category_id']).to be_present
       end
     end
 
@@ -492,19 +511,21 @@ describe Search::Inventory::Items::API do
           end
           let(:valid_params) do
             JSON.parse <<-JSON
-            {
-              "fields": {
-                "#{field.id}": {
-                  "equal_to": 30
-                }
+              {
+                "fields": {
+                  "#{field.id}": {
+                    "equal_to": "30"
+                  }
+                },
+                "sort": "title",
+                "order": "asc"
               }
-            }
             JSON
           end
 
           before do
-            field.update(kind: "integer")
-            get "/search/inventory/items", valid_params, auth(user)
+            field.update(kind: "radio")
+            get "/search/inventory/items?only=id", valid_params, auth(user)
           end
 
           it "returns the correct item" do
@@ -512,6 +533,91 @@ describe Search::Inventory::Items::API do
               i['id']
             end).to eq([correct_item.id])
           end
+        end
+
+        context "should not return repeated results" do
+          let!(:options) do
+            [
+              create(:inventory_field_option, field: field, value: "Opção 1"),
+              create(:inventory_field_option, field: field, value: "Opção 2")
+            ]
+          end
+          let!(:item) do
+            item = create(:inventory_item, category: category)
+            item.data.find_by(field: field).update!(inventory_field_option_ids: options.map(&:id))
+            item
+          end
+          let(:valid_params) do
+            JSON.parse <<-JSON
+            {
+              "fields": {
+                "#{field.id}": {
+                  "includes": ["Opção 1"]
+                }
+              }
+            }
+            JSON
+          end
+
+          before do
+            field.update(kind: "checkbox")
+            get "/search/inventory/items", valid_params, auth(user)
+          end
+
+          it "returns the correct item" do
+            expect(parsed_body['items'].map do |i|
+              i['id']
+            end).to eq([item.id])
+          end
+
+        end
+      end
+
+      context "using multiple filters" do
+        let!(:field2) { create(:inventory_field, section: category.sections.sample) }
+        let!(:items) do
+          create_list(:inventory_item, 3, category: category)
+        end
+        let!(:correct_item) do
+          item = items.sample
+          item.data.find_by(field: field).update!(content: 50)
+          item.data.find_by(field: field2).update!(content: 'Sim')
+          item
+        end
+        let!(:wrong_items) do
+          items.delete(correct_item)
+          items.each do |item|
+            item.data.find_by(field: field).update!(content: 120)
+            item.data.find_by(field: field2).update!(content: 'Não')
+          end
+        end
+        let(:valid_params) do
+          JSON.parse <<-JSON
+            {
+              "fields": {
+                "#{field.id}": {
+                  "greater_than": 30,
+                  "lesser_than": 100
+                },
+                "#{field2.id}": {
+                  "equal_to": "Sim"
+                }
+              },
+              "sort": "title",
+              "order": "asc"
+            }
+          JSON
+        end
+
+        before do
+          field.update(kind: "integer")
+          get "/search/inventory/items", valid_params, auth(user)
+        end
+
+        it "returns the correct item" do
+          expect(parsed_body['items'].map do |i|
+            i['id']
+          end).to eq([correct_item.id])
         end
       end
 

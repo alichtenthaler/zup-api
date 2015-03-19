@@ -1,19 +1,15 @@
 FactoryGirl.define do
   factory :group_permission do
     factory :admin_permissions do
-      manage_users true
-      manage_inventory_categories true
-      manage_inventory_items true
-      manage_groups true
-      manage_reports_categories true
-      manage_reports true
+      users_full_access true
+      inventories_full_access true
+      groups_full_access true
+      reports_full_access true
       manage_flows true
-      manage_inventory_formulas true
+      inventories_formulas_full_access true
       manage_config true
       panel_access true
       create_reports_from_panel true
-      edit_reports true
-      edit_inventory_items true
     end
   end
 end

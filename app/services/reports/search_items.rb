@@ -32,11 +32,9 @@ class Reports::SearchItems
   end
 
   def search
-    scope = Reports::Item.all
-    scope = scope.includes(:user)
-    scope = scope.includes(:images)
-    scope = scope.includes(:category)
-    scope = scope.includes(:inventory_item)
+    scope = Reports::Item.includes(
+      :images, :comments, :category, :inventory_item, user: :groups
+    )
 
     permissions = UserAbility.new(signed_user)
 
@@ -48,7 +46,7 @@ class Reports::SearchItems
       # Select only unique inventory_item_id
       scope = scope.select(
         <<-SQL
-          DISTINCT ON (COALESCE(inventory_item_id, id)) reports_items.*
+          DISTINCT ON (COALESCE(reports_items.inventory_item_id, reports_items.id)) reports_items.*
         SQL
       )
     end
@@ -95,7 +93,7 @@ class Reports::SearchItems
 
     if position_params
       if clusterize
-        position_params[:distance] = position_params[:distance].to_f * 2
+        position_params[:distance] = position_params[:distance].to_f
       end
 
       scope = Reports::SearchItemsByGeolocation.new(
@@ -136,18 +134,13 @@ class Reports::SearchItems
       if sort == 'user_name'
         sort = 'users.name'
       elsif sort == 'id'
-        sort = 'scope.id'
+        sort = 'reports_items.id'
       end
 
-      scope = Reports::Item.find_by_sql(
-        <<-SQL
-          SELECT scope.*
-          FROM (#{scope.to_sql}) scope
-          INNER JOIN users
-          ON users.id = scope.user_id
-          ORDER BY #{sort} #{order.upcase}
-        SQL
-      )
+      scope = Reports::Item.from("(#{scope.to_sql}) reports_items").joins(:user)
+                   .preload(
+                     :images, :comments, :category, :inventory_item, user: :groups
+                   ).order("#{sort} #{order.downcase}")
 
       if paginator.present?
         scope = paginator.call(scope)
