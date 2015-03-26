@@ -12,13 +12,13 @@ module Cases
       end
       post do
         authenticate!
-        initial_flow = Flow.find_initial(safe_params[:initial_flow_id]).the_version(true)
+        initial_flow = Flow.find_initial(safe_params[:initial_flow_id]).the_version(0)
         step = initial_flow.get_new_step_to_case
         return error!(I18n.t(:flow_not_published), 400) if initial_flow.version.blank?
         return error!(I18n.t(:step_not_found), 404)     unless step.try(:active)
         validate_permission!(:create, initial_flow.cases.build.case_steps.build(step: step))
 
-        case_step_params = {created_by: current_user, step: step, step_version: step.version.id}
+        case_step_params = { created_by: current_user, step: step, step_version: step.version.id }
         if safe_params[:fields].present?
           case_step_params.merge!(responsible_user_id: current_user.id,
                                   case_step_data_fields_attributes: fields_params)
@@ -39,9 +39,9 @@ module Cases
 
         trigger_result = run_triggers(step, kase)
 
-        {message: I18n.t(:case_created), case: Case::Entity.represent(kase, display_type: 'full'),
+        { message: I18n.t(:case_created), case: Case::Entity.represent(kase, only: return_fields, display_type: 'full'),
          trigger_type: trigger_result[:type], trigger_values: trigger_result[:value],
-         trigger_description: trigger_result[:description]}
+         trigger_description: trigger_result[:description] }
       end
 
       desc 'Get all Cases'
@@ -75,23 +75,23 @@ module Cases
         end
 
         kases = Case.where(case_query.join(' and '), parameters.to_h)
-        if parameters[:step_id].present? or parameters[:responsible_group_id].present?  or
-            parameters[:responsible_user_id].present? or
-            parameters[:updated_by_id].present? or parameters[:created_by_id].present?
+        if parameters[:step_id].present? || parameters[:responsible_group_id].present?  ||
+            parameters[:responsible_user_id].present? ||
+            parameters[:updated_by_id].present? || parameters[:created_by_id].present?
 
           case_steps_params = parameters.slice(:step_id, :responsible_group_id,
                                                :responsible_user_id,
                                                :updated_by_id, :created_by_id)
-          case_steps_params.reject! {|key, value| value.blank? }
+          case_steps_params.reject! { |_key, value| value.blank? }
           kases = kases.select do |kase|
             kase.case_steps = kase.case_steps.where(case_steps_params)
             kase.case_steps.any?
           end
         end
 
-        {cases: Case::Entity.represent(paginate(kases), display_type: safe_params[:display_type],
+        { cases: Case::Entity.represent(paginate(kases), only: return_fields, display_type: safe_params[:display_type],
                                        just_user_can_view: (safe_params[:just_user_can_view] || true),
-                                       current_user: current_user)}
+                                       current_user: current_user) }
       end
 
       resources ':id' do
@@ -105,9 +105,9 @@ module Cases
           kase = Case.not_inactive.find(safe_params[:id])
           validate_permission!(:show, kase)
 
-          {case: Case::Entity.represent(kase, display_type: safe_params[:display_type],
+          { case: Case::Entity.represent(kase, only: return_fields, display_type: safe_params[:display_type],
                                         just_user_can_view: (safe_params[:just_user_can_view] || true),
-                                        current_user: current_user)}
+                                        current_user: current_user) }
         end
 
         desc 'Inactive Case'
@@ -119,7 +119,7 @@ module Cases
           kase.update!(old_status: kase.status, status: 'inactive', updated_by: current_user)
           kase.log!('delete_case', user: current_user)
 
-          {message: I18n.t(:case_deleted)}
+          { message: I18n.t(:case_deleted) }
         end
 
         desc 'Restore Case'
@@ -131,7 +131,7 @@ module Cases
           kase.update!(status: kase.old_status, old_status: nil, updated_by: current_user)
           kase.log!('restored_case', user: current_user)
 
-          {message: I18n.t(:case_restored)}
+          { message: I18n.t(:case_restored) }
         end
 
         desc 'Update/Next Step Case'
@@ -159,8 +159,8 @@ module Cases
             end
             case_step.update!(responsible_user_id: current_user.id, updated_by: current_user)
           else
-            case_step_params = {created_by: current_user, step: step, step_version: step.version.id,
-                                case_step_data_fields_attributes: fields}
+            case_step_params = { created_by: current_user, step: step, step_version: step.version.id,
+                                case_step_data_fields_attributes: fields }
             if safe_params[:responsible_user_id].present?
               case_step_params.merge!(responsible_user_id: safe_params[:responsible_user_id])
             elsif safe_params[:responsible_group_id].present?
@@ -172,9 +172,9 @@ module Cases
             validate_permission!(:create, case_step)
 
             current_step = kase.case_steps.last
-            if current_step.present? and current_step.id != step.id and
-                not current_step.executed? and
-                not kase.disabled_steps.include? current_step.id
+            if current_step.present? && current_step.id != step.id &&
+                !(current_step.executed? || current_step.my_step.required_fields.blank?) &&
+                !kase.disabled_steps.include?(current_step.id)
               return error!(I18n.t(:current_step_required), 400)
             end
           end
@@ -182,7 +182,7 @@ module Cases
           kase.updated_by  = current_user
           case_step_is_new = case_step.new_record?
           kase.save!
-          if case_step_is_new and case_step.case_step_data_fields.blank?
+          if case_step_is_new && case_step.case_step_data_fields.blank?
             kase.log!('started_step', user: current_user)
             message = I18n.t(:started_step_success)
           elsif case_step_is_new
@@ -195,7 +195,7 @@ module Cases
           all_steps       = kase.initial_flow.list_all_steps
           next_step_index = all_steps.index(step).try(:next)
           next_steps      = all_steps[next_step_index..-1]
-          if kase.status == 'not_satisfied' or next_steps.blank?
+          if kase.status == 'not_satisfied' || next_steps.blank?
             if kase.steps_not_fulfilled.blank?
               kase.update!(status: 'finished', updated_by: current_user)
               kase.log!('finished', user: current_user)
@@ -208,9 +208,9 @@ module Cases
           end
 
           trigger_result = run_triggers(step, kase)
-          {message: message, case: Case::Entity.represent(kase, display_type: 'full'),
+          { message: message, case: Case::Entity.represent(kase, only: return_fields, display_type: 'full'),
            trigger_type: trigger_result[:type], trigger_values: trigger_result[:value],
-           trigger_description: trigger_result[:description]}
+           trigger_description: trigger_result[:description] }
         end
 
         desc 'To Finish Case'
@@ -218,13 +218,13 @@ module Cases
         put '/finish' do
           authenticate!
           kase = Case.not_inactive.find(safe_params[:id])
-          return {message: I18n.t(:case_is_already_finished)} if kase.status == 'finished'
+          return { message: I18n.t(:case_is_already_finished) } if kase.status == 'finished'
           validate_permission!(:update, kase)
 
           kase.update!(status: 'finished', resolution_state_id: safe_params[:resolution_state_id])
           kase.log!('finished', user: current_user)
 
-          {message: I18n.t(:finished_case)}
+          { message: I18n.t(:finished_case) }
         end
 
         desc 'Transfer Case to other Flow'
@@ -238,15 +238,15 @@ module Cases
           return error!(I18n.t(:case_is_already_transfered), 400) if kase.status == 'transfer'
           validate_permission!(:update, kase)
 
-          initial_flow = Flow.find_by(id: safe_params[:flow_id]).the_version(true)
+          initial_flow = Flow.find_by(id: safe_params[:flow_id]).the_version(0)
           new_kase     = initial_flow.cases.create!(created_by: current_user, original_case_id: kase.id,
                                                     flow_version: initial_flow.version.id)
           kase.update!(status: 'transfer')
           kase.log!('transfer_flow', user: current_user, child_case_id: new_kase.id)
           new_kase.log!('create_case', user: current_user)
 
-          {message: I18n.t(:case_updated),
-           case: Case::Entity.represent(new_kase, display_type: safe_params[:display_type])}
+          { message: I18n.t(:case_updated),
+            case: Case::Entity.represent(new_kase, only: return_fields, display_type: safe_params[:display_type]) }
         end
 
         desc 'Get Case History'
@@ -256,8 +256,8 @@ module Cases
           kase = Case.find(safe_params[:id])
           validate_permission!(:show, kase)
 
-          {cases_log_entries: CasesLogEntry::Entity.represent(kase.cases_log_entries,
-                                                              display_type: safe_params[:display_type])}
+          { cases_log_entries: CasesLogEntry::Entity.represent(kase.cases_log_entries, only: return_fields,
+                                                              display_type: safe_params[:display_type]) }
         end
 
         resources '/case_steps' do
@@ -274,7 +274,7 @@ module Cases
             log_params    = {}
             before_update = case_step.dup
             parameters    = safe_params.permit(:responsible_user_id, :responsible_group_id)
-            case_step.update!({updated_by: current_user}.merge(parameters))
+            case_step.update!({ updated_by: current_user }.merge(parameters))
 
             if safe_params.has_key?(:responsible_user_id)
               log_params.merge!(before_user_id: before_update.responsible_user_id,
@@ -284,11 +284,11 @@ module Cases
               log_params.merge!(before_group_id: before_update.responsible_group_id,
                                 after_group_id: safe_params[:responsible_group_id])
             end
-            if safe_params.has_key?(:responsible_user_id) or safe_params.has_key?(:responsible_group_id)
+            if safe_params.has_key?(:responsible_user_id) || safe_params.has_key?(:responsible_group_id)
               case_step.case.log!('transfer_case', log_params.merge(user: current_user))
             end
 
-            {message: I18n.t(:case_step_updated)}
+            { message: I18n.t(:case_step_updated) }
           end
         end
       end

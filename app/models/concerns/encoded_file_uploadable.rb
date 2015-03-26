@@ -61,5 +61,4 @@ module EncodedFileUploadable
       METHODS
     end
   end
-
 end

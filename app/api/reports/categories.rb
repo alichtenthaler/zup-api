@@ -1,4 +1,4 @@
-require "grape/validators/category_status"
+require 'grape/validators/category_status'
 
 module Reports::Categories
   class API < Grape::API
@@ -71,7 +71,7 @@ module Reports::Categories
           category = Reports::Category.create!(category_params)
           statuses = []
 
-          params[:statuses].each do |k, status|
+          params[:statuses].each do |_k, status|
             statuses << status
           end
 
@@ -83,7 +83,6 @@ module Reports::Categories
             )
           }
         end
-
       end
 
       desc 'Return information about the given category'
@@ -99,15 +98,20 @@ module Reports::Categories
       end
 
       desc 'Returns list of all reports category'
-      paginate per_page: 25
       params do
-        optional :display_type, type: String,
-                 desc: 'If "full", returns additional control properties.'
+        optional :subcategories_flat, type: Boolean,
+                 desc: 'Return subcategories with categories'
       end
       get do
-        display_type = params[:display_type] == 'full' ? :full : :default
-        categories_scope = Reports::Category.active.main
-                                            .includes(:inventory_categories, :statuses, subcategories: [:inventory_categories, :statuses, :subcategories])
+        display_type = params[:display_type].to_sym if params[:display_type]
+        subcategories_flat = params[:subcategories_flat]
+
+        include_args = [:inventory_categories, :statuses, subcategories: [:inventory_categories, :statuses, :subcategories]]
+
+        categories_scope = Reports::Category.active
+        categories_scope = categories_scope.main unless subcategories_flat
+        categories_scope = categories_scope.includes(*include_args)
+
         permissions = UserAbility.new(current_user)
 
         unless permissions.can?(:manage, Reports::Category)
@@ -116,9 +120,9 @@ module Reports::Categories
 
         {
           categories: Reports::Category::Entity.represent(
-            paginate(categories_scope),
-            display_type: display_type,
-            only: return_fields
+            categories_scope,
+            only: return_fields,
+            display_type: display_type
           )
         }
       end
@@ -147,7 +151,7 @@ module Reports::Categories
         end
 
         category = Reports::Category.find(params[:id])
-        validate_permission!(:create, category)
+        validate_permission!(:edit, category)
 
         Reports::Category.transaction do
           old_color = category.color
@@ -156,7 +160,7 @@ module Reports::Categories
           unless params[:statuses].nil?
             statuses = []
 
-            params[:statuses].each do |k, status|
+            params[:statuses].each do |_k, status|
               statuses << status
             end
 
@@ -178,7 +182,7 @@ module Reports::Categories
         authenticate!
 
         category = Reports::Category.find(params[:id])
-        validate_permission!(:destroy, category)
+        validate_permission!(:delete, category)
         category.destroy
 
         status 204

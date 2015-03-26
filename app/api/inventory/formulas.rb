@@ -8,11 +8,18 @@ module Inventory::Formulas
 
     namespace :categories do
       route_param :category_id do
-
         # /inventory/categories/:id/formulas
         resource :formulas do
+          desc 'Get all formulas for the category'
+          get do
+            authenticate!
+            validate_permission!(:view, Inventory::Formula)
 
-          desc "Create a new formula for the category"
+            category = load_category
+            present category.formulas, using: Inventory::Formula::Entity
+          end
+
+          desc 'Create a new formula for the category'
           params do
             requires :category_id, type: Integer
             requires :inventory_status_id, type: Integer
@@ -44,7 +51,9 @@ module Inventory::Formulas
             #     ]
 
             formula.status = status
-            formula.groups_to_alert = params[:groups_to_alert].map(&:to_i)
+            if params[:groups_to_alert].present?
+              formula.groups_to_alert = params[:groups_to_alert].map(&:to_i)
+            end
             formula.conditions_attributes = params[:conditions]
             formula.save!
 
@@ -55,7 +64,7 @@ module Inventory::Formulas
             present formula, using: Inventory::Formula::Entity
           end
 
-          desc "Updates a formula"
+          desc 'Updates a formula'
           params do
             requires :category_id, type: Integer
             optional :inventory_status_id, type: Integer
@@ -85,25 +94,25 @@ module Inventory::Formulas
             present formula, using: Inventory::Formula::Entity
           end
 
-          desc "Destroy a formula"
+          desc 'Destroy a formula'
           delete ':formula_id' do
             authenticate!
-            validate_permission!(:destroy, Inventory::Formula)
+            validate_permission!(:delete, Inventory::Formula)
 
             category = load_category
             formula = category.formulas.find(params[:formula_id])
             formula.destroy!
 
             if formula && formula.destroy
-              { message: "Formula destroyed sucessfully" }
+              { message: 'Formula destroyed sucessfully' }
             else
-              error!("Formula not found", 404)
+              error!('Formula not found', 404)
             end
           end
 
           route_param :formula_id do
             resources :alerts do
-              desc "List affected items by an alert"
+              desc 'List affected items by an alert'
               get ':alert_id' do
                 authenticate!
                 validate_permission!(:view, Inventory::Formula)
@@ -116,12 +125,8 @@ module Inventory::Formulas
               end
             end
           end
-
         end
-
       end
     end
-
   end
 end
-

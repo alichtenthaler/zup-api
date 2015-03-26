@@ -9,7 +9,7 @@ module Flows
       get do
         authenticate!
         validate_permission!(:view, Flow)
-        { flows: Flow::Entity.represent(Flow.where(safe_params.permit(:initial)), display_type: safe_params[:display_type]) }
+        { flows: Flow::Entity.represent(Flow.where(safe_params.permit(:initial)), only: return_fields, display_type: safe_params[:display_type]) }
       end
 
       desc 'Create a flow'
@@ -23,7 +23,7 @@ module Flows
         validate_permission!(:create, Flow)
 
         flow = Flow.create! safe_params.permit(:title, :description, :initial).merge(created_by: current_user)
-        { message: I18n.t(:flow_created), flow: Flow::Entity.represent(flow, display_type: 'full') }
+        { message: I18n.t(:flow_created), flow: Flow::Entity.represent(flow, only: return_fields, display_type: 'full') }
       end
 
       resource ':id' do
@@ -36,7 +36,7 @@ module Flows
           authenticate!
           validate_permission!(:view, Flow)
 
-          { flow: Flow::Entity.represent(Flow.find(safe_params[:id]).the_version(safe_params[:version]), display_type: safe_params[:display_type]) }
+          { flow: Flow::Entity.represent(Flow.find(safe_params[:id]).the_version(safe_params[:version]), only: return_fields, display_type: safe_params[:display_type]) }
         end
 
         desc 'Delete a flow'
@@ -73,7 +73,7 @@ module Flows
           validate_permission!(:view, Flow)
 
           ancestors = Flow.find(safe_params[:id]).ancestors
-          { flows: (safe_params[:display_type] == 'full') ? Flow::Entity.represent(ancestors) : ancestors.map(&:id) }
+          { flows: (safe_params[:display_type] == 'full') ? Flow::Entity.represent(ancestors, only: return_fields) : ancestors.map(&:id) }
         end
 
         desc 'Change the useful version of Flow'
@@ -83,7 +83,7 @@ module Flows
           validate_permission!(:manage, Flow)
 
           flow = Flow.find(safe_params[:id])
-          error!(I18n.t(:version_isnt_valid), 400) if flow.versions.size.zero? or not flow.versions.pluck(:id).include? safe_params[:new_version].to_i
+          error!(I18n.t(:version_isnt_valid), 400) if flow.versions.size.zero? || !flow.versions.pluck(:id).include?(safe_params[:new_version].to_i)
           flow.update! current_version: safe_params[:new_version].to_i
 
           { message: I18n.t(:flow_version_updated, version: safe_params[:new_version]) }

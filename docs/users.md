@@ -163,3 +163,11 @@ Parâmetros:
     {
       "token": "asd13s2342bcede4308b1"
     }
+
+## Ativando um usuário
+
+Para ativar um usuário, basta utilizar o seguinte endpoint:
+
+__URI__ `PUT /users/:id/enable`
+
+Para utilizá-lo você precisa ter a permissão de gerenciar usuários em um determinado grupo que o usuário pertença.

@@ -1,7 +1,7 @@
 # Read about factories at https://github.com/thoughtbot/factory_girl
 
 FactoryGirl.define do
-  factory :inventory_section, :class => 'Inventory::Section' do
+  factory :inventory_section, class: 'Inventory::Section' do
     title { generate(:name) }
     category { create(:inventory_category) }
     permissions {}
@@ -9,7 +9,7 @@ FactoryGirl.define do
     position 0
 
     factory :inventory_section_with_fields do
-      after(:create) do |section, evaluator|
+      after(:create) do |section, _evaluator|
         create_list(:inventory_field, 2, section: section)
       end
     end

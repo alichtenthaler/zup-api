@@ -1,9 +1,9 @@
 FactoryGirl.define do
-  factory :inventory_item, :class => 'Inventory::Item' do
+  factory :inventory_item, class: 'Inventory::Item' do
     association :category, factory: :inventory_category_with_sections
     association :user, factory: :user
 
-    before(:create) do |item, evaluator|
+    before(:create) do |item, _evaluator|
       item.category.fields.each do |field|
         if field.use_options?
           item_data = item.data.build(field: field, content: [])
@@ -14,9 +14,9 @@ FactoryGirl.define do
         if field.location
           latitude, longitude = RandomLocationPoint.location(-23.5505200, -46.6333090, 1)
 
-          if field.title == "longitude"
+          if field.title == 'longitude'
             item_data.content = longitude
-          elsif field.title == "latitude"
+          elsif field.title == 'latitude'
             item_data.content = latitude
           end
         end

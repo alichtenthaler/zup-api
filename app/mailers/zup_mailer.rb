@@ -14,12 +14,15 @@ class ZupMailer < ActionMailer::Base
   end
 
   protected
-    # Intercept emails and check on the
-    # settings if it should be sent.
-    def validate_email
-      action_name = @_action_name.to_sym
-      unless Settings.can_send_email?(self.class::RESTRICT_ACTIONS[action_name]).inspect
-        def self.deliver! ; false ; end
+
+  # Intercept emails and check on the
+  # settings if it should be sent.
+  def validate_email
+    action_name = @_action_name.to_sym
+    unless Settings.can_send_email?(self.class::RESTRICT_ACTIONS[action_name]).inspect
+      def self.deliver!
+        false
       end
     end
+  end
 end

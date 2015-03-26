@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 describe Reports::Feedback do
-  context "kind validation" do
+  context 'kind validation' do
     %w(positive negative).each do |kind|
       it "accepts #{kind} as content" do
         feedback = build(:reports_feedback, kind: kind)

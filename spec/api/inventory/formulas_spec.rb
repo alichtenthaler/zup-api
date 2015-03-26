@@ -1,9 +1,9 @@
-require "spec_helper"
+require 'spec_helper'
 
 describe Inventory::Formulas::API do
   let(:user) { create(:user) }
 
-  context "POST /inventory/categories/:id/formulas" do
+  context 'POST /inventory/categories/:id/formulas' do
     let(:category) { create(:inventory_category_with_sections) }
     let(:status) { create(:inventory_status, category: category) }
     let(:field) do
@@ -30,7 +30,7 @@ describe Inventory::Formulas::API do
       post "/inventory/categories/#{category.id}/formulas", valid_params, auth(user)
     end
 
-    it "creates a new formula" do
+    it 'creates a new formula' do
       subject
       expect(response.status).to be_a_requisition_created
 
@@ -45,12 +45,12 @@ describe Inventory::Formulas::API do
 
       condition = created_conditions.first
       expect(condition.field).to eq(field)
-      expect(condition.operator).to eq("equal_to")
-      expect(condition.content).to eq("test")
+      expect(condition.operator).to eq('equal_to')
+      expect(condition.content).to eq('test')
     end
 
-    it "raise error if something is missing" do
-      valid_params.delete("inventory_status_id")
+    it 'raise error if something is missing' do
+      valid_params.delete('inventory_status_id')
 
       subject
 
@@ -58,7 +58,7 @@ describe Inventory::Formulas::API do
     end
   end
 
-  context "PUT /inventory/categories/:category_id/formulas/:id" do
+  context 'PUT /inventory/categories/:category_id/formulas/:id' do
     let(:category) { create(:inventory_category_with_sections) }
     let(:status) { create(:inventory_status, category: category) }
     let(:field) do
@@ -75,7 +75,7 @@ describe Inventory::Formulas::API do
       put "/inventory/categories/#{category.id}/formulas/#{formula.id}", valid_params, auth(user)
     end
 
-    context "updating common data" do
+    context 'updating common data' do
       let(:valid_params) do
         JSON.parse <<-JSON
           {
@@ -93,7 +93,7 @@ describe Inventory::Formulas::API do
       end
     end
 
-    context "updating existing conditions" do
+    context 'updating existing conditions' do
       let(:formula) do
         create(:inventory_formula, :with_conditions, category: category)
       end
@@ -106,7 +106,7 @@ describe Inventory::Formulas::API do
         {}
       end
 
-      it "updates existing conditions" do
+      it 'updates existing conditions' do
         valid_params['conditions'] = [{
           id: condition.id,
           operator: 'includes',
@@ -124,7 +124,7 @@ describe Inventory::Formulas::API do
       end
     end
 
-    context "destroying existing conditions" do
+    context 'destroying existing conditions' do
       let(:formula) do
         create(:inventory_formula, :with_conditions, category: category)
       end
@@ -137,7 +137,7 @@ describe Inventory::Formulas::API do
         {}
       end
 
-      it "updates existing conditions" do
+      it 'updates existing conditions' do
         valid_params['conditions'] = [{
           id: condition.id,
           _destroy: true
@@ -151,7 +151,7 @@ describe Inventory::Formulas::API do
     end
   end
 
-  describe "DELETE /inventory/categories/:c_id/formulas/:id" do
+  describe 'DELETE /inventory/categories/:c_id/formulas/:id' do
     let(:category) { create(:inventory_category_with_sections) }
     let(:formula) { create(:inventory_formula, category: category) }
 
@@ -159,7 +159,7 @@ describe Inventory::Formulas::API do
       delete "/inventory/categories/#{category.id}/formulas/#{formula.id}", {}, auth(user)
     end
 
-    it "destroys the formula" do
+    it 'destroys the formula' do
       subject
 
       expect(response).to be_ok
@@ -167,8 +167,8 @@ describe Inventory::Formulas::API do
     end
   end
 
-  context "alerts" do
-    describe "GET /inventory/categories/:c_id/formulas/:f_id/alerts/:a_id" do
+  context 'alerts' do
+    describe 'GET /inventory/categories/:c_id/formulas/:f_id/alerts/:a_id' do
       let(:category) { create(:inventory_category_with_sections) }
       let(:formula) { create(:inventory_formula, :with_history, category: category) }
       let(:alert) { create(:inventory_formula_alert, formula: formula) }
@@ -181,7 +181,7 @@ describe Inventory::Formulas::API do
         get "/inventory/categories/#{category.id}/formulas/#{formula.id}/alerts/#{alert.id}", {}, auth(user)
       end
 
-      it "return all affected items" do
+      it 'return all affected items' do
         subject
 
         expect(response).to be_ok
@@ -189,5 +189,4 @@ describe Inventory::Formulas::API do
       end
     end
   end
-
 end

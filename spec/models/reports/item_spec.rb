@@ -1,16 +1,16 @@
-require "spec_helper"
+require 'spec_helper'
 
 describe Reports::Item do
-  context "validations" do
-    it "should not allow description" do
+  context 'validations' do
+    it 'should not allow description' do
       report = build(:reports_item)
-      report.description = "a" * 801
+      report.description = 'a' * 801
 
       expect(report.save).to eq(false)
       expect(report.errors).to include(:description)
     end
 
-    context "validations for boundary" do
+    context 'validations for boundary' do
       let(:item) { build(:reports_item) }
       let(:latitude) { -46.32341 }
       let(:longitude) { -23.134234 }
@@ -19,41 +19,41 @@ describe Reports::Item do
         item.position = Reports::Item.rgeo_factory.point(longitude, latitude)
       end
 
-      context "validation for boundary is enabled" do
+      context 'validation for boundary is enabled' do
         before do
           allow(CityShape).to receive(:validation_enabled?).and_return(true)
         end
 
-        context "position in boundaries" do
+        context 'position in boundaries' do
           before do
             allow(CityShape).to receive(:contains?)
             .and_return(true)
           end
 
-          it "is valid" do
+          it 'is valid' do
             expect(item.valid?).to be_truthy
           end
         end
 
-        context "position not in boundaries" do
+        context 'position not in boundaries' do
           before do
             allow(CityShape).to receive(:contains?)
                             .and_return(false)
           end
 
-          it "is valid" do
+          it 'is valid' do
             expect(item.valid?).to be_falsy
           end
         end
       end
 
-      context "validation for boundary is disabled" do
+      context 'validation for boundary is disabled' do
         before do
           allow(CityShape).to receive(:validation_enabled?).and_return(false)
         end
 
-        context "position not in boundaries" do
-          it "is valid" do
+        context 'position not in boundaries' do
+          it 'is valid' do
             expect(item.valid?).to be_truthy
           end
         end
@@ -61,7 +61,7 @@ describe Reports::Item do
     end
   end
 
-  it "has relationship with inventory category through category" do
+  it 'has relationship with inventory category through category' do
     inventory_categories = create_list(:inventory_category, 3)
     category = create(
       :reports_category_with_statuses,
@@ -72,7 +72,7 @@ describe Reports::Item do
     expect(item.inventory_categories).to eq(inventory_categories)
   end
 
-  it "has the same position of the inventory item" do
+  it 'has the same position of the inventory item' do
     inventory_item = create(:inventory_item)
     report = build(:reports_item)
 
@@ -81,8 +81,8 @@ describe Reports::Item do
     expect(report.position).to eq(inventory_item.position)
   end
 
-  context "status history" do
-    it "create a new entry on status history when status is created" do
+  context 'status history' do
+    it 'create a new entry on status history when status is created' do
       item = create(:reports_item)
       new_status = item.statuses.last
       Reports::UpdateItemStatus.new(item).set_status(new_status)
@@ -93,7 +93,7 @@ describe Reports::Item do
     end
   end
 
-  describe "#can_receive_feedback?" do
+  describe '#can_receive_feedback?' do
     let(:report) { create(:reports_item) }
 
     it "returns true if the report is final and the time isn't expired" do
@@ -106,7 +106,7 @@ describe Reports::Item do
       expect(report.can_receive_feedback?).to eq(false)
     end
 
-    it "returns false if the report is final but the time expired" do
+    it 'returns false if the report is final but the time expired' do
       Reports::UpdateItemStatus.new(report).update_status!(report.category.statuses.final.first)
       report.status_history
             .last
@@ -119,4 +119,3 @@ describe Reports::Item do
     end
   end
 end
-

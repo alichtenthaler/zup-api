@@ -16,9 +16,9 @@ module Reports
     def visibility
       user_permissions = UserAbility.new(user)
 
-      if user_permissions.can?(:view, item) && user_permissions.can?(:edit, item)
+      if user_permissions.can?(:view_private, item) || user_permissions.can?(:edit, item)
         Reports::Comment::INTERNAL
-      elsif user.id == item.user_id
+      elsif user.id == item.user_id || user_permissions.can?(:edit, item)
         Reports::Comment::PRIVATE
       else
         Reports::Comment::PUBLIC

@@ -7,49 +7,49 @@ class Flow < ActiveRecord::Base
   PERMISSION_TYPES = %w{flow_can_view_all_steps flow_can_execute_all_steps
                         flow_can_delete_own_cases flow_can_delete_all_cases}
 
-  belongs_to :created_by,        class_name: 'User', foreign_key: :created_by_id
-  belongs_to :updated_by,        class_name: 'User', foreign_key: :updated_by_id
-  has_many   :cases,             class_name: 'Case', foreign_key: :initial_flow_id
-  has_many   :parent_steps,      class_name: 'Step', foreign_key: :child_flow_id
-  has_many   :steps,             dependent: :destroy
-  has_many   :resolution_states, dependent: :destroy
+  belongs_to :created_by,      class_name: 'User', foreign_key: :created_by_id
+  belongs_to :updated_by,      class_name: 'User', foreign_key: :updated_by_id
+  has_many :cases,             class_name: 'Case', foreign_key: :initial_flow_id
+  has_many :parent_steps,      class_name: 'Step', foreign_key: :child_flow_id
+  has_many :steps,             dependent: :destroy
+  has_many :resolution_states, dependent: :destroy
 
   scope :active, -> { where.not(status: :inactive) }
 
   validates :title, :created_by, presence: true
-  validates :title, length: {maximum: 100}
-  validates :description, length: {maximum: 600}
+  validates :title, length: { maximum: 100 }
+  validates :description, length: { maximum: 600 }
   validates :updated_by, presence: true, on: :update
 
-  after_validation :verify_if_has_resolution_state_default, if: -> { self.status != 'inactive' }
-  before_update    :set_draft, unless: -> { self.draft_changed? or self.current_version_changed? }
+  after_validation :verify_if_has_resolution_state_default, if: -> { status != 'inactive' }
+  before_update :set_draft, unless: -> { self.draft_changed? || self.current_version_changed? }
 
   def self.find_initial(id)
-    self.find_by(initial: true, id: id)
+    find_by(initial: true, id: id)
   end
 
   def publish(current_user)
     user = current_user
-    return if user.blank? or not draft
+    return if user.blank? || !draft
     transaction do
       override_old_version = versions.present? && Version.reify_last_version(self).cases_arent_using?
       resolutions_versions = resolution_states_versions.dup
       step_versions        = steps_versions.dup
 
-      my_resolution_states({draft: true}, true).each do |resolution|
+      my_resolution_states({ draft: true }, true).each do |resolution|
         resolution.update!(user: user, draft: false)
         Version.build!(resolution, override_old_version)
         resolutions_versions[resolution.id.to_s] = resolution.versions.last.id
       end
 
-      my_steps({draft: true}, true).each do |step|
+      my_steps({ draft: true }, true).each do |step|
         trigger_versions = step.triggers_versions.dup
         field_versions   = step.fields_versions.dup
 
-        step.my_triggers({draft: true}, true).each do |trigger|
+        step.my_triggers({ draft: true }, true).each do |trigger|
           condition_versions = trigger.trigger_conditions_versions.dup
 
-          trigger.my_trigger_conditions({draft: true}, true).each do |condition|
+          trigger.my_trigger_conditions({ draft: true }, true).each do |condition|
             condition.update!(user: user, draft: false)
             Version.build!(condition, override_old_version)
             condition_versions[condition.id.to_s] = condition.versions.last.id
@@ -61,7 +61,7 @@ class Flow < ActiveRecord::Base
           trigger_versions[trigger.id.to_s] = trigger.versions.last.id
         end
 
-        step.my_fields({draft: true}, true).each do |field|
+        step.my_fields({ draft: true }, true).each do |field|
           field.update!(user: user, draft: false)
           Version.build!(field, override_old_version)
           field_versions[field.id.to_s] = field.versions.last.id
@@ -80,7 +80,7 @@ class Flow < ActiveRecord::Base
   end
 
   def cases_arent_using?
-    not (my_cases.present? or my_steps(step_type: 'form').map(&:my_case_steps).flatten.present?)
+    not (my_cases.present? || my_steps(step_type: 'form').map(&:my_case_steps).flatten.present?)
   end
 
   def inactive!
@@ -89,23 +89,24 @@ class Flow < ActiveRecord::Base
 
   def my_cases(options = {})
     return [] if versions.blank?
-    my_version = self.version || versions.last.try(:id)
+    my_version = version || versions.last.try(:id)
     cases.where(options.merge(flow_version: my_version))
   end
 
   def my_steps(options = {}, live = false)
-    return steps.where(options) if versions.blank? or live
+    return steps.where(options) if versions.blank? || live
     Version.where('Step', steps_versions, options)
   end
 
   def my_resolution_states(options = {}, live = false)
-    return resolution_states.where(options) if versions.blank? or live
+    return resolution_states.where(options) if versions.blank? || live
     Version.where('ResolutionState', resolution_states_versions, options)
   end
 
-  def the_version(last = false)
+  def the_version(version_id = nil)
+    return Version.reify(version_id)      if version_id.present? && version_id != 0
     return Version.reify(current_version) if current_version.present?
-    return self                           if draft and not last
+    return self                           if draft && version_id != 0
     versions.present? ? previous_version : self
   end
 
@@ -120,18 +121,18 @@ class Flow < ActiveRecord::Base
   # revisar regra de versao
   def list_tree_steps(flow_step = self, skips = [])
     steps_children = []
-    flow_step.my_steps.reject{|s| skips.include? s.id }.each do |step|
-      steps_children << {step: step, flow: step.my_child_flow, steps: (step.step_type == 'flow' ? list_tree_steps(step.my_child_flow, skips) : [])}
-    end if flow_step.present? and flow_step.my_steps.present?
+    flow_step.my_steps.reject{ |s| skips.include? s.id }.each do |step|
+      steps_children << { step: step, flow: step.my_child_flow, steps: (step.step_type == 'flow' ? list_tree_steps(step.my_child_flow, skips) : []) }
+    end if flow_step.present? && flow_step.my_steps.present?
     steps_children
   end
 
   def list_all_steps(flow_step = self, skips = [])
-    return @list_all_steps if @list_all_steps.present? and skips.blank?
+    return @list_all_steps if @list_all_steps.present? && skips.blank?
     steps_children = []
     return steps_children if flow_step.try(:my_steps).blank?
 
-    flow_step.my_steps.reject{|step| skips.include? step.id }.each do |step|
+    flow_step.my_steps.reject{ |step| skips.include? step.id }.each do |step|
       steps = step.step_type == 'flow' ? list_all_steps(step.my_child_flow, skips) : step
       steps_children.push(steps)
     end
@@ -147,9 +148,9 @@ class Flow < ActiveRecord::Base
 
   def get_new_step_to_case(actual_step = nil, skips = [])
     all_steps = list_all_steps(self, skips)
-    return all_steps.first if actual_step.blank? or all_steps.blank?
+    return all_steps.first if actual_step.blank? || all_steps.blank?
     next_step_index = all_steps.index(actual_step).try(:next)
-    next_step_index and all_steps[next_step_index]
+    next_step_index && all_steps[next_step_index]
   end
 
   # verificar se algum lugar usa
@@ -164,9 +165,10 @@ class Flow < ActiveRecord::Base
   end
 
   private
+
   def verify_if_has_resolution_state_default
     new_status  = 'pending'
-    new_status  = 'active'   if persisted? and resolution_states.find_by(default: true).present?
+    new_status  = 'active'   if persisted? && resolution_states.find_by(default: true).present?
     self.status = new_status if status != new_status
   end
 
@@ -222,11 +224,13 @@ class Flow < ActiveRecord::Base
     expose :title
     expose :description
     expose :initial
-    expose :steps,                using: Step::Entity, if: {display_type: 'full'}
-    expose :my_steps,             using: Step::Entity, if: {display_type: 'full'}
-    expose :my_steps_flows,       if: {display_type: 'full'}
-    expose :steps_versions do |instance, _| Hash[instance.steps_versions.to_a.reverse] end
-    expose :steps_id,             unless: {display_type: 'full'}
+    expose :steps,                using: Step::Entity, if: { display_type: 'full' }
+    expose :my_steps,             using: Step::Entity, if: { display_type: 'full' }
+    expose :my_steps_flows,       if: { display_type: 'full' }
+    expose :steps_versions do |instance, _|
+      Hash[instance.steps_versions.to_a.reverse]
+    end
+    expose :steps_id,             unless: { display_type: 'full' }
     expose :resolution_states,    using: ResolutionState::Entity
     expose :my_resolution_states, using: ResolutionState::Entity
     expose :resolution_states_versions
@@ -234,11 +238,11 @@ class Flow < ActiveRecord::Base
     expose :draft
     expose :total_cases
     expose :version_id
-    expose :permissions,          if: {display_type: 'full'}
-    expose :created_by_id,        unless: {display_type: 'full'}
-    expose :updated_by_id,        unless: {display_type: 'full'}
-    expose :created_by,           using: User::Entity, if: {display_type: 'full'}
-    expose :updated_by,           using: User::Entity, if: {display_type: 'full'}
+    expose :permissions,          if: { display_type: 'full' }
+    expose :created_by_id,        unless: { display_type: 'full' }
+    expose :updated_by_id,        unless: { display_type: 'full' }
+    expose :created_by,           using: User::Entity, if: { display_type: 'full' }
+    expose :updated_by,           using: User::Entity, if: { display_type: 'full' }
     expose :updated_at
     expose :created_at
   end
@@ -248,11 +252,13 @@ class Flow < ActiveRecord::Base
     expose :title
     expose :description
     expose :initial
-    expose :steps,                using: Step::Entity, if: {display_type: 'full'}
-    expose :my_steps,             using: Step::Entity, if: {display_type: 'full'}
-    expose :my_steps_flows,       if: {display_type: 'full'}
-    expose :steps_versions do |instance, _| Hash[instance.steps_versions.to_a.reverse] end
-    expose :steps_id,             unless: {display_type: 'full'}
+    expose :steps,                using: Step::Entity, if: { display_type: 'full' }
+    expose :my_steps,             using: Step::Entity, if: { display_type: 'full' }
+    expose :my_steps_flows,       if: { display_type: 'full' }
+    expose :steps_versions do |instance, _|
+      Hash[instance.steps_versions.to_a.reverse]
+    end
+    expose :steps_id,             unless: { display_type: 'full' }
     expose :resolution_states,    using: ResolutionState::Entity
     expose :my_resolution_states, using: ResolutionState::Entity
     expose :resolution_states_versions
@@ -260,11 +266,11 @@ class Flow < ActiveRecord::Base
     expose :draft
     expose :total_cases
     expose :version_id
-    expose :permissions,          if:     {display_type: 'full'}
-    expose :created_by_id,        unless: {display_type: 'full'}
-    expose :updated_by_id,        unless: {display_type: 'full'}
-    expose :created_by,           using: User::Entity, if: {display_type: 'full'}
-    expose :updated_by,           using: User::Entity, if: {display_type: 'full'}
+    expose :permissions,          if:     { display_type: 'full' }
+    expose :created_by_id,        unless: { display_type: 'full' }
+    expose :updated_by_id,        unless: { display_type: 'full' }
+    expose :created_by,           using: User::Entity, if: { display_type: 'full' }
+    expose :updated_by,           using: User::Entity, if: { display_type: 'full' }
     expose :updated_at
     expose :created_at
     expose :list_versions, using: Flow::EntityVersion

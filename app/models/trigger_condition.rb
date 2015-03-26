@@ -9,11 +9,11 @@ class TriggerCondition < ActiveRecord::Base
   scope :active, -> { where.not(status: :inactive) }
 
   validates :values,         presence: true
-  validates :condition_type, inclusion: {in: %w{== != > < inc}}, presence: true
+  validates :condition_type, inclusion: { in: %w{== != > < inc} }, presence: true
 
-  after_create   :add_condition_on_trigger
-  before_update  :set_draft, unless: :draft_changed?
-  before_update  :remove_condition_on_trigger, if: -> { active_changed? and not active }
+  after_create :add_condition_on_trigger
+  before_update :set_draft, unless: :draft_changed?
+  before_update :remove_condition_on_trigger, if: -> { active_changed? && !active }
   before_destroy :remove_condition_on_trigger
 
   def inactive!
@@ -25,6 +25,7 @@ class TriggerCondition < ActiveRecord::Base
   end
 
   private
+
   def add_condition_on_trigger
     condition_versions = trigger.trigger_conditions_versions.dup
     condition_versions.merge!(id.to_s => nil)
@@ -44,7 +45,7 @@ class TriggerCondition < ActiveRecord::Base
     trigger.update! user: user, trigger_conditions_versions: condition_versions
   end
 
-  def get_flow(object=nil)
+  def get_flow(object = nil)
     @get_flow ||= object || trigger.step.flow
   end
 

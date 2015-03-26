@@ -1,5 +1,4 @@
 class AuthenticationController < ApplicationController
-
   def twitter_callback
     unless request.env['omniauth.auth'].nil?
       user_info = request.env['omniauth.auth']
@@ -9,9 +8,8 @@ class AuthenticationController < ApplicationController
       }
     end
 
-    # Todo: figure out how we are going to pass this to the client
+    # TODO: figure out how we are going to pass this to the client
   end
-
 
   def facebook_callback
     unless request.env['omniauth.auth'].nil?
@@ -23,7 +21,7 @@ class AuthenticationController < ApplicationController
       }
     end
 
-    # Todo: figure out how we are going to pass this to the client
+    # TODO: figure out how we are going to pass this to the client
   end
 
   def google_callback
@@ -36,6 +34,6 @@ class AuthenticationController < ApplicationController
       }
     end
 
-    # Todo: figure out how we are going to pass this to the client
+    # TODO: figure out how we are going to pass this to the client
   end
 end

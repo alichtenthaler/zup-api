@@ -2,8 +2,8 @@ class CaseStep < ActiveRecord::Base
   belongs_to :case
   belongs_to :step
   belongs_to :trigger
-  has_many   :cases_log_entries
-  has_many   :case_step_data_fields
+  has_many :cases_log_entries
+  has_many :case_step_data_fields
   belongs_to :created_by,        class_name: 'User',  foreign_key: :created_by_id
   belongs_to :updated_by,        class_name: 'User',  foreign_key: :updated_by_id
   belongs_to :responsible_user,  class_name: 'User',  foreign_key: :responsible_user_id
@@ -14,22 +14,23 @@ class CaseStep < ActiveRecord::Base
   URI_FORMAT   = /(^$)|(^(http|https|ftp|udp):\/\/[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,5}(:[0-9]{1,5})?([\/].*)?$)/ix
   EMAIL_FORMAT = /^([^\s]+)((?:[-a-z0-9]\.)[a-z]{2,})$/
 
-  validates :step_id, uniqueness: {scope: :case_id}
-  validate  :fields_of_step, if: -> { case_step_data_fields.present? }
+  validates :step_id, uniqueness: { scope: :case_id }
+  validate :fields_of_step, if: -> { case_step_data_fields.present? }
 
   def my_step
     Version.reify(step_version)
   end
 
   def executed?
-    case_step_data_fields.present? or my_step.my_fields.select{|f| f.required? }.blank?
+    case_step_data_fields.present?
   end
 
   private
+
   def fields_of_step
     field_data = convert_field_data(case_step_data_fields)
     my_step.my_fields.each do |field|
-      data_field  = field_data.select{|f| f.field_id == field.id}.try(:first)
+      data_field  = field_data.select{ |f| f.field_id == field.id }.try(:first)
       requirement = Hash(field.requirements)
       if data_field.present?
         value   = convert_data(field.field_type, data_field['value'],    data_field)
@@ -41,7 +42,7 @@ class CaseStep < ActiveRecord::Base
       presence = requirement['presence'] == 'true'
       custom_validations(field, value, minimum, maximum, presence)
     end
-    @items_with_update.map(&:save!) if self.errors.blank? and @items_with_update.present?
+    @items_with_update.map(&:save!) if errors.blank? && @items_with_update.present?
   end
 
   def custom_validations(field, value, minimum, maximum, presence, field_type = nil)
@@ -79,7 +80,7 @@ class CaseStep < ActiveRecord::Base
       minimum = convert_data(inventory_field.kind, inventory_field.minimum)
       maximum = convert_data(inventory_field.kind, inventory_field.maximum)
       custom_validations(inventory_field, value, minimum, maximum, inventory_field.required, inventory_field.kind)
-      if self.errors.blank? and @items_with_update
+      if errors.blank? && @items_with_update
         @items_with_update.each do |item|
           item_field = item.data.select { |d| d.inventory_field_id == inventory_field.id }.try(:first)
           item_field.content = value
@@ -88,12 +89,12 @@ class CaseStep < ActiveRecord::Base
     when 'category_report'
       errors_add(field.title, :inclusion) if (Array(value) - field.category_report.items.pluck(:id)).present?
     end
-    if value.is_a? String or value.is_a? Array
-      errors_add(field.title, :greater_than, count: minimum) if minimum.present? and value.size < minimum.to_i
-      errors_add(field.title, :less_than,    count: maximum) if maximum.present? and value.size > maximum.to_i
+    if value.is_a?(String) || value.is_a?(Array)
+      errors_add(field.title, :greater_than, count: minimum) if minimum.present? && value.size < minimum.to_i
+      errors_add(field.title, :less_than,    count: maximum) if maximum.present? && value.size > maximum.to_i
     else
-      errors_add(field.title, :greater_than, count: minimum) if minimum.present? and value < minimum
-      errors_add(field.title, :less_than,    count: maximum) if maximum.present? and value > maximum
+      errors_add(field.title, :greater_than, count: minimum) if minimum.present? && value < minimum
+      errors_add(field.title, :less_than,    count: maximum) if maximum.present? && value > maximum
     end
   end
 
@@ -142,7 +143,7 @@ class CaseStep < ActiveRecord::Base
     when 'previous_field'
       #nothing to do
     when 'category_inventory'
-      @items_with_update = elem.field.category_inventory.items.where(id: eval(data_value))
+      @items_with_update = elem.field.category_inventory.items.where(id: convert_field_data(data_value))
       data_value = @items_with_update.map(&:id)
     when 'category_inventory_field'
       inventory_field = Inventory::Field.find(elem.field.origin_field_id)
@@ -160,7 +161,7 @@ class CaseStep < ActiveRecord::Base
 
   def errors_add(name, error_type, *options)
     error = "errors.messages.#{error_type}"
-    self.errors.add(:fields, "#{name} #{I18n.t(error, *options)}")
+    errors.add(:fields, "#{name} #{I18n.t(error, *options)}")
   end
 
   class Entity < Grape::Entity
@@ -173,10 +174,19 @@ class CaseStep < ActiveRecord::Base
       Array(options[:simplify_to]).include? case_step_id
     end
 
+    def change_options_to_return_fields(key, options = {})
+      return options if options[:only].blank?
+      fields = options[:only].select { |field| field.is_a?(Hash) && field[key].present? }
+      fields.present? && options.merge!(only: fields.first[key])
+      options
+    end
+
     expose :id
     expose :step_id
     expose :step_version
-    expose :my_step do |instance, options| my_step(instance, options) end
+    expose :my_step do |instance, options|
+      my_step(instance, change_options_to_return_fields(:my_step, options))
+    end
     expose :trigger_ids
     expose :responsible_user_id
     expose :responsible_group_id

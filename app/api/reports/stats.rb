@@ -1,13 +1,13 @@
 module Reports::Stats
   class API < Grape::API
-    desc "Return stats for desired category"
+    desc 'Return stats for desired category'
     params do
       optional :category_id,
-               desc: "The reports category, you can pass an array of ids or a single id"
+               desc: 'The reports category, you can pass an array of ids or a single id'
       optional :begin_date, type: Date,
-               desc: "The minimum date to filter"
+               desc: 'The minimum date to filter'
       optional :end_date, type: Date,
-               desc: "The maximum date to filter"
+               desc: 'The maximum date to filter'
     end
     get 'stats' do
       if safe_params[:category_id].present?
@@ -18,12 +18,9 @@ module Reports::Stats
 
       stats = Reports::GetStats.new(
         category_ids,
-        {
-          begin_date: safe_params[:begin_date],
+                  begin_date: safe_params[:begin_date],
           end_date:   safe_params[:end_date]
-        }
       ).fetch
-
 
       {
         stats: stats

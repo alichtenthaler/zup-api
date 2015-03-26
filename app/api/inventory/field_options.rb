@@ -10,9 +10,8 @@ module Inventory::FieldOptions
 
     namespace :fields do
       route_param :field_id do
-
         resource :options do
-          desc "List all options for an field"
+          desc 'List all options for an field'
           get do
             authenticate!
             field = load_field
@@ -20,11 +19,11 @@ module Inventory::FieldOptions
             validate_permission!(:view, field)
 
             {
-              field_options: Inventory::FieldOption::Entity.represent(field.field_options.enabled)
+              field_options: Inventory::FieldOption::Entity.represent(field.field_options.enabled.sorted)
             }
           end
 
-          desc "Create an option for a field"
+          desc 'Create an option for a field'
           params do
             requires :value, desc: 'The value for the option'
           end
@@ -54,7 +53,7 @@ module Inventory::FieldOptions
           end
 
           route_param :id do
-            desc "Get info about a specific field option"
+            desc 'Get info about a specific field option'
             get do
               authenticate!
               field = load_field
@@ -67,7 +66,7 @@ module Inventory::FieldOptions
               }
             end
 
-            desc "Updates an option for a field"
+            desc 'Updates an option for a field'
             params do
               requires :value, desc: 'The value for the option'
             end
@@ -87,7 +86,7 @@ module Inventory::FieldOptions
               }
             end
 
-            desc "Removes an option for a field"
+            desc 'Removes an option for a field'
             delete do
               authenticate!
               field = load_field
@@ -103,7 +102,6 @@ module Inventory::FieldOptions
             end
           end
         end
-
       end
     end
   end

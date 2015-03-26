@@ -5,29 +5,29 @@ class Inventory::Item < Inventory::Base
   set_rgeo_factory_for_column(:position, RGeo::Geographic.simple_mercator_factory)
 
   belongs_to :user
-  belongs_to :category, class_name: "Inventory::Category", foreign_key: "inventory_category_id"
-  belongs_to :status, class_name: "Inventory::Status", foreign_key: "inventory_status_id"
-  belongs_to :locker, class_name: "User"
+  belongs_to :category, class_name: 'Inventory::Category', foreign_key: 'inventory_category_id'
+  belongs_to :status, class_name: 'Inventory::Status', foreign_key: 'inventory_status_id'
+  belongs_to :locker, class_name: 'User'
 
-  has_many :data, class_name: "Inventory::ItemData",
-                  foreign_key: "inventory_item_id",
+  has_many :data, class_name: 'Inventory::ItemData',
+                  foreign_key: 'inventory_item_id',
                   autosave: true,
                   include: [:field],
                   dependent: :destroy
 
-  has_many :fields, class_name: "Inventory:Field",
+  has_many :fields, class_name: 'Inventory:Field',
                     through: :category
 
-  has_many :field_options, class_name: "Inventory::FieldOption",
+  has_many :field_options, class_name: 'Inventory::FieldOption',
                      through: :fields
 
-  has_many :selected_options, class_name: "Inventory::FieldOption",
+  has_many :selected_options, class_name: 'Inventory::FieldOption',
                      through: :data,
                      source: :option
-  has_many :histories, class_name: "Inventory::ItemHistory",
-                       foreign_key: "inventory_item_id",
+  has_many :histories, class_name: 'Inventory::ItemHistory',
+                       foreign_key: 'inventory_item_id',
                        dependent: :destroy
-  has_many :images, class_name: "Inventory::ItemDataImage",
+  has_many :images, class_name: 'Inventory::ItemDataImage',
                     through: :data
 
   before_validation :update_position_from_data
@@ -44,7 +44,7 @@ class Inventory::Item < Inventory::Base
 
   def location
     @location ||= Hash[
-      self.data.joins { field }
+      data.joins { field }
                .where { field.title >> ['latitude', 'longitude', 'address'] }
                .map do |item_data|
                  [item_data.field.title.to_sym, item_data.content]
@@ -75,7 +75,7 @@ class Inventory::Item < Inventory::Base
       end
     end
 
-    with_options(if: { display_type: 'full'}) do
+    with_options(if: { display_type: 'full' }) do
       expose :user, using: User::Entity
       expose :category, using: Inventory::Category::Entity
     end
@@ -94,14 +94,13 @@ class Inventory::Item < Inventory::Base
 
       permissions = UserAbility.new(user)
 
-      unless permissions.can?(:manage, Inventory::Item)
+      unless permissions.can?(:manage, Inventory::Item) || permissions.can?(:edit, object.category)
         ids = permissions.inventory_fields_visible
         objects = objects.where(inventory_field_id: ids)
       end
 
       Inventory::ItemData::Entity.represent(objects, options)
     end
-
   end
 
   # Data with Inventory::ItemDataRepresenter
@@ -110,43 +109,44 @@ class Inventory::Item < Inventory::Base
   end
 
   private
-    def must_have_status?
-      category && category.require_item_status?
+
+  def must_have_status?
+    category && category.require_item_status?
+  end
+
+  # TODO: Singularize portuguese words
+  def generate_title
+    if category && (new_record?)
+      self.title = category.title
+      self.sequence = category.items.count + 1
+    end
+  end
+
+  # TODO: This should be in the representer class
+  def update_position_from_data
+    latitude, longitude, dynamic_address = nil
+
+    # TODO: Find a way to select the data with
+    # location fields, automatically.
+    data.each do |data|
+      next unless data.field.present?
+      next unless data.field.location
+
+      if data.field.title == 'latitude'
+        latitude = data.content
+      elsif data.field.title == 'longitude'
+        longitude = data.content
+      elsif data.field.title == 'address'
+        dynamic_address = data.content
+      end
     end
 
-    # TODO: Singularize portuguese words
-    def generate_title
-      if category && (new_record?)
-        self.title = category.title
-        self.sequence = category.items.count + 1
-      end
+    if latitude && longitude
+      self.position = ::Reports::Item.rgeo_factory.point(longitude, latitude)
     end
 
-    # TODO: This should be in the representer class
-    def update_position_from_data
-      latitude, longitude, dynamic_address = nil
-
-      # TODO: Find a way to select the data with
-      # location fields, automatically.
-      self.data.each do |data|
-        next unless data.field.present?
-        next unless data.field.location
-
-        if data.field.title == "latitude"
-          latitude = data.content
-        elsif data.field.title == "longitude"
-          longitude = data.content
-        elsif data.field.title == "address"
-          dynamic_address = data.content
-        end
-      end
-
-      if latitude && longitude
-        self.position = ::Reports::Item.rgeo_factory.point(longitude, latitude)
-      end
-
-      if !self.address_changed? && dynamic_address
-        self.address = dynamic_address
-      end
+    if !self.address_changed? && dynamic_address
+      self.address = dynamic_address
     end
+  end
 end

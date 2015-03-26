@@ -1,0 +1,7 @@
+AllCops:
+  Exclude:
+    - vendor/**/*
+    - logs/**/*
+    - db/schema.rb
+
+inherit_from: .rubocop_todo.yml

@@ -14,7 +14,7 @@ class Reports::Comment < Reports::Base
 
   before_validation :set_default_values
 
-  scope :with_visibility, -> (visibility) { where("visibility <= ?", visibility) }
+  scope :with_visibility, -> (visibility) { where('visibility <= ?', visibility) }
 
   class Entity < Grape::Entity
     expose :id
@@ -29,6 +29,6 @@ class Reports::Comment < Reports::Base
   private
 
   def set_default_values
-    self.visibility = PUBLIC if self.visibility.nil?
+    self.visibility = PUBLIC if visibility.nil?
   end
 end

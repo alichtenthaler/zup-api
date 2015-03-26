@@ -7,6 +7,6 @@ end
 
 module AuthenticationHelper
   def auth(user)
-    { "X-App-Token" => user.last_access_key }
+    { 'X-App-Token' => user.last_access_key }
   end
 end

@@ -20,8 +20,8 @@ class Reports::SearchItems
     @end_date        = opts[:end_date]
     @statuses        = opts[:statuses]
     @overdue         = opts[:overdue]
-    @sort            = opts[:sort] || "created_at"
-    @order           = opts[:order] || "desc"
+    @sort            = opts[:sort] || 'created_at'
+    @order           = opts[:order] || 'desc'
     @paginator       = opts[:paginator]
     @group_by_inventory_item = opts[:group_by_inventory_item]
     @page            = opts[:page] || 1
@@ -53,16 +53,16 @@ class Reports::SearchItems
 
     if query
       scope = scope.joins(:user).like_search(
-        "users.name" => query,
+        'users.name' => query,
         address: query,
         protocol: query
       )
     end
 
     if user
-      if user.kind_of?(Array)
+      if user.is_a?(Array)
         users_ids = user.map { |u| u.id }
-      elsif user.kind_of?(User)
+      elsif user.is_a?(User)
         users_ids = user.id
       end
 
@@ -70,9 +70,9 @@ class Reports::SearchItems
     end
 
     if category
-      if category.kind_of?(Array)
+      if category.is_a?(Array)
         categories_ids = category.map { |c| c.id }
-      elsif category.kind_of?(Reports::Category)
+      elsif category.is_a?(Reports::Category)
         categories_ids = [category.id]
       end
     end
@@ -111,9 +111,9 @@ class Reports::SearchItems
       if begin_date && end_date
         scope = scope.where('reports_items.created_at' => begin_date..end_date)
       elsif begin_date
-        scope = scope.where("reports_items.created_at >= ?", begin_date)
+        scope = scope.where('reports_items.created_at >= ?', begin_date)
       elsif end_date
-        scope = scope.where("reports_items.created_at <= ?", end_date)
+        scope = scope.where('reports_items.created_at <= ?', end_date)
       end
     end
 
@@ -150,7 +150,7 @@ class Reports::SearchItems
     end
 
     if position_params && clusterize
-      Reports::ClusterizeItems.new(scope, zoom).results
+      ClusterizeItems::Reports.new(scope, zoom).results
     else
       scope
     end

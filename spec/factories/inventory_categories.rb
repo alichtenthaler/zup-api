@@ -1,10 +1,10 @@
 # Read about factories at https://github.com/thoughtbot/factory_girl
 
 FactoryGirl.define do
-  factory :inventory_category, :class => 'Inventory::Category' do
+  factory :inventory_category, class: 'Inventory::Category' do
     title { generate(:name) }
-    description "A cool category"
-    plot_format "pin"
+    description 'A cool category'
+    plot_format 'pin'
     color '#f2f2f2'
     require_item_status false
 
@@ -20,7 +20,7 @@ FactoryGirl.define do
     end
 
     factory :inventory_category_with_sections do
-      after(:create) do |category, evaluator|
+      after(:create) do |category, _evaluator|
         create_list(:inventory_section_with_fields, 3, category: category)
       end
     end

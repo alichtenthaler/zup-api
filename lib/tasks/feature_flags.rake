@@ -1,5 +1,5 @@
 namespace :feature_flags do
-  desc "Populate feature flags table"
+  desc 'Populate feature flags table'
   task populate: :environment do
     flags = %w(
       explore

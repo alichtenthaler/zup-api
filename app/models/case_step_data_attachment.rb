@@ -4,7 +4,7 @@ class CaseStepDataAttachment < ActiveRecord::Base
   belongs_to :case_step_step_data
 
   def url
-    self.attachment.url
+    attachment.url
   end
 
   class Entity < Grape::Entity

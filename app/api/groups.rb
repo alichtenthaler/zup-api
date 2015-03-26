@@ -3,12 +3,11 @@ module Groups
     resources :groups do
       mount Groups::Permissions::API
 
-      desc "List all groups"
-      paginate per_page: 25
+      desc 'List all groups'
       params do
-        optional :name, type: String, desc: "Name of the group"
-        optional :user_name, type: String, desc: "Name of the user"
-        optional :display_users, type: Boolean, desc: "Sets if should display users or not"
+        optional :name, type: String, desc: 'Name of the group'
+        optional :user_name, type: String, desc: 'Name of the user'
+        optional :display_users, type: Boolean, desc: 'Sets if should display users or not'
       end
       get do
         authenticate!
@@ -29,22 +28,23 @@ module Groups
           search_query = search_query.merge(users: { name: user_name })
         end
 
-        unless user_permissions.can?(:manage, Group)
+        # Find a way to remove these ugly permissions checking:
+        unless user_permissions.can?(:manage, Group) ||
+          current_user.permissions.inventories_categories_edit.any? ||
+          current_user.permissions.reports_categories_edit.any? ||
+          current_user.permissions.inventories_full_access ||
+          current_user.permissions.reports_full_access
           search_query = search_query.merge(id: user_permissions.groups_visible)
         end
 
         groups = Group.includes(:users, :permission)
 
-        if search_query.empty?
-          groups = paginate(groups.all)
-        else
-          if (visible_ids = search_query.delete(:id))
-            groups = groups.where(id: visible_ids)
-          end
+        if (visible_ids = search_query.delete(:id))
+          groups = groups.where(id: visible_ids)
+        end
 
-          if search_query.any?
-            groups = groups.advanced_search(search_query, false)
-          end
+        unless search_query.blank?
+          groups = groups.advanced_search(search_query, false)
         end
 
         {
@@ -55,12 +55,12 @@ module Groups
         }
       end
 
-      desc "Create a group"
+      desc 'Create a group'
       params do
         requires :name, type: String, desc: "Group's name"
         optional :permissions, type: Hash, desc: "Group's permissions (add_users, view_categories, view_sections)"
         optional :description, type: String, desc: "Group's description"
-        optional :users, type: Array, desc: "Array of users id to add to the user"
+        optional :users, type: Array, desc: 'Array of users id to add to the user'
       end
       post do
         authenticate!
@@ -85,12 +85,12 @@ module Groups
         group.build_permission(permission_params)
         group.save!
 
-        { message: "Group created successfully", group: Group::Entity.represent(group) }
+        { message: 'Group created successfully', group: Group::Entity.represent(group) }
       end
 
-      desc "Shows group info"
+      desc 'Shows group info'
       params do
-        optional :display_users, type: Boolean, desc: "Sets if should display all group users or not"
+        optional :display_users, type: Boolean, desc: 'Sets if should display all group users or not'
       end
       get ':id' do
         group = Group.find_by!(id: safe_params[:id])
@@ -102,21 +102,21 @@ module Groups
               group, display_users: safe_params[:display_users])
           }
         else
-          error!("Group not found", 404)
+          error!('Group not found', 404)
         end
       end
 
-      desc "Destroy group"
+      desc 'Destroy group'
       delete ':id' do
         authenticate!
 
         group = Group.find_by(id: safe_params[:id])
-        validate_permission!(:destroy, group)
+        validate_permission!(:delete, group)
 
         if group && group.destroy
-          { message: "Group destroyed sucessfully" }
+          { message: 'Group destroyed sucessfully' }
         else
-          error!("Group not found", 404)
+          error!('Group not found', 404)
         end
       end
 
@@ -125,9 +125,9 @@ module Groups
         optional :name, type: String, desc: "Group's name"
         optional :description, type: String, desc: "Group's description"
         optional :permissions, type: Hash, desc: "Group's permissions (add_users, view_categories, view_sections)"
-        optional :users, type: Array, desc: "Array of users id to add to the user"
+        optional :users, type: Array, desc: 'Array of users id to add to the user'
       end
-      put ":id" do
+      put ':id' do
         authenticate!
         group = Group.find(safe_params[:id])
         validate_permission!(:edit, group)
@@ -150,87 +150,87 @@ module Groups
         end
 
         if group.save
-          { message: "Group updated succesfully", group: group }
+          { message: 'Group updated succesfully', group: group }
         else
-          error!("Group not found", 404)
+          error!('Group not found', 404)
         end
       end
 
       desc "Updates group's permissions"
       params do
         # Managing
-        optional :users_full_access, type: Boolean, desc: "Can manage users"
-        optional :groups_full_access, type: Boolean, desc: "Can manage groups"
-        optional :inventories_full_access, type: Boolean, desc: "Can inventory categories"
-        optional :reports_full_access, type: Boolean, desc: "Can manage inventory categories"
-        optional :manage_flows, type: Boolean, desc: "Can manage flows"
-        optional :inventories_formulas_full_access, type: Boolean, desc: "Can manage formulas"
+        optional :users_full_access, type: Boolean, desc: 'Can manage users'
+        optional :groups_full_access, type: Boolean, desc: 'Can manage groups'
+        optional :inventories_full_access, type: Boolean, desc: 'Can inventory categories'
+        optional :reports_full_access, type: Boolean, desc: 'Can manage inventory categories'
+        optional :manage_flows, type: Boolean, desc: 'Can manage flows'
+        optional :inventories_formulas_full_access, type: Boolean, desc: 'Can manage formulas'
 
         # Flows
         optional :flow_can_view_all_steps, type: Array[Integer],
-                 desc: "Flow ids that can be viewed by the group"
+                 desc: 'Flow ids that can be viewed by the group'
         optional :flow_can_execute_all_steps, type: Array[Integer],
-                 desc: "Flow ids that can be executed by the group"
+                 desc: 'Flow ids that can be executed by the group'
         optional :flow_can_delete_own_cases, type: Array[Integer],
-                 desc: "Flow ids that can be delete by the group"
+                 desc: 'Flow ids that can be delete by the group'
         optional :flow_can_delete_all_cases, type: Array[Integer],
-                 desc: "Flow ids that can be delete by the group"
+                 desc: 'Flow ids that can be delete by the group'
 
         # Steps
         optional :can_view_step, type: Array[Integer],
-                 desc: "Step ids that can be viewed by the group"
+                 desc: 'Step ids that can be viewed by the group'
         optional :can_execute_step, type: Array[Integer],
-                 desc: "Step ids that can be executed by the group"
+                 desc: 'Step ids that can be executed by the group'
 
         # Panel access
-        optional :panel_access, type: Boolean, desc: "Can access panel"
-        optional :create_reports_from_panel, type: Boolean, desc: "Can create reports while on panel"
+        optional :panel_access, type: Boolean, desc: 'Can access panel'
+        optional :create_reports_from_panel, type: Boolean, desc: 'Can create reports while on panel'
 
         # Groups
         optional :groups_edit, type: Array[Integer],
-                 desc: "Groups ids that can be edited by the group"
+                 desc: 'Groups ids that can be edited by the group'
         optional :groups_read_only, type: Array[Integer],
-                 desc: "Groups ids that can be viewed by the group"
+                 desc: 'Groups ids that can be viewed by the group'
 
         # Reports Categories
         optional :reports_categories_edit, type: Array[Integer],
-                 desc: "Reports categories ids that can be edited by the group"
+                 desc: 'Reports categories ids that can be edited by the group'
 
         # Inventory Categories
         optional :inventories_categories_edit, type: Array[Integer],
-                 desc: "Inventory categories ids that can be edited by the group"
+                 desc: 'Inventory categories ids that can be edited by the group'
 
         # Inventory Items
         optional :inventories_items_read_only, type: Array[Integer],
-                 desc: "Inventory categories ids that group can see and view items"
+                 desc: 'Inventory categories ids that group can see and view items'
         optional :inventories_items_create, type: Array[Integer],
-                 desc: "Inventory categories ids that group can create items"
+                 desc: 'Inventory categories ids that group can create items'
         optional :inventories_items_edit, type: Array[Integer],
-                 desc: "Inventory categories ids that group can edit items"
+                 desc: 'Inventory categories ids that group can edit items'
         optional :inventories_items_delete, type: Array[Integer],
-                 desc: "Inventory categories ids that group can delete items"
+                 desc: 'Inventory categories ids that group can delete items'
 
         # Reports Items
-        optional :reports_items_read_only, type: Array[Integer],
-                 desc: "Reports categories ids that group can see and view items"
+        optional :reports_items_read_public, type: Array[Integer],
+                 desc: 'Reports categories ids that group can see and view items'
         optional :reports_items_create, type: Array[Integer],
-                 desc: "Reports categories ids that group can create items"
+                 desc: 'Reports categories ids that group can create items'
         optional :reports_items_edit, type: Array[Integer],
-                 desc: "Reports categories ids that group can edit items"
+                 desc: 'Reports categories ids that group can edit items'
         optional :reports_items_delete, type: Array[Integer],
-                 desc: "Reports categories ids that group can delete items"
+                 desc: 'Reports categories ids that group can delete items'
 
         # Inventory Sections
         optional :inventory_sections_can_view, type: Array[Integer],
-                 desc: "Inventory sections ids that can be edited by the group"
+                 desc: 'Inventory sections ids that can be edited by the group'
         optional :inventory_sections_can_edit, type: Array[Integer],
-                 desc: "Inventory sections ids that can be edited by the group"
+                 desc: 'Inventory sections ids that can be edited by the group'
 
         # Inventory Fields
         optional :inventory_fields_can_view, type: Array[Integer],
-                 desc: "Inventory fields ids that can be edited by the group"
+                 desc: 'Inventory fields ids that can be edited by the group'
         optional :inventory_fields_can_edit, type: Array[Integer],
-                 desc: "Inventory fields ids that can be edited by the group"
+                 desc: 'Inventory fields ids that can be edited by the group'
       end
       put ':id/permissions' do
         authenticate!
@@ -244,22 +244,22 @@ module Groups
           :manage_flows,
           :inventories_formulas_full_access,
           :create_reports_from_panel,   :panel_access,
-          :groups_edit => [],
-          :inventory_sections_can_view => [], :inventory_sections_can_edit => [],
-          :inventory_categories_can_view => [], :inventory_categories_can_edit => [],
-          :inventory_fields_can_view => [], :inventory_fields_can_edit => [],
-          :groups_read_only => [],             :reports_categories_edit => [],
-          :reports_categories_can_view => [], :inventory_categories_edit => [],
-          :flow_can_execute_all_steps => [], :flow_can_delete_own_cases => [],
-          :step_view_all_case => [],          :step_execute_all_case => [],
-          :inventories_items_read_only => [],
-          :inventories_items_edit => [],
-          :inventories_items_create => [],
-          :inventories_items_delete => [],
-          :reports_items_read_only => [],
-          :reports_items_edit => [],
-          :reports_items_create => [],
-          :reports_items_delete => []
+          groups_edit: [],
+          inventory_sections_can_view: [], inventory_sections_can_edit: [],
+          inventory_categories_can_view: [], inventory_categories_can_edit: [],
+          inventory_fields_can_view: [], inventory_fields_can_edit: [],
+          groups_read_only: [],             reports_categories_edit: [],
+          reports_categories_can_view: [], inventory_categories_edit: [],
+          flow_can_execute_all_steps: [], flow_can_delete_own_cases: [],
+          step_view_all_case: [],          step_execute_all_case: [],
+          inventories_items_read_only: [],
+          inventories_items_edit: [],
+          inventories_items_create: [],
+          inventories_items_delete: [],
+          reports_items_read_public: [],
+          reports_items_edit: [],
+          reports_items_create: [],
+          reports_items_delete: []
         )
 
         unless permission_params.empty?
@@ -269,9 +269,9 @@ module Groups
         { group: Group::Entity.represent(group) }
       end
 
-      desc "Add user to group"
+      desc 'Add user to group'
       params do
-        requires :user_id, type: Integer, desc: "The user id you will add"
+        requires :user_id, type: Integer, desc: 'The user id you will add'
       end
       post ':id/users' do
         authenticate!
@@ -281,12 +281,12 @@ module Groups
         group.users << User.find(safe_params[:user_id])
         group.save!
 
-        { message: "User added successfully" }
+        { message: 'User added successfully' }
       end
 
-      desc "Removes user from group"
+      desc 'Removes user from group'
       params do
-        requires :user_id, type: Integer, desc: "The user you will remove from group"
+        requires :user_id, type: Integer, desc: 'The user you will remove from group'
       end
       delete ':id/users' do
         authenticate!
@@ -296,10 +296,10 @@ module Groups
         group.users.delete(User.find(safe_params[:user_id]))
         group.save!
 
-        { message: "User added successfully" }
+        { message: 'User delete successfully' }
       end
 
-      desc "List users from group"
+      desc 'List users from group'
       paginate per_page: 25
       get ':id/users' do
         authenticate!

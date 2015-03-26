@@ -6,7 +6,7 @@ class User < ActiveRecord::Base
   attr_accessor :from_webhook
 
   has_many :access_keys
-  has_many :reports, class_name: "Reports::Item", foreign_key: "user_id"
+  has_many :reports, class_name: 'Reports::Item', foreign_key: 'user_id'
   has_and_belongs_to_many :groups
   has_many :feedbacks, class_name: 'Reports::Feedback'
   has_many :flows, class_name: 'Flow', foreign_key: :created_by_id
@@ -49,7 +49,7 @@ class User < ActiveRecord::Base
     end
   end
 
-  def to_json(options={})
+  def to_json(options = {})
     options[:except] ||= [:encrypted_password, :salt]
     super(options)
   end
@@ -64,6 +64,14 @@ class User < ActiveRecord::Base
 
   def disable!
     update!(disabled: true)
+  end
+
+  def enable!
+    update!(disabled: false)
+  end
+
+  def enabled?
+    !disabled?
   end
 
   # Compile all user permissions from group
@@ -89,6 +97,11 @@ class User < ActiveRecord::Base
     @permissions
   end
 
+  def reload_permissions
+    @permissions = nil
+    @p
+  end
+
   def groups_names
     if groups.any?
       groups.map(&:name)
@@ -109,7 +122,7 @@ class User < ActiveRecord::Base
     expose :permissions
     expose :groups_names
 
-    with_options(if: { display_type: 'full'}) do
+    with_options(if: { display_type: 'full' }) do
       expose :email
       expose :phone
       expose :document

@@ -33,7 +33,7 @@ class Reports::Item < Reports::Base
                      dependent: :destroy
 
   before_save :set_initial_status
-  before_validation :get_position_from_inventory_item
+  before_validation :get_position_from_inventory_item, :set_uuid
 
   after_create :generate_protocol
 
@@ -43,7 +43,7 @@ class Reports::Item < Reports::Base
   accepts_nested_attributes_for :comments
 
   def inventory_item_category_id
-    self.inventory_item.try(:inventory_category_id)
+    inventory_item.try(:inventory_category_id)
   end
 
   # Returns the last public status if the status is the private one
@@ -59,10 +59,10 @@ class Reports::Item < Reports::Base
   # as a 'feedback_expirates_at' on the
   # reports_items table.
   def can_receive_feedback?
-    if self.category.user_response_time.present? && self.status.final?
-      final_status_datetime = self.status_history.last.created_at
+    if category.user_response_time.present? && status.final?
+      final_status_datetime = status_history.last.created_at
       expiration_datetime = final_status_datetime + \
-        self.category.user_response_time.seconds
+        category.user_response_time.seconds
 
       return expiration_datetime.to_date >= Date.today
     else
@@ -86,7 +86,7 @@ class Reports::Item < Reports::Base
 
   def images_structure
     images.map do |image|
-      self.fetch_image_versions(image.image).merge(original: image.url)
+      fetch_image_versions(image.image).merge(original: image.url)
     end
   end
 
@@ -162,8 +162,7 @@ class Reports::Item < Reports::Base
       user = options[:user]
       permissions = UserAbility.new(user)
 
-      if permissions.can?(:access, "Panel") ||
-          permissions.can?(:manage, Reports::Category) ||
+      if permissions.can?(:view_private, object) ||
           permissions.can?(:edit, object) || user == object.user
         object.protocol
       end
@@ -176,36 +175,41 @@ class Reports::Item < Reports::Base
 
   private
 
-    def generate_protocol
-      if self.protocol.blank?
-        generated_protocol = self.id.to_s
+  def generate_protocol
+    if protocol.blank?
+      generated_protocol = id.to_s
 
-        if self.reports_category_id.present?
-          generated_protocol << self.reports_category_id.to_s.rjust(5, '0')
-        else
-          generated_protocol << "00000"
-        end
-
-        (16 - generated_protocol.size).times do
-          generated_protocol << rand(10).to_s
-        end
-
-        self.update(protocol: generated_protocol.to_i)
+      if reports_category_id.present?
+        generated_protocol << reports_category_id.to_s.rjust(5, '0')
+      else
+        generated_protocol << '00000'
       end
-    end
 
-    def get_position_from_inventory_item
-      if self.inventory_item.present? &&
-          (self.new_record? || self.inventory_item_id_changed?)
-        self.position = self.inventory_item.position
+      (16 - generated_protocol.size).times do
+        generated_protocol << rand(10).to_s
       end
-    end
 
-    # before_save
-    def set_initial_status
-      if self.status.nil?
-        new_status = self.category.status_categories.initial.first!.status
-        Reports::UpdateItemStatus.new(self).set_status(new_status)
-      end
+      update(protocol: generated_protocol.to_i)
     end
+  end
+
+  def get_position_from_inventory_item
+    if inventory_item.present? &&
+        (self.new_record? || self.inventory_item_id_changed?)
+      self.position = inventory_item.position
+    end
+  end
+
+  # before_save
+  def set_initial_status
+    if status.nil?
+      new_status = category.status_categories.initial.first!.status
+      Reports::UpdateItemStatus.new(self).set_status(new_status)
+    end
+  end
+
+  # Set uuid
+  def set_uuid
+    self.uuid = SecureRandom.uuid if uuid.nil?
+  end
 end

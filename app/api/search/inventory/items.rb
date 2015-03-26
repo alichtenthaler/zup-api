@@ -1,6 +1,6 @@
 module Search::Inventory::Items
   class API < Grape::API
-    desc "Search for inventory items"
+    desc 'Search for inventory items'
     paginate per_page: 25
     params do
       optional :inventory_categories_ids, type: String,
@@ -32,7 +32,7 @@ module Search::Inventory::Items
       optional :zoom, type: String,
                desc: 'The zoom level for the map'
     end
-    get "inventory/items" do
+    get 'inventory/items' do
       authenticate!
 
       search_params = safe_params.permit(
@@ -44,6 +44,11 @@ module Search::Inventory::Items
 
       search_params[:fields] = safe_params[:fields]
       search_params[:position] = safe_params[:position]
+
+      # Pagination
+      search_params[:paginator] = method(:paginate)
+      search_params[:page] = safe_params[:page]
+      search_params[:per_page] = safe_params[:per_page]
 
       unless safe_params[:inventory_statuses_ids].blank?
         search_params[:statuses] = safe_params[:inventory_statuses_ids].split(',').map do |inventory_status_id|
@@ -70,11 +75,9 @@ module Search::Inventory::Items
 
         {
           items: Inventory::Item::Entity.represent(results[:items], only: return_fields, display_type: params[:display_type]),
-          clusters: Inventory::Cluster::Entity.represent(results[:clusters])
+          clusters: ClusterizeItems::Cluster::Entity.represent(results[:clusters])
         }
       else
-        results = paginate(results)
-
         {
           items: Inventory::Item::Entity.represent(results, only: return_fields, display_type: params[:display_type])
         }

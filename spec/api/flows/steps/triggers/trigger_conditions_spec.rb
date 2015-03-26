@@ -7,9 +7,8 @@ describe Flows::Steps::Triggers::TriggerConditions::API do
   let(:step)       { flow.steps.first }
   let(:field)      { step.fields.first }
   let(:trigger) do
-    params_to_create = {'title'=>'Trigger 1','action_type'=>'disable_steps',
-                        'action_values'=>[1,2,3],'trigger_conditions_attributes'=>
-                        [{'field_id'=>field.id,'condition_type'=>'==','values'=>[1]}]}
+    params_to_create = { 'title' => 'Trigger 1', 'action_type' => 'disable_steps',
+                        'action_values' => [1, 2, 3], 'trigger_conditions_attributes' =>                         [{ 'field_id' => field.id, 'condition_type' => '==', 'values' => [1] }] }
     post "/flows/#{flow.id}/steps/#{step.id}/triggers", params_to_create, auth(user)
     Trigger.last
   end

@@ -1,4 +1,4 @@
-require "spec_helper"
+require 'spec_helper'
 
 describe Inventory::ItemLocking do
   let(:item) { create(:inventory_item) }
@@ -6,8 +6,8 @@ describe Inventory::ItemLocking do
 
   subject { described_class.new(item, user) }
 
-  describe "#lock!" do
-    it "locks the item" do
+  describe '#lock!' do
+    it 'locks the item' do
       subject.lock!
       item.reload
       expect(item).to be_locked
@@ -16,20 +16,20 @@ describe Inventory::ItemLocking do
     end
   end
 
-  describe "#unlock!" do
+  describe '#unlock!' do
     before do
       item.update(locked: true)
     end
 
-    it "unlocks the item" do
+    it 'unlocks the item' do
       subject.unlock!
       item.reload
       expect(item).to_not be_locked
     end
   end
 
-  describe "#unlock_if_expired!" do
-    context "item locked less than 1 minute ago" do
+  describe '#unlock_if_expired!' do
+    context 'item locked less than 1 minute ago' do
       before do
         item.update(locked: true, locked_at: 10.seconds.ago)
       end
@@ -42,7 +42,7 @@ describe Inventory::ItemLocking do
       end
     end
 
-    context "item locked more than 1 minute ago" do
+    context 'item locked more than 1 minute ago' do
       before do
         item.update(locked: true, locked_at: (1.minute + 2.seconds).ago)
       end
@@ -55,5 +55,4 @@ describe Inventory::ItemLocking do
       end
     end
   end
-
 end

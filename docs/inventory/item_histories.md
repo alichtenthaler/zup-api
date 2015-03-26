@@ -40,3 +40,38 @@ Exemplo de retorno:
         "created_at": "2015-02-23T22:17:56.257-03:00"
       }, ...]
     }
+
+## Dados de histórico com campos
+
+Caso o `kind` do histórico seja `fields`, cada entidade de histórico de item retornará um `fields_changes` que listará as mudanças para cada campo.
+
+Exemplo de retorno:
+
+    {
+      histories: [{
+        "id": 1,
+        "inventory_item_id": 90,
+        "user": {
+          "id": 1,
+          "name": "Ellie Welch IV",
+          "groups": [...],
+          "permissions": {...},
+          "groups_names": [
+            "Administradores"
+          ]
+        },
+        "kind": "fields",
+        "action": "Um relato foi solicitado",
+        "objects": [{ //Dados do campo aqui }, { // Dados de outro campo aqui }],
+        "fields_changes": {
+          "field": { //Dado do campo },
+          "previous_content": "conteúdo",
+          "new_content": "conteúdo alterado"
+        },
+        "created_at": "2015-02-23T22:17:56.257-03:00"
+      }, ...]
+    }
+
+### Nota importante:
+
+Caso o campo utilize opções para seu conteúdo, o `previous_content` e o `new_content` serão sempre um array de ids.

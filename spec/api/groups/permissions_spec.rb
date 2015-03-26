@@ -1,10 +1,10 @@
-require "rails_helper"
+require 'rails_helper'
 
 describe Groups::Permissions::API do
   let(:user) { create(:user) }
   let(:group) { create(:group) }
 
-  context "GET /groups/:id/permissions" do
+  context 'GET /groups/:id/permissions' do
     let(:inventory_category) { create(:inventory_category) }
 
     before do
@@ -15,23 +15,23 @@ describe Groups::Permissions::API do
       )
     end
 
-    it "returns all permissions by type and id" do
+    it 'returns all permissions by type and id' do
       get "/groups/#{group.id}/permissions", nil, auth(user)
       expect(response.status).to eq(200)
 
       expect(parsed_body.size).to eq(2)
-      expect(parsed_body.first["permission_type"]).to eq("inventory")
-      expect(parsed_body.last["permission_type"]).to eq("report")
+      expect(parsed_body.first['permission_type']).to eq('inventory')
+      expect(parsed_body.last['permission_type']).to eq('report')
     end
   end
 
-  context "POST /groups/:id/permissions/:type" do
+  context 'POST /groups/:id/permissions/:type' do
     let(:type) { 'report' }
     let(:url) { "/groups/#{group.id}/permissions/#{type}" }
 
     context 'array permissions' do
-      let(:objects_ids) { [1,2] }
-      let(:permissions) { ['reports_items_edit', 'reports_items_read_only'] }
+      let(:objects_ids) { create_list(:reports_category, 2).map(&:id) }
+      let(:permissions) { %w(reports_items_edit reports_items_read_public) }
 
       let(:valid_params) do
         {
@@ -40,13 +40,22 @@ describe Groups::Permissions::API do
         }
       end
 
-      it "adds the ids to the array of ids of the permissions" do
+      it 'adds the ids to the array of ids of the permissions' do
         post url, valid_params, auth(user)
         expect(response.status).to eq(201)
 
         group.permission.reload
-        expect(group.permission.reports_items_edit).to match_array([1,2])
-        expect(group.permission.reports_items_read_only).to match_array([1,2])
+        expect(group.permission.reports_items_edit).to match_array(objects_ids)
+        expect(
+          group.permission.reports_items_read_public
+        ).to match_array(objects_ids)
+      end
+
+      it 'throws an error if the id is non-existent' do
+        valid_params[:objects_ids] = [99, 98]
+        post url, valid_params, auth(user)
+
+        expect(response.status).to eq(404)
       end
     end
 
@@ -59,7 +68,7 @@ describe Groups::Permissions::API do
         }
       end
 
-      it "sets the permissions as true" do
+      it 'sets the permissions as true' do
         post url, valid_params, auth(user)
         expect(response.status).to eq(201)
 
@@ -69,7 +78,7 @@ describe Groups::Permissions::API do
     end
   end
 
-  context "DELETE /groups/:id/permissions/:type" do
+  context 'DELETE /groups/:id/permissions/:type' do
     let(:type) { 'report' }
     let(:url) { "/groups/#{group.id}/permissions/#{type}" }
 
@@ -90,7 +99,7 @@ describe Groups::Permissions::API do
         )
       end
 
-      it "removes the id from the permission" do
+      it 'removes the id from the permission' do
         delete url, valid_params, auth(user)
         expect(response.status).to eq(200)
 
@@ -108,7 +117,7 @@ describe Groups::Permissions::API do
         }
       end
 
-      it "sets the permissions as false" do
+      it 'sets the permissions as false' do
         delete url, valid_params, auth(user)
         expect(response.status).to eq(200)
 
@@ -117,5 +126,4 @@ describe Groups::Permissions::API do
       end
     end
   end
-
 end

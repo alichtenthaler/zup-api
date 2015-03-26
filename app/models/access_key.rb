@@ -19,7 +19,8 @@ class AccessKey < ActiveRecord::Base
   end
 
   private
-    def random_key
-      self.key ||= SecureRandom.hex
-    end
+
+  def random_key
+    self.key ||= SecureRandom.hex
+  end
 end

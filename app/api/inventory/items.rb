@@ -9,13 +9,13 @@ module Inventory::Items
     # Lists/searches for inventory items
     # /inventory/items
     resources :items do
-      desc "List all items"
+      desc 'List all items'
       paginate per_page: 25
       params do
         optional :position, type: Hash,
-          desc: "Hash of position data"
+          desc: 'Hash of position data'
         optional :inventory_category_id,
-          desc: "ID (or array of ids of the desired inventory category"
+          desc: 'ID (or array of ids of the desired inventory category'
         optional :limit, type: Integer,
                desc: 'The maximum number to reports to return'
         optional :sort, type: String,
@@ -66,7 +66,7 @@ module Inventory::Items
     resources :categories do
       route_param :category_id do
         resources :items do
-          desc "Create an item"
+          desc 'Create an item'
           params do
             optional :title, type: String
             optional :inventory_status_id, type: Integer
@@ -85,13 +85,13 @@ module Inventory::Items
             creator = Inventory::CreateItemFromCategoryForm.new(
               category: category,
               user: current_user,
-              data: safe_params["data"],
+              data: safe_params['data'],
               status: status
             )
             item = creator.create!
 
             {
-              message: "Item created successfully",
+              message: 'Item created successfully',
               item: Inventory::Item::Entity.represent(item, user: current_user)
             }
           end
@@ -104,7 +104,7 @@ module Inventory::Items
             { item: Inventory::Item::Entity.represent(item, user: current_user, only: return_fields) }
           end
 
-          desc "Destroy item"
+          desc 'Destroy item'
           delete ':id' do
             authenticate!
             category = load_category
@@ -113,14 +113,14 @@ module Inventory::Items
             validate_permission!(:delete, item)
             item.destroy!
 
-            { message: "Inventory item successfully destroyed!" }
+            { message: 'Inventory item successfully destroyed!' }
           end
 
           desc "Update item's info"
           params do
-            optional :data, type: Hash, desc: "The item data where each element is a content for a category field"
+            optional :data, type: Hash, desc: 'The item data where each element is a content for a category field'
             optional :inventory_status_id, type: Integer,
-                     desc: "The inventory status you want"
+                     desc: 'The inventory status you want'
           end
           put ':id' do
             authenticate!
@@ -146,17 +146,17 @@ module Inventory::Items
                                                      status)
               end
 
-              { message: "Inventory item updated successfully!" }
+              { message: 'Inventory item updated successfully!' }
             else
               {
-                message: "Form locked",
+                message: 'Form locked',
                 locker: User::Entity.represent(item.locker),
                 locked_at: item.locked_at
               }
             end
           end
 
-          desc "Update the access to the inventory item, locking it"
+          desc 'Update the access to the inventory item, locking it'
           patch ':id/update_access' do
             authenticate!
 
@@ -165,7 +165,6 @@ module Inventory::Items
 
             Inventory::ItemLocking.new(item, current_user).lock!
           end
-
         end
       end
     end

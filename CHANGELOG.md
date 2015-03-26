@@ -1,5 +1,24 @@
 # CHANGELOG
 
+## v1.4.2-p4
+* Integração via webhook
+* Correções nos mapas
+* Correções nos gatilhos de item de inventário
+* Correção na criação e atualização de item de inventário
+* Melhoras no histórico de inventário
+
+## v1.4.1-p0
+* Nova estrutura de permissões
+* Mudanças na clusterização
+* Mudança do webserver para usar o Phusion Passenger
+* Atualização de dependências
+* Ruby 2.2.1
+* Otimizações de performance
+* Correções para gatilhos dos itens de inventário
+* Adicionado padronização do código fonte
+* Utilização do Dockerfile para configuração de ambiente
+
+
 ## v1.1.1-p6
 
 * Correções para campos de inventário com múltipla escolha

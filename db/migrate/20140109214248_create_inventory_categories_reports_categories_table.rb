@@ -1,6 +1,6 @@
 class CreateInventoryCategoriesReportsCategoriesTable < ActiveRecord::Migration
   def change
-    create_table :inventory_categories_reports_categories, :id => false do |t|
+    create_table :inventory_categories_reports_categories, id: false do |t|
         t.references :reports_category
         t.references :inventory_category
     end

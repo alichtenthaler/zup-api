@@ -1,5 +1,5 @@
 module DateHelper
   def short_date(date)
-    date.strftime("%d/%m/%Y")
+    date.strftime('%d/%m/%Y')
   end
 end

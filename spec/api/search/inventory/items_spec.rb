@@ -1,33 +1,31 @@
-require "spec_helper"
+require 'spec_helper'
 
 describe Search::Inventory::Items::API do
-
   let(:user) { create(:user) }
 
-  describe "GET /search/inventory/items" do
-
+  describe 'GET /search/inventory/items' do
     let(:category) { create(:inventory_category_with_sections) }
 
-    context "specifing the fields" do
+    context 'specifing the fields' do
       let!(:items) { create_list(:inventory_item, 3, category: category) }
 
-      it "returns only specified fields" do
-        get "/search/inventory/items?return_fields=id,title,address,user.name&display_type=full", nil, auth(user)
+      it 'returns only specified fields' do
+        get '/search/inventory/items?return_fields=id,title,address,user.name&display_type=full', nil, auth(user)
         expect(response.status).to eq(200)
 
         body = parsed_body['items']
         expect(body.first).to match(
-          "id" => a_value,
-          "title" => an_instance_of(String),
-          "address" => an_instance_of(String),
-          "user" => {
-            "name" => an_instance_of(String)
+          'id' => a_value,
+          'title' => an_instance_of(String),
+          'address' => an_instance_of(String),
+          'user' => {
+            'name' => an_instance_of(String)
           }
         )
       end
     end
 
-    context "filtered by permission" do
+    context 'filtered by permission' do
       let!(:items) { create_list(:inventory_item, 3, category: category) }
       let!(:other_category) { create(:inventory_category_with_sections) }
       let!(:other_items) { create_list(:inventory_item, 2, category: other_category) }
@@ -40,8 +38,8 @@ describe Search::Inventory::Items::API do
         user.save!
       end
 
-      it "only can see the category it has the permission" do
-        get "/search/inventory/items?display_type=basic&order=desc&page=1&per_page=30&sort=title", nil, auth(user)
+      it 'only can see the category it has the permission' do
+        get '/search/inventory/items?display_type=basic&order=desc&page=1&per_page=30&sort=title', nil, auth(user)
         expect(response.status).to eq(200)
         body = parsed_body
 
@@ -52,7 +50,7 @@ describe Search::Inventory::Items::API do
       end
     end
 
-    context "by address" do
+    context 'by address' do
       let(:items) do
         create_list(:inventory_item, 10, category: category)
       end
@@ -64,27 +62,27 @@ describe Search::Inventory::Items::API do
         JSON
       end
 
-      it "returns the correct items with the correct address" do
+      it 'returns the correct items with the correct address' do
         correct_item = items.sample
         correct_item.update(address: 'Rua Abilio Soares, 140')
 
-        get "/search/inventory/items", valid_params, auth(user)
+        get '/search/inventory/items', valid_params, auth(user)
         expect(parsed_body['items'].first['id']).to eq(correct_item.id)
       end
     end
 
-    context "by query" do
+    context 'by query' do
       let!(:items) do
         create_list(:inventory_item, 5, category: category)
       end
       let!(:correct_items) do
         item = items.sample
         items.delete(item)
-        item.update(title: "Tree 123456")
+        item.update(title: 'Tree 123456')
 
         item2 = items.sample
         items.delete(item2)
-        item2.update(address: "123456 ol street")
+        item2.update(address: '123456 ol street')
 
         item3 = items.sample
         items.delete(item3)
@@ -100,16 +98,15 @@ describe Search::Inventory::Items::API do
         JSON
       end
 
-      it "returns the correct items" do
-        get "/search/inventory/items", valid_params, auth(user)
+      it 'returns the correct items' do
+        get '/search/inventory/items', valid_params, auth(user)
         expect(parsed_body['items'].map do |r|
           r['id']
         end).to match_array(correct_items.map(&:id))
       end
     end
 
-
-    context "by user ids" do
+    context 'by user ids' do
       let!(:user) { create(:user) }
       let!(:user2) { create(:user) }
       let!(:items) do
@@ -135,17 +132,17 @@ describe Search::Inventory::Items::API do
       end
 
       before do
-        get "/search/inventory/items", valid_params, auth(user)
+        get '/search/inventory/items', valid_params, auth(user)
       end
 
-      it "returns the correct items with the correct address" do
+      it 'returns the correct items with the correct address' do
         expect(parsed_body['items'].map do |i|
           i['id']
         end).to match_array(correct_items.map(&:id))
       end
     end
 
-    context "by title" do
+    context 'by title' do
       let(:items) do
         create_list(:inventory_item, 10, category: category)
       end
@@ -157,17 +154,16 @@ describe Search::Inventory::Items::API do
         JSON
       end
 
-      it "returns the correct items with the correct address" do
+      it 'returns the correct items with the correct address' do
         correct_item = items.sample
         correct_item.update(title: 'Árvore torta')
 
-        get "/search/inventory/items", valid_params, auth(user)
+        get '/search/inventory/items', valid_params, auth(user)
         expect(parsed_body['items'].first['id']).to eq(correct_item.id)
       end
     end
 
-
-    context "by multiple positions" do
+    context 'by multiple positions' do
       let(:items) do
         create_list(:inventory_item, 10, category: category)
       end
@@ -196,7 +192,7 @@ describe Search::Inventory::Items::API do
         JSON
       end
 
-      it "returns the correct items with both positions args" do
+      it 'returns the correct items with both positions args' do
         items.each do |item|
           item.update_attribute(
             :position, Reports::Item.rgeo_factory.point(-1, -1)
@@ -213,15 +209,14 @@ describe Search::Inventory::Items::API do
           :position, Reports::Item.rgeo_factory.point(longitude2, latitude2)
         )
 
-        get "/search/inventory/items", valid_params, auth(user)
+        get '/search/inventory/items', valid_params, auth(user)
         expect(parsed_body['items'].map do
           |r| r['id']
         end).to match_array([correct_item_1.id, correct_item_2.id])
       end
-
     end
 
-    context "by address or position" do
+    context 'by address or position' do
       let(:items) do
         create_list(:inventory_item, 10, category: category)
       end
@@ -240,7 +235,7 @@ describe Search::Inventory::Items::API do
         JSON
       end
 
-      it "returns the correct items with address, position or both" do
+      it 'returns the correct items with address, position or both' do
         items.each do |item|
           item.update_attribute(
             :position, Reports::Item.rgeo_factory.point(-1, -1)
@@ -255,14 +250,14 @@ describe Search::Inventory::Items::API do
           :position, Reports::Item.rgeo_factory.point(longitude, latitude)
         )
 
-        get "/search/inventory/items", valid_params, auth(user)
+        get '/search/inventory/items', valid_params, auth(user)
         expect(parsed_body['items'].map do
           |r| r['id']
         end).to match_array([correct_item_1.id, correct_item_2.id])
       end
     end
 
-    context "with clusterization active" do
+    context 'with clusterization active' do
       let(:items) do
         create_list(:inventory_item, 3, category: category)
       end
@@ -276,6 +271,7 @@ describe Search::Inventory::Items::API do
               "longitude": #{longitude},
               "distance": 1000
             },
+            "zoom": 1,
             "clusterize": true
           }
         JSON
@@ -289,8 +285,8 @@ describe Search::Inventory::Items::API do
         end
       end
 
-      it "returns clusterized options" do
-        get "/search/inventory/items", valid_params, auth(user)
+      it 'returns clusterized options' do
+        get '/search/inventory/items', valid_params, auth(user)
         body = parsed_body
 
         expect(body['clusters'].size).to eq(1)
@@ -304,7 +300,7 @@ describe Search::Inventory::Items::API do
       end
     end
 
-    context "by status" do
+    context 'by status' do
       let(:status) { create(:inventory_status, category: category) }
       let(:wrong_status) { create(:inventory_status, category: category) }
       let!(:items) do
@@ -321,15 +317,15 @@ describe Search::Inventory::Items::API do
         JSON
       end
 
-      it "returns the correct items with the correct address" do
-        get "/search/inventory/items", valid_params, auth(user)
+      it 'returns the correct items with the correct address' do
+        get '/search/inventory/items', valid_params, auth(user)
         expect(parsed_body['items'].map do |i|
           i['id']
         end).to match_array(items.map(&:id))
       end
     end
 
-    context "by created_at" do
+    context 'by created_at' do
       let!(:items) do
         create_list(:inventory_item, 3, category: category)
       end
@@ -353,21 +349,20 @@ describe Search::Inventory::Items::API do
       end
 
       before do
-        get "/search/inventory/items", valid_params, auth(user)
+        get '/search/inventory/items', valid_params, auth(user)
       end
 
-      it "returns the correct item" do
+      it 'returns the correct item' do
         expect(parsed_body['items'].map do |i|
           i['id']
         end).to eq([correct_item.id])
       end
     end
 
-    context "by field content" do
+    context 'by field content' do
       let!(:field) { create(:inventory_field, section: category.sections.sample) }
 
-      context "using the lesser_than" do
-
+      context 'using the lesser_than' do
         let!(:items) do
           create_list(:inventory_item, 3, category: category)
         end
@@ -395,20 +390,18 @@ describe Search::Inventory::Items::API do
         end
 
         before do
-          field.update(kind: "integer")
-          get "/search/inventory/items", valid_params, auth(user)
+          field.update(kind: 'integer')
+          get '/search/inventory/items', valid_params, auth(user)
         end
 
-        it "returns the correct item" do
+        it 'returns the correct item' do
           expect(parsed_body['items'].map do |i|
             i['id']
           end).to eq([correct_item.id])
         end
-
       end
 
-      context "using the greater_than" do
-
+      context 'using the greater_than' do
         let!(:items) do
           create_list(:inventory_item, 3, category: category)
         end
@@ -436,20 +429,19 @@ describe Search::Inventory::Items::API do
         end
 
         before do
-          field.update(kind: "integer")
-          get "/search/inventory/items", valid_params, auth(user)
+          field.update(kind: 'integer')
+          get '/search/inventory/items', valid_params, auth(user)
         end
 
-        it "returns the correct item" do
+        it 'returns the correct item' do
           expect(parsed_body['items'].map do |i|
             i['id']
           end).to eq([correct_item.id])
         end
-
       end
 
-      context "using equal_to" do
-        context "using input field" do
+      context 'using equal_to' do
+        context 'using input field' do
           let!(:items) do
             create_list(:inventory_item, 3, category: category)
           end
@@ -477,18 +469,18 @@ describe Search::Inventory::Items::API do
           end
 
           before do
-            field.update(kind: "integer")
-            get "/search/inventory/items", valid_params, auth(user)
+            field.update(kind: 'integer')
+            get '/search/inventory/items', valid_params, auth(user)
           end
 
-          it "returns the correct item" do
+          it 'returns the correct item' do
             expect(parsed_body['items'].map do |i|
               i['id']
             end).to eq([correct_item.id])
           end
         end
 
-        context "using input with option selected" do
+        context 'using input with option selected' do
           let!(:items) do
             create_list(:inventory_item, 3, category: category)
           end
@@ -524,22 +516,22 @@ describe Search::Inventory::Items::API do
           end
 
           before do
-            field.update(kind: "radio")
-            get "/search/inventory/items?only=id", valid_params, auth(user)
+            field.update(kind: 'radio')
+            get '/search/inventory/items?only=id', valid_params, auth(user)
           end
 
-          it "returns the correct item" do
+          it 'returns the correct item' do
             expect(parsed_body['items'].map do |i|
               i['id']
             end).to eq([correct_item.id])
           end
         end
 
-        context "should not return repeated results" do
+        context 'should not return repeated results' do
           let!(:options) do
             [
-              create(:inventory_field_option, field: field, value: "Opção 1"),
-              create(:inventory_field_option, field: field, value: "Opção 2")
+              create(:inventory_field_option, field: field, value: 'Opção 1'),
+              create(:inventory_field_option, field: field, value: 'Opção 2')
             ]
           end
           let!(:item) do
@@ -560,20 +552,19 @@ describe Search::Inventory::Items::API do
           end
 
           before do
-            field.update(kind: "checkbox")
-            get "/search/inventory/items", valid_params, auth(user)
+            field.update(kind: 'checkbox')
+            get '/search/inventory/items', valid_params, auth(user)
           end
 
-          it "returns the correct item" do
+          it 'returns the correct item' do
             expect(parsed_body['items'].map do |i|
               i['id']
             end).to eq([item.id])
           end
-
         end
       end
 
-      context "using multiple filters" do
+      context 'using multiple filters' do
         let!(:field2) { create(:inventory_field, section: category.sections.sample) }
         let!(:items) do
           create_list(:inventory_item, 3, category: category)
@@ -610,19 +601,18 @@ describe Search::Inventory::Items::API do
         end
 
         before do
-          field.update(kind: "integer")
-          get "/search/inventory/items", valid_params, auth(user)
+          field.update(kind: 'integer')
+          get '/search/inventory/items', valid_params, auth(user)
         end
 
-        it "returns the correct item" do
+        it 'returns the correct item' do
           expect(parsed_body['items'].map do |i|
             i['id']
           end).to eq([correct_item.id])
         end
       end
 
-      context "using different" do
-
+      context 'using different' do
         let!(:items) do
           create_list(:inventory_item, 3, category: category)
         end
@@ -650,32 +640,30 @@ describe Search::Inventory::Items::API do
         end
 
         before do
-          field.update(kind: "integer")
-          get "/search/inventory/items", valid_params, auth(user)
+          field.update(kind: 'integer')
+          get '/search/inventory/items', valid_params, auth(user)
         end
 
-        it "returns the correct item" do
+        it 'returns the correct item' do
           expect(parsed_body['items'].map do |i|
             i['id']
           end).to eq([correct_item.id])
         end
-
       end
 
-      context "using like" do
-
+      context 'using like' do
         let!(:items) do
           create_list(:inventory_item, 3, category: category)
         end
         let!(:correct_item) do
           item = items.sample
-          item.data.find_by(field: field).update!(content: "correct_test")
+          item.data.find_by(field: field).update!(content: 'correct_test')
           item
         end
         let!(:wrong_items) do
           items.delete(correct_item)
           items.each do |item|
-            item.data.find_by(field: field).update!(content: "wrong_test")
+            item.data.find_by(field: field).update!(content: 'wrong_test')
           end
         end
         let(:valid_params) do
@@ -691,21 +679,19 @@ describe Search::Inventory::Items::API do
         end
 
         before do
-          get "/search/inventory/items", valid_params, auth(user)
+          get '/search/inventory/items', valid_params, auth(user)
         end
 
-        it "returns the correct item" do
+        it 'returns the correct item' do
           expect(parsed_body['items'].map do |i|
             i['id']
           end).to eq([correct_item.id])
         end
-
       end
 
-
-      context "using includes" do
-        context "using input with option selected" do
-          let!(:field) { create(:inventory_field, section: category.sections.sample, kind: "checkbox") }
+      context 'using includes' do
+        context 'using input with option selected' do
+          let!(:field) { create(:inventory_field, section: category.sections.sample, kind: 'checkbox') }
           let!(:items) do
             create_list(:inventory_item, 3, category: category)
           end
@@ -753,10 +739,10 @@ describe Search::Inventory::Items::API do
           end
 
           before do
-            get "/search/inventory/items", valid_params, auth(user)
+            get '/search/inventory/items', valid_params, auth(user)
           end
 
-          it "returns the correct item" do
+          it 'returns the correct item' do
             expect(parsed_body['items'].map do |i|
               i['id']
             end).to match_array(correct_items.map(&:id))
@@ -764,9 +750,9 @@ describe Search::Inventory::Items::API do
         end
       end
 
-      context "using excludes", broken: true do
-        context "using input with option selected" do
-          let!(:field) { create(:inventory_field, section: category.sections.sample, kind: "checkbox") }
+      context 'using excludes', broken: true do
+        context 'using input with option selected' do
+          let!(:field) { create(:inventory_field, section: category.sections.sample, kind: 'checkbox') }
           let!(:items) do
             create_list(:inventory_item, 3, category: category)
           end
@@ -817,23 +803,20 @@ describe Search::Inventory::Items::API do
           end
 
           before do
-            get "/search/inventory/items", valid_params, auth(user)
+            get '/search/inventory/items', valid_params, auth(user)
           end
 
-          it "returns the correct item" do
+          it 'returns the correct item' do
             expect(parsed_body['items'].map do |i|
               i['id']
             end).to match_array(correct_items.map(&:id))
           end
-
         end
       end
-
-
     end
 
-    context "sorting" do
-      context "by title" do
+    context 'sorting' do
+      context 'by title' do
         let!(:items) do
           items = create_list(:inventory_item, 3, category: category)
           items.sort_by { |item| item.title }
@@ -848,16 +831,52 @@ describe Search::Inventory::Items::API do
         end
 
         before do
-          get "/search/inventory/items", valid_params, auth(user)
+          get '/search/inventory/items', valid_params, auth(user)
         end
 
-        it "returns the items on the correct order" do
+        it 'returns the items on the correct order' do
           expect(parsed_body['items'].map do |i|
             i['id']
           end).to eq(items.map(&:id))
         end
       end
+
+      context 'by user names' do
+        let!(:user) { create(:user, name: 'Robert') }
+        let!(:user2) { create(:user, name: 'John') }
+        let!(:items) do
+          create_list(:inventory_item, 2, category: category)
+        end
+        let!(:correct_items) do
+          item = items.sample
+          items.delete(item)
+          item.update(user_id: user.id)
+
+          item2 = items.sample
+          items.delete(item2)
+          item2.update(user_id: user2.id)
+
+          [item2, item]
+        end
+        let(:valid_params) do
+          JSON.parse <<-JSON
+          {
+            "sort": "user_name",
+            "order": "asc"
+          }
+          JSON
+        end
+
+        before do
+          get '/search/inventory/items', valid_params, auth(user)
+        end
+
+        it 'returns the correct items in the correct or' do
+          expect(parsed_body['items'].map do |i|
+                   i['id']
+                 end).to eq(correct_items.map(&:id))
+        end
+      end
     end
   end
-
 end

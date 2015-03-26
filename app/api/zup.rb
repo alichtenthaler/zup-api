@@ -1,5 +1,5 @@
 require 'grape-swagger'
-require "garner/mixins/rack"
+require 'garner/mixins/rack'
 require 'oj'
 require 'will_paginate/array'
 require 'return_fields_params'
@@ -12,15 +12,12 @@ module ZUP
 
     format :json
     default_format :json
-    formatter :json, -> (object, env) {
-      Oj.dump(object)
-    }
 
     rescue_from :all do |e|
       Raven.capture_exception(e)
 
       if ENV['RAISE_ERRORS']
-        raise e
+        fail e
       end
 
       rack_response("{ \"error\": \"#{e.message}\" }", 400)
@@ -30,11 +27,11 @@ module ZUP
       res = { error: {} }
 
       if ENV['RAISE_ERRORS']
-        raise e
+        fail e
       end
 
       e.errors.each do |field_name, error|
-        res[:error].merge!({ field_name[0] => error.map(&:to_s) })
+        res[:error].merge!(field_name[0] => error.map(&:to_s))
       end
 
       rack_response(res.to_json, 400)
@@ -44,7 +41,7 @@ module ZUP
       Raven.capture_exception(e)
 
       if ENV['RAISE_ERRORS']
-        raise e
+        fail e
       end
 
       rack_response({ error: e.message }.to_json, 404)
@@ -54,7 +51,7 @@ module ZUP
       Raven.capture_exception(e)
 
       if ENV['RAISE_ERRORS']
-        raise e
+        fail e
       end
 
       rack_response({ error: e.record.errors.messages.as_json }.to_json, 400)
@@ -62,7 +59,7 @@ module ZUP
 
     helpers do
       def current_user
-        token = headers["X-App-Token"] || params[:token]
+        token = headers['X-App-Token'] || params[:token]
         @current_user ||= User.authorize(token) if token
       end
 
@@ -115,7 +112,7 @@ module ZUP
     mount Utils::API
 
     namespace :settings do
-      desc "Return the app settings"
+      desc 'Return the app settings'
       get do
         Settings.to_hash
       end

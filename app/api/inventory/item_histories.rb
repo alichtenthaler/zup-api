@@ -8,10 +8,9 @@ module Inventory::ItemHistories
 
     namespace :items do
       route_param :item_id do
-
-        desc "Search history entries for an inventory item"
+        desc 'Search history entries for an inventory item'
         params do
-          optional :kind, type: String, desc: 'O tipo do histórico'
+          optional :kind, type: String, desc: 'O tipo do histórico, podem ser vários separados por vírgula'
           optional :created_at, type: Hash,
                desc: 'Limit the period of creation, accepts `begin` and `end`'
           optional :user_id, type: Integer, desc: 'ID do usuário'
@@ -35,7 +34,6 @@ module Inventory::ItemHistories
             histories: Inventory::ItemHistory::Entity.represent(results)
           }
         end
-
       end
     end
   end

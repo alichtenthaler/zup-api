@@ -1,6 +1,5 @@
 module Inventory::Statuses
   class API < Grape::API
-
     helpers do
       def load_category
         Inventory::Category.find(params[:category_id])
@@ -20,10 +19,10 @@ module Inventory::Statuses
         }
       end
 
-      desc "Create a status for the category"
+      desc 'Create a status for the category'
       params do
-        requires :title, type: String, desc: "The status title (maximum 160)"
-        requires :color, type: String, desc: "Color in hexadecimal format"
+        requires :title, type: String, desc: 'The status title (maximum 160)'
+        requires :color, type: String, desc: 'Color in hexadecimal format'
       end
       post do
         validate_permission!(:edit, Inventory::Category)
@@ -40,10 +39,10 @@ module Inventory::Statuses
         }
       end
 
-      desc "Update the category status"
+      desc 'Update the category status'
       params do
-        optional :title, type: String, desc: "The status title (maximum 160)"
-        optional :color, type: String, desc: "Color in hexadecimal format"
+        optional :title, type: String, desc: 'The status title (maximum 160)'
+        optional :color, type: String, desc: 'Color in hexadecimal format'
       end
       put ':id' do
         validate_permission!(:edit, Inventory::Category)
@@ -59,7 +58,7 @@ module Inventory::Statuses
         }
       end
 
-      desc "Remove an category status"
+      desc 'Remove an category status'
       delete ':id' do
         validate_permission!(:edit, Inventory::Category)
 
@@ -67,8 +66,6 @@ module Inventory::Statuses
         status = category.statuses.find(params[:id])
         status.destroy!
       end
-
     end
-
   end
 end

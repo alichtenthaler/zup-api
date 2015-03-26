@@ -3,17 +3,17 @@ class ResolutionState < ActiveRecord::Base
 
   belongs_to :user
   belongs_to :flow
-  has_many   :cases
+  has_many :cases
 
-  validates :title, uniqueness: {scope: :flow_id}, length: {maximum: 100}, presence: true
-  validate  :unique_by_default, if: -> { default }
+  validates :title, uniqueness: { scope: :flow_id }, length: { maximum: 100 }, presence: true
+  validate :unique_by_default, if: -> { default }
 
   scope :active, -> { where(active: true) }
 
-  after_create   :add_resolution_on_flow
-  before_update  :set_flow_pending_when_have_no_default_resolution
-  before_update  :set_draft, unless: :draft_changed?
-  before_update  :remove_resolution_on_flow, if: -> { active_changed? and not active }
+  after_create :add_resolution_on_flow
+  before_update :set_flow_pending_when_have_no_default_resolution
+  before_update :set_draft, unless: :draft_changed?
+  before_update :remove_resolution_on_flow, if: -> { active_changed? && !active }
   before_destroy :remove_resolution_on_flow
 
   def add_resolution_on_flow
@@ -40,6 +40,7 @@ class ResolutionState < ActiveRecord::Base
   end
 
   private
+
   def unique_by_default
     return if get_flow.blank?
     resolution_default = get_flow.resolution_states.where(default: true).select do |resolution|

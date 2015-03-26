@@ -2,6 +2,6 @@
 
 FactoryGirl.define do
   factory :case_attachment do
-    attachment "MyString"
+    attachment 'MyString'
   end
 end

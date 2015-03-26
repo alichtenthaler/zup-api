@@ -51,6 +51,7 @@ module Groups
 
     def add_with_objects(permission_name, objects_ids)
       validate_permission_name(permission_name)
+      validate_objects_existence(permission_name, objects_ids)
 
       permissions.atomic_cat(permission_name, objects_ids)
     end
@@ -80,6 +81,18 @@ module Groups
     def validate_permission_name(permission_name)
       unless permissions.respond_to?(permission_name)
         fail "Permission doesn't exists: #{permission_name}"
+      end
+    end
+
+    def validate_objects_existence(permission_name, objects_ids)
+      if permission_name['reports']
+        klass = Reports::Category
+      elsif permission_name['inventories']
+        klass = Inventory::Category
+      end
+
+      objects_ids.each do |id|
+        klass.find_by!(id: id)
       end
     end
   end

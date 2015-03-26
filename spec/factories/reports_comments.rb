@@ -5,6 +5,6 @@ FactoryGirl.define do
     association :item, factory: :reports_item
     association :author, factory: :user
     visibility { Reports::Comment::PUBLIC }
-    message "This is a test comment"
+    message 'This is a test comment'
   end
 end

@@ -1,11 +1,11 @@
 module Users
   class API < Grape::API
-    desc "Authenticate user and return a valid access token"
+    desc 'Authenticate user and return a valid access token'
     params do
       requires :email, type: String, desc: "User's email address"
       requires :password, type: String, desc: "User's password"
-      optional :device_token, type: String, desc: "The device token if registration is from mobile"
-      optional :device_type, type: String, desc: "Could be ios or android"
+      optional :device_token, type: String, desc: 'The device token if registration is from mobile'
+      optional :device_type, type: String, desc: 'Could be ios or android'
     end
     post :authenticate do
       user = User.authenticate(params[:email], params[:password])
@@ -30,9 +30,9 @@ module Users
       end
     end
 
-    desc "Logout: invalidate access token"
+    desc 'Logout: invalidate access token'
     params do
-      requires :token, type: String, desc: "The access token"
+      requires :token, type: String, desc: 'The access token'
     end
     delete :sign_out do
       authenticate!
@@ -44,7 +44,7 @@ module Users
         current_user.access_keys.active.each(&:expire!)
       end
 
-      { message: "Token invalidado com sucesso!" }
+      { message: 'Token invalidado com sucesso!' }
     end
 
     # Password recovery
@@ -55,23 +55,23 @@ module Users
     put :recover_password do
       User.request_password_recovery(params[:email])
 
-      { message: "E-mail de recuperação de senha enviado com sucesso!" }
+      { message: 'E-mail de recuperação de senha enviado com sucesso!' }
     end
 
     desc "Resets user's password"
     params do
-      requires :token, type: String, desc: "The password reset token"
-      requires :new_password, type: String, desc: "The new password for the account"
+      requires :token, type: String, desc: 'The password reset token'
+      requires :new_password, type: String, desc: 'The new password for the account'
     end
     put :reset_password do
       if User.reset_password(params[:token], params[:new_password])
-        { message: "Senha alterada com sucesso!" }
+        { message: 'Senha alterada com sucesso!' }
       else
-        { message: "Token de acesso inválido ou expirado." }
+        { message: 'Token de acesso inválido ou expirado.' }
       end
     end
 
-    desc "Shows authenticated info"
+    desc 'Shows authenticated info'
     get :me do
       authenticate!
 
@@ -83,17 +83,18 @@ module Users
                                     ) }
     end
 
-    desc "Destroy current user account"
+    desc 'Destroy current user account'
     delete :me do
       authenticate!
+      validate_permission!(:delete, current_user)
       current_user.disable!
 
-      { message: "Conta deletada com sucesso." }
+      { message: 'Conta deletada com sucesso.' }
     end
 
     # Users CRUD
     resources :users do
-      desc "List all registered users"
+      desc 'List all registered users'
       paginate per_page: 25
       params do
         optional :name, type: String
@@ -123,7 +124,7 @@ module Users
         if groups_ids
           users = users.includes(:groups)
                        .references(:groups)
-                       .where("groups.id IN (?)", groups_ids)
+                       .where('groups.id IN (?)', groups_ids)
         end
 
         unless search_query.empty?
@@ -137,29 +138,29 @@ module Users
         }
       end
 
-      desc "Create an user"
+      desc 'Create an user'
       params do
         requires :email, type: String, desc: "User's email address used for sign in"
         requires :password, type: String, desc: "User's password"
         requires :password_confirmation, type: String, desc: "User's password confirmation"
 
         requires :name, type: String, desc: "User's name"
-        requires :phone, type: String, desc: "Phone, only numbers"
+        requires :phone, type: String, desc: 'Phone, only numbers'
         requires :document, type: String, desc: "User's document (CPF), only numbers"
         requires :address, type: String, desc: "User's address (with the number)"
-        optional :address_additional, type: String, desc: "Address complement"
-        requires :postal_code, type: String, desc: "CEP"
+        optional :address_additional, type: String, desc: 'Address complement'
+        requires :postal_code, type: String, desc: 'CEP'
         requires :district, type: String, desc: "User's neighborhood"
-        optional :groups_ids, type: Array, desc: "User groups"
+        optional :groups_ids, type: Array, desc: 'User groups'
 
         optional :facebook_user_id, type: Integer, desc: "User's id on facebook"
         optional :twitter_user_id, type: Integer, desc: "User's id on twitter"
         optional :google_plus_user_id, type: Integer, desc: "User's id on G+"
 
-        optional :device_token, type: String, desc: "The device token if registration is from mobile"
-        optional :device_type, type: String, desc: "Could be `ios` or `android`"
+        optional :device_token, type: String, desc: 'The device token if registration is from mobile'
+        optional :device_type, type: String, desc: 'Could be `ios` or `android`'
 
-        optional :email_notifications, type: Boolean, desc: "If the user wants email notification or not"
+        optional :email_notifications, type: Boolean, desc: 'If the user wants email notification or not'
       end
       post do
         user = User.new(
@@ -174,10 +175,11 @@ module Users
         )
 
         if params[:groups_ids].present?
-          validate_permission!(:manage, User)
           user.groups = params[:groups_ids].map do |id|
             Group.find(id)
           end
+
+          validate_permission!(:create, user)
         else
           guest_group = Group.guest
           user.groups << guest_group if guest_group
@@ -186,12 +188,12 @@ module Users
         user.save!
 
         {
-          message: "Usuário criado com sucesso",
+          message: 'Usuário criado com sucesso',
           user: User::Entity.represent(user, display_type: 'full')
         }
       end
 
-      desc "Shows user info"
+      desc 'Shows user info'
       get ':id' do
         user = User.find(safe_params[:id])
         { user: User::Entity.represent(user, display_type: 'full', display_groups: true) }
@@ -205,17 +207,17 @@ module Users
 
         optional :name, type: String, desc: "User's name"
         optional :email, type: String, desc: "User's email address"
-        optional :phone, type: String, desc: "Phone, only numbers"
+        optional :phone, type: String, desc: 'Phone, only numbers'
         optional :document, type: String, desc: "User's document (CPF), only numbers"
         optional :address, type: String, desc: "User's address (with the number)"
-        optional :address_additional, type: String, desc: "Address complement"
-        optional :postal_code, type: String, desc: "CEP"
+        optional :address_additional, type: String, desc: 'Address complement'
+        optional :postal_code, type: String, desc: 'CEP'
         optional :district, type: String, desc: "User's neighborhood"
 
-        optional :device_token, type: String, desc: "The device token if registration is from mobile"
-        optional :device_type, type: String, desc: "Could be ios or android"
+        optional :device_token, type: String, desc: 'The device token if registration is from mobile'
+        optional :device_type, type: String, desc: 'Could be ios or android'
 
-        optional :email_notifications, type: Boolean, desc: "If the user wants email notification or not"
+        optional :email_notifications, type: Boolean, desc: 'If the user wants email notification or not'
       end
       put ':id' do
         authenticate!
@@ -230,10 +232,11 @@ module Users
         )
 
         user.update!(user_params.merge(user_changing_password: current_user))
-        { message: "Conta alterada com sucesso." }
+
+        { message: 'Conta alterada com sucesso.' }
       end
 
-      desc "Destroy user account"
+      desc 'Destroy user account'
       delete ':id' do
         authenticate!
         user = User.find(safe_params[:id])
@@ -241,20 +244,31 @@ module Users
 
         user.disable!
 
-        { message: "Conta deletada com sucesso." }
+        { message: 'Conta deletada com sucesso.' }
       end
 
-      desc "Unsubscribe user from emails"
+      desc 'Enable user account'
+      put ':id/enable' do
+        authenticate!
+        user = User.find(safe_params[:id])
+        validate_permission!(:manage, user)
+
+        user.enable!
+
+        { message: 'Conta habilitada com sucesso.' }
+      end
+
+      desc 'Unsubscribe user from emails'
       params do
-        requires :token, type: String, desc: ""
+        requires :token, type: String, desc: ''
       end
       get 'unsubscribe/:token' do
         result = User.unsubscribe(params[:token])
 
         if result
-          { message: "Você não receberá mais atualizações no seu e-mail!" }
+          { message: 'Você não receberá mais atualizações no seu e-mail!' }
         else
-          { message: "Usuário não encontrado" }
+          { message: 'Usuário não encontrado' }
         end
       end
     end

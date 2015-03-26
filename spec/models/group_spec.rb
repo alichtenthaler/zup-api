@@ -1,13 +1,13 @@
 require 'rails_helper'
 
 describe Group do
-  it "validates name" do
+  it 'validates name' do
     group = Group.new
     expect(group).to_not be_valid
     group.errors.should include(:name)
   end
 
-  it "has relation with users" do
+  it 'has relation with users' do
     group = create(:group)
     user = create(:user)
 
@@ -23,7 +23,7 @@ describe Group do
     expect(group.guest).to eq(false)
   end
 
-  describe ".with_permission" do
+  describe '.with_permission' do
     let(:group) { create(:group) }
     let(:groups) { create_list(:group, 10) }
 
@@ -32,12 +32,12 @@ describe Group do
       group.save!
     end
 
-    it "returns groups where the given permission is true" do
+    it 'returns groups where the given permission is true' do
       expect(Group.with_permission(:manage_users)).to eq(group)
     end
   end
 
-  describe ".that_includes_permission" do
+  describe '.that_includes_permission' do
     let!(:group) { create(:group) }
     let!(:other_group) { create(:group) }
 
@@ -48,12 +48,12 @@ describe Group do
       )
     end
 
-    it "returns only the groups that has the id in permissions" do
+    it 'returns only the groups that has the id in permissions' do
       groups = Group.that_includes_permission(:inventory_fields_can_edit, 2)
       expect(groups).to eq([group])
     end
 
-    it "returns no group if none has the id" do
+    it 'returns no group if none has the id' do
       groups = Group.that_includes_permission(:inventory_fields_can_edit, 3)
       expect(groups).to eq([])
     end

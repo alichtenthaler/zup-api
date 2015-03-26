@@ -1,18 +1,17 @@
 module Inventory::Categories
   class API < Grape::API
     resources :categories do
-      desc "List all categories"
+      desc 'List all categories'
       paginate(per_page: 25)
       params do
         optional :title, type: String, desc: "Category's name for search"
-        optional :display_type, type: String, desc: "Display type for the categories"
+        optional :display_type, type: String, desc: 'Display type for the categories'
       end
       get do
         validate_permission!(:view, Inventory::Category)
 
         title = safe_params[:title]
         permissions = UserAbility.new(current_user)
-
 
         categories = Inventory::Category.includes(:statuses, :sections, sections: [{ fields: :field_options }])
 
@@ -34,7 +33,7 @@ module Inventory::Categories
         }
       end
 
-      desc "Create an category"
+      desc 'Create an category'
       params do
         requires :title, type: String, desc: "Category's name"
         optional :description, type: String, desc: "Category's short description"
@@ -46,9 +45,9 @@ module Inventory::Categories
         optional :require_item_status, type: Boolean,
           desc: 'Defines if item of category should have a status'
         optional :sections, type: Array, desc: "An array of sections and it's fields"
-        optional :statuses, type: Array, desc: "An array of statuses, fields required: title and color"
-        optional :groups_can_view, type: Array, desc: "An array of groups ids"
-        optional :groups_can_edit, type: Array, desc: "An array of groups ids"
+        optional :statuses, type: Array, desc: 'An array of statuses, fields required: title and color'
+        optional :groups_can_view, type: Array, desc: 'An array of groups ids'
+        optional :groups_can_edit, type: Array, desc: 'An array of groups ids'
       end
       post do
         authenticate!
@@ -85,7 +84,7 @@ module Inventory::Categories
         Groups::UpdatePermissions.update(groups_can_edit, category, :inventories_categories_edit)
 
         {
-          message: "Category created with success",
+          message: 'Category created with success',
           category: Inventory::Category::Entity.represent(category, only: return_fields, user: current_user)
         }
       end
@@ -110,7 +109,7 @@ module Inventory::Categories
         }
       end
 
-      desc "Destroy category"
+      desc 'Destroy category'
       delete ':id' do
         authenticate!
 
@@ -118,7 +117,7 @@ module Inventory::Categories
         validate_permission!(:delete, category)
         category.destroy
 
-        { message: "Category deleted successfully" }
+        { message: 'Category deleted successfully' }
       end
 
       desc "Update category's info"
@@ -131,8 +130,8 @@ module Inventory::Categories
         optional :color, type: String, desc: 'Color of the category'
         optional :require_item_status, type: Boolean,
           desc: 'Defines if item of category should have a status'
-        optional :groups_can_view, type: Array, desc: "An array of groups ids"
-        optional :groups_can_edit, type: Array, desc: "An array of groups ids"
+        optional :groups_can_view, type: Array, desc: 'An array of groups ids'
+        optional :groups_can_edit, type: Array, desc: 'An array of groups ids'
       end
       put ':id' do
         authenticate!
@@ -172,14 +171,14 @@ module Inventory::Categories
         Groups::UpdatePermissions.update(groups_can_edit, category, :inventories_categories_edit)
 
         {
-          message: "Category updated successfully",
+          message: 'Category updated successfully',
           category: Inventory::Category::Entity.represent(category, user: current_user)
         }
       end
 
-      desc "Changes the form for the category"
+      desc 'Changes the form for the category'
       params do
-        requires :sections, type: Array, desc: "An array of sections and it's fields"
+        requires :sections, type: Array[Hash], desc: "An array of sections and it's fields"
       end
       put ':id/form' do
         authenticate!
@@ -193,19 +192,19 @@ module Inventory::Categories
           form = Inventory::RenderCategoryFormData.new(category, current_user).render
 
           {
-            message: "Form updated successfully!",
+            message: 'Form updated successfully!',
             form: form
           }
         else
           {
-            message: "Form locked",
+            message: 'Form locked',
             locker: User::Entity.represent(category.locker),
             locked_at: category.locked_at
           }
         end
       end
 
-      desc "Get the form structure for category"
+      desc 'Get the form structure for category'
       get ':id/form' do
         authenticate!
         category = Inventory::Category.includes(sections: :fields)
@@ -215,7 +214,7 @@ module Inventory::Categories
         Inventory::RenderCategoryFormData.new(category, current_user).render
       end
 
-      desc "Update the access to the inventory category, locking it"
+      desc 'Update the access to the inventory category, locking it'
       patch ':id/update_access' do
         authenticate!
 

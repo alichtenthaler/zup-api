@@ -1,7 +1,7 @@
-require "spec_helper"
+require 'spec_helper'
 
 describe Inventory::FormulaValidator do
-  context "validations" do
+  context 'validations' do
     let!(:category) { create(:inventory_category_with_sections) }
     let(:item) { create(:inventory_item, category: category) }
     let(:formula) do
@@ -11,11 +11,11 @@ describe Inventory::FormulaValidator do
       )
     end
 
-    context "equal_to" do
+    context 'equal_to' do
       let!(:field) do
         create(
           :inventory_field,
-          kind: "text",
+          kind: 'text',
           section: category.sections.sample
         )
       end
@@ -23,8 +23,8 @@ describe Inventory::FormulaValidator do
       let!(:condition) do
         create(
           :inventory_formula_condition,
-          operator: "equal_to",
-          content: "test",
+          operator: 'equal_to',
+          content: 'test',
           field: field,
           formula: formula
         )
@@ -32,31 +32,31 @@ describe Inventory::FormulaValidator do
 
       subject { described_class.new(item, formula) }
 
-      it "returns true if content is equal" do
-        item.data.find_by(field: field).update(content: "test")
+      it 'returns true if content is equal' do
+        item.data.find_by(field: field).update(content: 'test')
         item.reload.represented_data
         expect(subject.valid?).to eq(true)
       end
 
-      it "returns false if content is different" do
-        item.data.find_by(field: field).update(content: "testa")
+      it 'returns false if content is different' do
+        item.data.find_by(field: field).update(content: 'testa')
         item.reload.represented_data
         expect(subject.valid?).to eq(false)
       end
 
-      context "field with selected option" do
+      context 'field with selected option' do
         let(:field_option) do
-          create(:inventory_field_option, value: "test")
+          create(:inventory_field_option, value: 'test')
         end
 
         before do
           field.update(
-            kind: "radio",
+            kind: 'radio',
             field_options: [field_option]
           )
         end
 
-        it "returns true if content is equal" do
+        it 'returns true if content is equal' do
           item.data.find_by(field: field).update(selected_options: [field_option])
           item.reload.represented_data
           expect(subject.valid?).to eq(true)
@@ -64,11 +64,11 @@ describe Inventory::FormulaValidator do
       end
     end
 
-    context "greater_than" do
+    context 'greater_than' do
       let!(:field) do
         create(
           :inventory_field,
-          kind: "integer",
+          kind: 'integer',
           section: category.sections.sample
         )
       end
@@ -76,8 +76,8 @@ describe Inventory::FormulaValidator do
       let!(:condition) do
         create(
           :inventory_formula_condition,
-          operator: "greater_than",
-          content: "20",
+          operator: 'greater_than',
+          content: '20',
           field: field,
           formula: formula
         )
@@ -85,24 +85,24 @@ describe Inventory::FormulaValidator do
 
       subject { described_class.new(item, formula) }
 
-      it "returns true if content is greater than" do
+      it 'returns true if content is greater than' do
         item.data.find_by(field: field).update(content: 30)
         item.reload.represented_data
         expect(subject.valid?).to eq(true)
       end
 
-      it "returns false if content is lesser than" do
+      it 'returns false if content is lesser than' do
         item.data.find_by(field: field).update(content: 20)
         item.reload.represented_data
         expect(subject.valid?).to eq(false)
       end
     end
 
-    context "lesser_than" do
+    context 'lesser_than' do
       let!(:field) do
         create(
           :inventory_field,
-          kind: "integer",
+          kind: 'integer',
           section: category.sections.sample
         )
       end
@@ -110,8 +110,8 @@ describe Inventory::FormulaValidator do
       let!(:condition) do
         create(
           :inventory_formula_condition,
-          operator: "lesser_than",
-          content: "20",
+          operator: 'lesser_than',
+          content: '20',
           field: field,
           formula: formula
         )
@@ -119,24 +119,24 @@ describe Inventory::FormulaValidator do
 
       subject { described_class.new(item, formula) }
 
-      it "returns true if content is lesser than" do
+      it 'returns true if content is lesser than' do
         item.data.find_by(field: field).update(content: 19)
         item.reload.represented_data
         expect(subject.valid?).to eq(true)
       end
 
-      it "returns false if content is greater than" do
+      it 'returns false if content is greater than' do
         item.data.find_by(field: field).update(content: 21)
         item.reload.represented_data
         expect(subject.valid?).to eq(false)
       end
     end
 
-    context "different" do
+    context 'different' do
       let!(:field) do
         create(
           :inventory_field,
-          kind: "text",
+          kind: 'text',
           section: category.sections.sample
         )
       end
@@ -144,8 +144,8 @@ describe Inventory::FormulaValidator do
       let!(:condition) do
         create(
           :inventory_formula_condition,
-          operator: "different",
-          content: "test",
+          operator: 'different',
+          content: 'test',
           field: field,
           formula: formula
         )
@@ -153,24 +153,24 @@ describe Inventory::FormulaValidator do
 
       subject { described_class.new(item, formula) }
 
-      it "returns true if content is different" do
-        item.data.find_by(field: field).update(content: "testa")
+      it 'returns true if content is different' do
+        item.data.find_by(field: field).update(content: 'testa')
         item.reload.represented_data
         expect(subject.valid?).to eq(true)
       end
 
-      it "returns false if content is equal" do
-        item.data.find_by(field: field).update(content: "test")
+      it 'returns false if content is equal' do
+        item.data.find_by(field: field).update(content: 'test')
         item.reload.represented_data
         expect(subject.valid?).to eq(false)
       end
     end
 
-    context "between" do
+    context 'between' do
       let!(:field) do
         create(
           :inventory_field,
-          kind: "text",
+          kind: 'text',
           section: category.sections.sample
         )
       end
@@ -178,8 +178,8 @@ describe Inventory::FormulaValidator do
       let!(:condition) do
         create(
           :inventory_formula_condition,
-          operator: "between",
-          content: ["test", "a", "b"],
+          operator: 'between',
+          content: ['test', 'a', 'b'],
           field: field,
           formula: formula
         )
@@ -187,24 +187,24 @@ describe Inventory::FormulaValidator do
 
       subject { described_class.new(item, formula) }
 
-      it "returns true if content satisfies the values" do
-        item.data.find_by(field: field).update(content: "a")
+      it 'returns true if content satisfies the values' do
+        item.data.find_by(field: field).update(content: 'a')
         item.reload.represented_data
         expect(subject.valid?).to eq(true)
       end
 
       it "returns false if content doesn't satisfies" do
-        item.data.find_by(field: field).update(content: "c")
+        item.data.find_by(field: field).update(content: 'c')
         item.reload.represented_data
         expect(subject.valid?).to eq(false)
       end
     end
 
-    context "includes" do
+    context 'includes' do
       let!(:field) do
         create(
           :inventory_field,
-          kind: "text",
+          kind: 'text',
           section: category.sections.sample
         )
       end
@@ -212,8 +212,8 @@ describe Inventory::FormulaValidator do
       let!(:condition) do
         create(
           :inventory_formula_condition,
-          operator: "includes",
-          content: "tes",
+          operator: 'includes',
+          content: 'tes',
           field: field,
           formula: formula
         )
@@ -221,14 +221,14 @@ describe Inventory::FormulaValidator do
 
       subject { described_class.new(item, formula) }
 
-      it "returns true if content satisfies the values" do
-        item.data.find_by(field: field).update(content: "test")
+      it 'returns true if content satisfies the values' do
+        item.data.find_by(field: field).update(content: 'test')
         item.reload.represented_data
         expect(subject.valid?).to eq(true)
       end
 
       it "returns false if content doesn't satisfies" do
-        item.data.find_by(field: field).update(content: "text")
+        item.data.find_by(field: field).update(content: 'text')
         item.reload.represented_data
         expect(subject.valid?).to eq(false)
       end

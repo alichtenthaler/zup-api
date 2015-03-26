@@ -51,7 +51,7 @@ class Reports::GetStats
     end
 
     statuses_stats = []
-    category_statuses.each do |title, statuses|
+    category_statuses.each do |_title, statuses|
       statuses_stats << fetch_stats_from_statuses(statuses, category)
     end
 
@@ -83,10 +83,9 @@ class Reports::GetStats
     if begin_date && end_date
       reports_items.where(created_at: begin_date..end_date)
     elsif begin_date
-      reports_items.where("created_at >= ?", begin_date)
+      reports_items.where('created_at >= ?', begin_date)
     elsif end_date
-      reports_items.where("created_at <= ?", end_date)
+      reports_items.where('created_at <= ?', end_date)
     end
   end
-
 end

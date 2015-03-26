@@ -1,10 +1,10 @@
-require "spec_helper"
+require 'spec_helper'
 
 describe Reports::Comments do
   let(:user) { create(:user) }
   let(:item) { create(:reports_item) }
 
-  describe "GET :id/comments" do
+  describe 'GET :id/comments' do
     subject { get "/reports/#{item.id}/comments", nil, auth(user) }
 
     let!(:public_comments) do
@@ -23,13 +23,13 @@ describe Reports::Comments do
                   visibility: Reports::Comment::INTERNAL)
     end
 
-    context "user is not the author" do
+    context 'user is not the author' do
       before do
         user.groups = Group.guest
         user.save!
       end
 
-      it "returns all public comments" do
+      it 'returns all public comments' do
         subject
 
         expect(response.status).to eq(200)
@@ -38,7 +38,7 @@ describe Reports::Comments do
       end
     end
 
-    context "user is the author" do
+    context 'user is the author' do
       before do
         user.groups = Group.guest
         user.save!
@@ -46,7 +46,7 @@ describe Reports::Comments do
         item.update!(user: user)
       end
 
-      it "returns all public and private comments" do
+      it 'returns all public and private comments' do
         subject
 
         expect(response.status).to eq(200)
@@ -55,7 +55,7 @@ describe Reports::Comments do
       end
     end
 
-    context "user has permission to view and edit report" do
+    context 'user has permission to view and edit report' do
       before do
         group = create(:group)
         group.permission.update(reports_items_edit: [item.category.id])
@@ -63,7 +63,7 @@ describe Reports::Comments do
         user.save!
       end
 
-      it "returns all public and private comments" do
+      it 'returns all public and private comments' do
         subject
 
         expect(response.status).to eq(200)
@@ -73,13 +73,12 @@ describe Reports::Comments do
         )
       end
     end
-
   end
 
-  describe "POST :id/comments" do
+  describe 'POST :id/comments' do
     subject { post "/reports/#{item.id}/comments", valid_params, auth(user) }
 
-    context "with valid params" do
+    context 'with valid params' do
       let(:valid_params) do
         JSON.parse <<-JSON
           {
@@ -89,13 +88,13 @@ describe Reports::Comments do
         JSON
       end
 
-      it "creates the comment" do
+      it 'creates the comment' do
         subject
 
         expect(response.status).to eq(201)
 
         created_comment = item.comments.last
-        expect(created_comment.message).to eq("Test message")
+        expect(created_comment.message).to eq('Test message')
         expect(created_comment.visibility).to eq(Reports::Comment::PUBLIC)
       end
     end

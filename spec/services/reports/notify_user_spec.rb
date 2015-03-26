@@ -1,12 +1,12 @@
-require "spec_helper"
+require 'spec_helper'
 
 describe Reports::NotifyUser do
   let!(:item) { create(:reports_item) }
   let(:user) { item.user }
-  let!(:status) { create(:status,
+  let!(:status) do create(:status,
                         initial: false,
                         final: false,
-                        title: 'Relato em andamento') }
+                        title: 'Relato em andamento') end
 
   before do
     # Add status to category
@@ -20,30 +20,30 @@ describe Reports::NotifyUser do
 
   subject { described_class.new(item) }
 
-  describe "#should_user_receive_status_notification?" do
+  describe '#should_user_receive_status_notification?' do
     context "status isn't private" do
-      it "returns true" do
+      it 'returns true' do
         expect(
           subject.should_user_receive_status_notification?(status)
         ).to be_truthy
       end
     end
 
-    context "status is private" do
+    context 'status is private' do
       before do
         status.status_categories.find_by(
           category: item.category
         ).update(private: true)
       end
 
-      it "returns false" do
+      it 'returns false' do
         expect(
           subject.should_user_receive_status_notification?(status)
         ).to be_falsy
       end
     end
 
-    context "user has permissions to manage reports items" do
+    context 'user has permissions to manage reports items' do
       let(:group) { create(:group) }
 
       before do
@@ -52,7 +52,7 @@ describe Reports::NotifyUser do
         item.user.save!
       end
 
-      it "returns true" do
+      it 'returns true' do
         expect(
           subject.should_user_receive_status_notification?(status)
         ).to be_truthy

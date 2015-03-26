@@ -1,4 +1,4 @@
-require "spec_helper"
+require 'spec_helper'
 
 describe Inventory::CategoryLocking do
   let(:category) { create(:inventory_category) }
@@ -6,8 +6,8 @@ describe Inventory::CategoryLocking do
 
   subject { described_class.new(category, user) }
 
-  describe "#lock!" do
-    it "locks the category" do
+  describe '#lock!' do
+    it 'locks the category' do
       subject.lock!
       category.reload
       expect(category).to be_locked
@@ -16,20 +16,20 @@ describe Inventory::CategoryLocking do
     end
   end
 
-  describe "#unlock!" do
+  describe '#unlock!' do
     before do
       category.update(locked: true)
     end
 
-    it "unlocks the category" do
+    it 'unlocks the category' do
       subject.unlock!
       category.reload
       expect(category).to_not be_locked
     end
   end
 
-  describe "#unlock_if_expired!" do
-    context "category locked less than 1 minute ago" do
+  describe '#unlock_if_expired!' do
+    context 'category locked less than 1 minute ago' do
       before do
         category.update(locked: true, locked_at: 10.seconds.ago)
       end
@@ -42,7 +42,7 @@ describe Inventory::CategoryLocking do
       end
     end
 
-    context "category locked more than 1 minute ago" do
+    context 'category locked more than 1 minute ago' do
       before do
         category.update(locked: true, locked_at: (1.minute + 2.seconds).ago)
       end
@@ -55,5 +55,4 @@ describe Inventory::CategoryLocking do
       end
     end
   end
-
 end

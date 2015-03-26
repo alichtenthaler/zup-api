@@ -1,9 +1,9 @@
-require "spec_helper"
+require 'spec_helper'
 
 describe Search::Reports::Items::API do
   let(:user) { create(:user) }
 
-  describe "GET /search/reports/:category_id/status/:status_id/items" do
+  describe 'GET /search/reports/:category_id/status/:status_id/items' do
     let(:category) { create(:reports_category_with_statuses) }
     let(:items) do
       create_list(:reports_item, 5, category: category) end
@@ -16,10 +16,10 @@ describe Search::Reports::Items::API do
       JSON
     end
 
-    it "returns the specified items" do
+    it 'returns the specified items' do
       desired_item = items.sample
       status = category.statuses.sample
-      desired_item.update!(address: "Rua Abilio Soares", status: status)
+      desired_item.update!(address: 'Rua Abilio Soares', status: status)
 
       get "/search/reports/#{category.id}/status/#{status.id}/items",
         valid_params, auth(user)
@@ -36,30 +36,30 @@ describe Search::Reports::Items::API do
     end
   end
 
-  describe "GET /search/reports/items" do
+  describe 'GET /search/reports/items' do
     let(:category) { create(:reports_category_with_statuses) }
 
-    context "specifing the fields" do
+    context 'specifing the fields' do
       let!(:items) { create_list(:reports_item, 3, category: category) }
 
-      it "returns only specified fields" do
-        get "/search/reports/items?return_fields=id,protocol,address,user.name&display_type=full", nil, auth(user)
+      it 'returns only specified fields' do
+        get '/search/reports/items?return_fields=id,protocol,address,user.name&display_type=full', nil, auth(user)
         expect(response.status).to eq(200)
 
         body = parsed_body['reports']
         expect(body.first).to match(
-          "id" => a_value,
-          "protocol" => a_value,
-          "address" => an_instance_of(String),
-          "user" => {
-            "name" => an_instance_of(String)
+          'id' => a_value,
+          'protocol' => a_value,
+          'address' => an_instance_of(String),
+          'user' => {
+            'name' => an_instance_of(String)
           }
         )
       end
     end
 
-    context "sorting" do
-      context "by user name" do
+    context 'sorting' do
+      context 'by user name' do
         let!(:users) { create_list(:user, 5) }
         let!(:items) do
           users.map do |u|
@@ -75,8 +75,8 @@ describe Search::Reports::Items::API do
           JSON
         end
 
-        it "returns the items on the correct order" do
-          get "/search/reports/items", valid_params, auth(user)
+        it 'returns the items on the correct order' do
+          get '/search/reports/items', valid_params, auth(user)
 
           returned_ids = parsed_body['reports'].map do |r|
             r['id']
@@ -89,7 +89,7 @@ describe Search::Reports::Items::API do
       end
     end
 
-    context "by categories" do
+    context 'by categories' do
       let!(:items) do
         create_list(:reports_item, 3, category: category)
       end
@@ -105,8 +105,8 @@ describe Search::Reports::Items::API do
         JSON
       end
 
-      it "returns the correct items with the correct address" do
-        get "/search/reports/items", valid_params, auth(user)
+      it 'returns the correct items with the correct address' do
+        get '/search/reports/items', valid_params, auth(user)
 
         returned_ids = parsed_body['reports'].map do |r|
           r['id']
@@ -117,8 +117,8 @@ describe Search::Reports::Items::API do
       end
     end
 
-    context "by users" do
-      context "only one user" do
+    context 'by users' do
+      context 'only one user' do
         let(:user) { create(:user) }
         let!(:items) do
           create_list(:reports_item, 3, category: category, user: user)
@@ -134,8 +134,8 @@ describe Search::Reports::Items::API do
           JSON
         end
 
-        it "returns the correct items from the correct user" do
-          get "/search/reports/items", valid_params, auth(user)
+        it 'returns the correct items from the correct user' do
+          get '/search/reports/items', valid_params, auth(user)
 
           returned_ids = parsed_body['reports'].map do |r|
             r['id']
@@ -146,7 +146,7 @@ describe Search::Reports::Items::API do
         end
       end
 
-      context "by multiple users" do
+      context 'by multiple users' do
         let(:user) { create(:user) }
         let(:user2) { create(:user) }
         let!(:items) do
@@ -165,8 +165,8 @@ describe Search::Reports::Items::API do
           JSON
         end
 
-        it "returns the correct items from the correct user" do
-          get "/search/reports/items", valid_params, auth(user)
+        it 'returns the correct items from the correct user' do
+          get '/search/reports/items', valid_params, auth(user)
 
           returned_ids = parsed_body['reports'].map do |r|
             r['id']
@@ -178,8 +178,7 @@ describe Search::Reports::Items::API do
       end
     end
 
-
-    context "by statuses" do
+    context 'by statuses' do
       let!(:items) do
         create_list(:reports_item, 3, category: category)
       end
@@ -202,8 +201,8 @@ describe Search::Reports::Items::API do
         JSON
       end
 
-      it "returns the correct items with the correct address" do
-        get "/search/reports/items", valid_params, auth(user)
+      it 'returns the correct items with the correct address' do
+        get '/search/reports/items', valid_params, auth(user)
 
         returned_ids = parsed_body['reports'].map do |r|
           r['id']
@@ -214,7 +213,7 @@ describe Search::Reports::Items::API do
       end
     end
 
-    context "by address" do
+    context 'by address' do
       let(:items) do
         create_list(:reports_item, 3, category: category)
       end
@@ -226,16 +225,16 @@ describe Search::Reports::Items::API do
         JSON
       end
 
-      it "returns the correct items with the correct address" do
+      it 'returns the correct items with the correct address' do
         correct_item = items.sample
         correct_item.update(address: 'Rua Abilio Soares, 140')
 
-        get "/search/reports/items", valid_params, auth(user)
+        get '/search/reports/items', valid_params, auth(user)
         expect(parsed_body['reports'].first['id']).to eq(correct_item.id)
       end
     end
 
-    context "by overdue" do
+    context 'by overdue' do
       let(:items) do
         create_list(:reports_item, 3, category: category)
       end
@@ -247,28 +246,28 @@ describe Search::Reports::Items::API do
         JSON
       end
 
-      it "returns the correct items with the correct address" do
+      it 'returns the correct items with the correct address' do
         correct_item = items.sample
         correct_item.update(overdue: true)
 
-        get "/search/reports/items", valid_params, auth(user)
+        get '/search/reports/items', valid_params, auth(user)
         expect(parsed_body['reports'].map { |r| r['id'] }).to eq([correct_item.id])
       end
     end
 
-    context "by query" do
+    context 'by query' do
       let!(:items) do
         create_list(:reports_item, 10, category: category)
       end
       let!(:correct_items) do
-        user = create(:user, name: "crazybar")
+        user = create(:user, name: 'crazybar')
         item = items.sample
         items.delete(item)
         item.update(user_id: user.id)
 
         item2 = items.sample
         items.delete(item2)
-        item2.update(address: "crazybar do naldo")
+        item2.update(address: 'crazybar do naldo')
 
         [item, item2]
       end
@@ -280,15 +279,15 @@ describe Search::Reports::Items::API do
         JSON
       end
 
-      it "returns the correct items with the correct address" do
-        get "/search/reports/items", valid_params, auth(user)
+      it 'returns the correct items with the correct address' do
+        get '/search/reports/items', valid_params, auth(user)
         expect(parsed_body['reports'].map do |r|
           r['id']
         end).to match_array(correct_items.map(&:id))
       end
     end
 
-    context "by address or position" do
+    context 'by address or position' do
       let(:items) do
         create_list(:reports_item, 3, category: category)
       end
@@ -307,7 +306,7 @@ describe Search::Reports::Items::API do
         JSON
       end
 
-      it "returns the correct items with address, position or both" do
+      it 'returns the correct items with address, position or both' do
         items.each do |item|
           item.update(
             position: Reports::Item.rgeo_factory.point(-1, 0)
@@ -322,14 +321,14 @@ describe Search::Reports::Items::API do
           position: Reports::Item.rgeo_factory.point(longitude, latitude)
         )
 
-        get "/search/reports/items", valid_params, auth(user)
+        get '/search/reports/items', valid_params, auth(user)
         expect(parsed_body['reports'].map do
           |r| r['id']
         end).to match_array([correct_item_1.id, correct_item_2.id])
       end
     end
 
-    context "with clusterization active" do
+    context 'with clusterization active' do
       let(:items) do
         create_list(:reports_item, 3, category: category)
       end
@@ -357,8 +356,8 @@ describe Search::Reports::Items::API do
         end
       end
 
-      it "returns clusterized options" do
-        get "/search/reports/items", valid_params, auth(user)
+      it 'returns clusterized options' do
+        get '/search/reports/items', valid_params, auth(user)
         body = parsed_body
 
         expect(body['clusters'].size).to eq(1)

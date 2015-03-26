@@ -5,12 +5,12 @@ FactoryGirl.define do
     sequence :title do |n|
       "field#{n}"
     end
-    kind "text"
-    size "M"
+    kind 'text'
+    size 'M'
     position 0
     section { create(:inventory_section) }
-    options ""
-    permissions ""
+    options ''
+    permissions ''
     required false
   end
 end

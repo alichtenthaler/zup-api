@@ -1,17 +1,17 @@
-require "spec_helper"
+require 'spec_helper'
 
 describe Reports::GetStats do
   let!(:report_category) { create(:reports_category_with_statuses) }
   let!(:status) { report_category.statuses.where(initial: false).first }
 
-  context "returning the correct stats" do
+  context 'returning the correct stats' do
     let!(:reports) do
       create_list(:reports_item, 7, category: report_category, status: status)
     end
 
     subject { described_class.new(report_category.id) }
 
-    it "returns the count of every status on category" do
+    it 'returns the count of every status on category' do
       returned_stats = subject.fetch
 
       expect(returned_stats.size).to eq(1)
@@ -24,7 +24,7 @@ describe Reports::GetStats do
       expect(returned_count).to eq(7)
     end
 
-    it "accepts argument as array" do
+    it 'accepts argument as array' do
       returned_stats = described_class.new([report_category.id]).fetch
 
       expect(returned_stats.size).to eq(1)
@@ -37,7 +37,7 @@ describe Reports::GetStats do
       expect(returned_count).to eq(7)
     end
 
-    context "category with subcategories" do
+    context 'category with subcategories' do
       let!(:subcategory) do
         create(:reports_category_with_statuses, parent_category: report_category)
       end
@@ -49,7 +49,7 @@ describe Reports::GetStats do
         create_list(:reports_item, 7, category: subcategory, status: status)
       end
 
-      it "return the right count" do
+      it 'return the right count' do
         returned_stats = subject.fetch
 
         expect(returned_stats.size).to eq(1)
@@ -64,7 +64,7 @@ describe Reports::GetStats do
     end
   end
 
-  context "filtering by date" do
+  context 'filtering by date' do
     let!(:reports) do
       reports = create_list(
         :reports_item, 5,
@@ -86,11 +86,9 @@ describe Reports::GetStats do
     let(:begin_date) { Date.new(2014, 1, 9).iso8601 }
     let(:end_date) { Date.new(2014, 1, 13).iso8601 }
 
-    it "the desired reports on the right date range" do
-      returned_stats = described_class.new(report_category.id, {
-        begin_date: begin_date,
-        end_date: end_date
-      }).fetch
+    it 'the desired reports on the right date range' do
+      returned_stats = described_class.new(report_category.id,         begin_date: begin_date,
+        end_date: end_date).fetch
 
       expect(returned_stats.first[:statuses].first[:count]).to eq(reports.size)
     end

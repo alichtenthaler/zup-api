@@ -4,6 +4,6 @@ class ApplicationController < ActionController::Base
   protect_from_forgery with: :exception
 
   def index
-    render :text => 'Version 1', :layout => false
+    render text: 'Version 1', layout: false
   end
 end

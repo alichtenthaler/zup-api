@@ -6,24 +6,24 @@ class Step < ActiveRecord::Base
   belongs_to :user
   belongs_to :flow
   belongs_to :child_flow, class_name: 'Flow', foreign_key: :child_flow_id
-  has_many   :triggers,   dependent: :destroy
-  has_many   :fields,     dependent: :destroy
-  has_many   :case_steps
+  has_many :triggers,   dependent: :destroy
+  has_many :fields,     dependent: :destroy
+  has_many :case_steps
 
   default_scope -> { order(id: :asc) }
   scope :active, -> { where(active: true) }
 
-  validates :title, length: {maximum: 100}, presence: true
+  validates :title, length: { maximum: 100 }, presence: true
   validates :step_type, presence: true
-  validates :step_type, inclusion: {in: %w{form flow}}, allow_blank: true
-  validate  :cant_use_parent_flow_on_child_flow, if: -> { step_type == 'flow' and child_flow.present? }
+  validates :step_type, inclusion: { in: %w{form flow} }, allow_blank: true
+  validate :cant_use_parent_flow_on_child_flow, if: -> { step_type == 'flow' && child_flow.present? }
 
-  after_create   :add_step_on_flow
-  before_update  :set_draft, unless: :draft_changed?
-  before_update  :remove_step_on_flow, if: -> { active_changed? and not active }
+  after_create :add_step_on_flow
+  before_update :set_draft, unless: :draft_changed?
+  before_update :remove_step_on_flow, if: -> { active_changed? && !active }
   before_destroy :remove_step_on_flow
 
-  def self.update_order!(ids, user = nil)
+  def self.update_order!(ids, _user = nil)
     get_flow  = find(ids.first).flow
     steps     = get_flow.steps_versions
     order_ids = ids.inject({}) do |ids, id|
@@ -40,17 +40,17 @@ class Step < ActiveRecord::Base
 
   def my_case_steps(options = {})
     return [] if versions.blank?
-    my_version = self.version || versions.last.try(:id)
+    my_version = version || versions.last.try(:id)
     case_steps.where(options.merge(step_version: my_version))
   end
 
   def my_fields(options = {}, live = false)
-    return fields.where(options) if versions.blank? or live
+    return fields.where(options) if versions.blank? || live
     Version.where('Field', fields_versions, options)
   end
 
   def my_triggers(options = {}, live = false)
-    return triggers.where(options) if versions.blank? or live
+    return triggers.where(options) if versions.blank? || live
     Version.where('Trigger', triggers_versions, options)
   end
 
@@ -67,6 +67,7 @@ class Step < ActiveRecord::Base
   end
 
   private
+
   def cant_use_parent_flow_on_child_flow
     return if get_flow.blank?
     errors.add(:child_flow, :invalid) if get_flow.ancestors.map(&:id).include? child_flow.id
@@ -120,17 +121,17 @@ class Step < ActiveRecord::Base
     expose :title
     expose :conduction_mode_open
     expose :step_type
-    expose :child_flow,    using: 'Flow::Entity', if: {display_type: 'full'}
-    expose :my_child_flow, using: 'Flow::Entity', if: {display_type: 'full'}
-    expose :child_flow_id, unless: {display_type: 'full'}
-    expose :fields,        using: 'Field::Entity', if: {display_type: 'full'}
-    expose :my_fields,     using: 'Field::Entity', if: {display_type: 'full'}
-    expose :fields_id,     unless: {display_type: 'full'}
+    expose :child_flow,    using: 'Flow::Entity', if: { display_type: 'full' }
+    expose :my_child_flow, using: 'Flow::Entity', if: { display_type: 'full' }
+    expose :child_flow_id, unless: { display_type: 'full' }
+    expose :fields,        using: 'Field::Entity', if: { display_type: 'full' }
+    expose :my_fields,     using: 'Field::Entity', if: { display_type: 'full' }
+    expose :fields_id,     unless: { display_type: 'full' }
     expose :active
     expose :version_id
-    expose :permissions,   if:     {display_type: 'full'}
-    expose :updated_at,    unless: {display_type: 'basic'}
-    expose :created_at,    unless: {display_type: 'basic'}
+    expose :permissions,   if:     { display_type: 'full' }
+    expose :updated_at,    unless: { display_type: 'basic' }
+    expose :created_at,    unless: { display_type: 'basic' }
   end
 
   class Entity < Grape::Entity
@@ -138,17 +139,17 @@ class Step < ActiveRecord::Base
     expose :title
     expose :conduction_mode_open
     expose :step_type
-    expose :child_flow,    using: 'Flow::Entity', if: {display_type: 'full'}
-    expose :my_child_flow, using: 'Flow::Entity', if: {display_type: 'full'}
-    expose :child_flow_id, unless: {display_type: 'full'}
-    expose :fields,        using: 'Field::Entity', if: {display_type: 'full'}
-    expose :my_fields,     using: 'Field::Entity', if: {display_type: 'full'}
-    expose :fields_id,     unless: {display_type: 'full'}
+    expose :child_flow,    using: 'Flow::Entity', if: { display_type: 'full' }
+    expose :my_child_flow, using: 'Flow::Entity', if: { display_type: 'full' }
+    expose :child_flow_id, unless: { display_type: 'full' }
+    expose :fields,        using: 'Field::Entity', if: { display_type: 'full' }
+    expose :my_fields,     using: 'Field::Entity', if: { display_type: 'full' }
+    expose :fields_id,     unless: { display_type: 'full' }
     expose :active
     expose :version_id
-    expose :permissions,   if:     {display_type: 'full'}
-    expose :updated_at,    unless: {display_type: 'basic'}
-    expose :created_at,    unless: {display_type: 'basic'}
-    expose :list_versions, using: Step::EntityVersion, unless: {display_type: 'basic'}
+    expose :permissions,   if:     { display_type: 'full' }
+    expose :updated_at,    unless: { display_type: 'basic' }
+    expose :created_at,    unless: { display_type: 'basic' }
+    expose :list_versions, using: Step::EntityVersion, unless: { display_type: 'basic' }
   end
 end

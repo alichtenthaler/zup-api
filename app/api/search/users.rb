@@ -1,10 +1,10 @@
 module Search::Users
   class API < Grape::API
-    desc "Search for users"
+    desc 'Search for users'
     paginate per_page: 25
     params do
-      optional :name, type: String, desc: "The name of the user to search for"
-      optional :email, type: String, desc: "The email of the user to search for"
+      optional :name, type: String, desc: 'The name of the user to search for'
+      optional :email, type: String, desc: 'The email of the user to search for'
       optional :sort, type: String,
         desc: 'The field to sort the users. Values: `name`, `username`, `phone`, `email`, `created_at`, `updated_at`'
       optional :order, type: String,
@@ -29,18 +29,18 @@ module Search::Users
       }
     end
 
-    desc "Search for users on a group"
+    desc 'Search for users on a group'
     paginate per_page: 25
     params do
       requires :group_id, type: Integer
-      optional :name, type: String, desc: "The name of the user to search for"
-      optional :email, type: String, desc: "The email of the user to search for"
+      optional :name, type: String, desc: 'The name of the user to search for'
+      optional :email, type: String, desc: 'The email of the user to search for'
       optional :sort, type: String,
         desc: 'The field to sort the users. Values: `name`, `username`, `phone`, `email`, `created_at`, `updated_at`'
       optional :order, type: String,
         desc: 'The order, can be `desc` or `asc`'
     end
-    get "groups/:group_id/users" do
+    get 'groups/:group_id/users' do
       authenticate!
 
       group = Group.find(safe_params[:group_id])
@@ -55,7 +55,6 @@ module Search::Users
 
       users = ListUsers.new(search_params).fetch
       users = paginate(users)
-
 
       {
         users: User::Entity.represent(users, only: return_fields, display_type: 'full')

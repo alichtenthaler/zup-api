@@ -15,14 +15,14 @@ class UserMailer < ZupMailer
   def send_password_recovery_instructions(user)
     @user = user
     @token = user.reset_password_token
-    mail to: user.email, subject: "Pedido de Recuperação de Senha"
+    mail to: user.email, subject: 'Pedido de Recuperação de Senha'
   end
 
   # Send email to user when it creates a report
   def notify_report_creation(report)
     @report = report
     @user = report.user
-    mail to: @user.email, subject: "Recebemos sua solicitação"
+    mail to: @user.email, subject: 'Recebemos sua solicitação'
   end
 
   # If the status of a report changes, send e-mail

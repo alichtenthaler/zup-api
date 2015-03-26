@@ -19,7 +19,7 @@ module Inventory
       queries = []
 
       fields.each do |field_id, filters|
-        statement = ""
+        statement = ''
 
         # Filters could be a hash like this:
         # filters = {
@@ -34,35 +34,35 @@ module Inventory
         filters.each do |operation, content|
           operation = operation.to_s
 
-          statement += " AND " unless statement.empty?
+          statement += ' AND ' unless statement.empty?
 
           field_id = ActiveRecord::Base.sanitize(field_id.to_i)
 
           case operation
-          when "lesser_than"
+          when 'lesser_than'
             content = ActiveRecord::Base.sanitize(content)
             statement += build_condition_for_float(field_id, "< CAST(#{content} AS float)")
-          when "greater_than"
+          when 'greater_than'
             content = ActiveRecord::Base.sanitize(content)
             statement += build_condition_for_float(field_id, "> CAST(#{content} AS float)")
-          when "equal_to"
+          when 'equal_to'
             content = ActiveRecord::Base.sanitize(content)
             statement += build_condition(field_id, "= #{content}")
-          when "like"
+          when 'like'
             content = ActiveRecord::Base.sanitize("%#{content}%")
             statement += build_condition(field_id, "LIKE #{content}")
-          when "different"
+          when 'different'
             content = ActiveRecord::Base.sanitize(content)
             statement += build_condition(field_id, "!= #{content}")
-          when "includes"
-            content = content.inject([]) { |s, (k, v)| s << v }
+          when 'includes'
+            content = content.inject([]) { |s, (_k, v)| s << v }
 
             content = "{#{content.join(",")}}"
             content = ActiveRecord::Base.sanitize(content)
 
             statement += build_condition_for_array(field_id, content)
-          when "excludes"
-            content = content.inject([]) { |s, (k, v)| s << v }
+          when 'excludes'
+            content = content.inject([]) { |s, (_k, v)| s << v }
 
             content = "{#{content.join(",")}}"
             content = ActiveRecord::Base.sanitize(content)
@@ -75,12 +75,14 @@ module Inventory
       end
 
       if queries.size > 1
+        i = 0
         queries = queries.map do |query|
-          Inventory::Item.from(Arel.sql("(#{query.to_sql}) as inventory_items"))
+          i += 1
+          Inventory::Item.select("inv#{i}.*").from(Arel.sql("(#{query.to_sql}) as inv#{i}"))
         end
 
         intersection = queries.inject(queries.shift) { |inter, q| inter.intersect(q) }
-        Inventory::Item.find_by_sql(intersection.to_sql)
+        Inventory::Item.from(Arel.sql("(#{intersection.to_sql}) as inventory_items"))
       else
         Inventory::Item.from(Arel.sql("(#{queries.first.to_sql}) as inventory_items"))
       end

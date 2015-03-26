@@ -1,4 +1,4 @@
-require "spec_helper"
+require 'spec_helper'
 
 describe Unsubscribeable do
   let(:klass) do
@@ -7,7 +7,7 @@ describe Unsubscribeable do
 
       attr_accessor :unsubscribe_email_token
 
-      def self.before_save(*args)
+      def self.before_save(*_args)
         true
       end
     end
@@ -19,7 +19,7 @@ describe Unsubscribeable do
     klass.send(:include, Unsubscribeable)
   end
 
-  describe "#unsubscribe!" do
+  describe '#unsubscribe!' do
     subject { klass.new }
 
     it 'returns true' do
@@ -29,11 +29,11 @@ describe Unsubscribeable do
     end
   end
 
-  describe "generate_unsubscribe_token" do
+  describe 'generate_unsubscribe_token' do
     subject { klass.new }
 
-    context "unsubscribe_email_token is blank" do
-      it "populates the unsubscribe_email_token with a random hash" do
+    context 'unsubscribe_email_token is blank' do
+      it 'populates the unsubscribe_email_token with a random hash' do
         subject.generate_unsubscribe_token
         expect(subject.unsubscribe_email_token).to_not be_blank
       end
@@ -50,7 +50,7 @@ describe Unsubscribeable do
     end
   end
 
-  describe ".unsubscribe" do
+  describe '.unsubscribe' do
     subject { klass }
     let(:instance) { klass.new }
     let(:token) { instance.unsubscribe_email_token }
@@ -62,7 +62,7 @@ describe Unsubscribeable do
       allow(instance).to receive(:unsubscribe!).and_return(true)
     end
 
-    it "calls unsubscribe! for the right instance" do
+    it 'calls unsubscribe! for the right instance' do
       subject.unsubscribe(token)
       expect(instance).to have_received(:unsubscribe!)
     end

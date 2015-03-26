@@ -2,6 +2,6 @@
 
 FactoryGirl.define do
   factory :case_image do
-    image "MyString"
+    image 'MyString'
   end
 end

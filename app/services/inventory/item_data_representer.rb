@@ -9,7 +9,7 @@ module Inventory
     # Factory creates a new class with
     # specific validations for this item
     def self.factory(item, user = nil)
-      instance_class = self.dup
+      instance_class = dup
 
       fields = item.category.fields
       fields.each do |field|
@@ -53,7 +53,7 @@ module Inventory
         if field && field.enabled?
           set_attribute_content(field, content)
         else
-          raise "Inventory field with id #{field_id} doesn't exists!"
+          fail "Inventory field with id #{field_id} doesn't exists!"
         end
       end
     end
@@ -69,7 +69,7 @@ module Inventory
 
           if item_data
             if field.kind != 'images' && new_content != item_data.content
-              @changes[field] = {
+              @changes[item_data] = {
                 old: item_data.content,
                 new: new_content
               }
@@ -78,7 +78,7 @@ module Inventory
             item_data.content = new_content
           else
             if field.kind != 'images'
-              @changes[field] = {
+              @changes[item_data] = {
                 new: new_content
               }
             end
@@ -102,11 +102,11 @@ module Inventory
     end
 
     def create_history_entry
-      fields = changes.keys
+      item_data = changes
 
-      if fields.any?
+      if item_data.any?
         Inventory::CreateHistoryEntry.new(item, user)
-                                    .create('fields', 'Atualizou os campos', fields)
+                                    .create('fields', 'Atualizou os campos', item_data)
       end
 
       created_images = item.images.select do |image|
@@ -195,19 +195,14 @@ module Inventory
       if field.minimum
         if [Fixnum, Float].include?(field.content_type)
           validations[:numericality] ||= {}
-          validations[:numericality].merge!({
-            greater_than_or_equal_to: field.minimum
-          })
+          validations[:numericality].merge!(greater_than_or_equal_to: field.minimum)
 
           unless field.required?
             validations[:numericality][:allow_nil] = true
           end
         else
           validations[:length] ||= {}
-          validations[:length].merge!({
-            minimum: field.minimum
-          })
-
+          validations[:length].merge!(minimum: field.minimum)
 
           unless field.required?
             validations[:length][:allow_nil] = true

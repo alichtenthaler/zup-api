@@ -9,7 +9,7 @@ module Inventory
 
     # Locks the category
     def lock!
-      raise "Need user" unless user
+      fail 'Need user' unless user
 
       category.locked = true
       category.locked_at = Time.now

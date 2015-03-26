@@ -532,7 +532,7 @@ Content-Type: application/json
 | version_id                 | Interger   | ID da Versão do objeto.                                                                                    |
 | permissions                | Object     | Lista de permissões (com chave a permissão e o valor é um array de ID de Grupos)                           |
 | total_cases                | Integer    | Total de Casos utlizando o Fluxo ou uma Etapa do Fluxo (quando o Fluxo não é inicial)                      |
-| steps                      | Array      | Array de Etapas com a versão (vide StepObject get /flows/1/steps/1)                                        |
+| steps                      | Array      | Array de Etapas com a última versão da Etapa (para Edição, pios pode estar sendo editado e estar em modo rascunho, vide StepObject get /flows/1/steps/1)                                        |
 | my_steps                   | Array      | Array de Etapas com a versão correspondente ao Fluxo (vide StepObject get /flows/1/steps/1)                |
 | steps_versions             | Array      | Array de Hash com a chave sendo o ID da Etapa e o valor sendo o ID da Versão (exibindo a ordem das Etapas) |
 | resolution_states_versions | Array      | Array de Hash com a chave sendo o ID do Estado de Resolução e o valor sendo o ID da Versão                 |

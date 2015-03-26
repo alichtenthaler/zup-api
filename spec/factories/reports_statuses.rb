@@ -1,5 +1,5 @@
 FactoryGirl.define do
-  factory :status, :class => 'Reports::Status' do
+  factory :status, class: 'Reports::Status' do
     sequence :title do |n|
       "Random status #{n}"
     end

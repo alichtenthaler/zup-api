@@ -1,11 +1,11 @@
 module Search::Reports::Items
   class API < Grape::API
-    desc "Search for report items"
+    desc 'Search for report items'
     paginate per_page: 25
     params do
       optional :begin_date, type: DateTime
       optional :end_date, type: DateTime
-      optional :query, type: String, desc: "Query for name of the user, title and protocol"
+      optional :query, type: String, desc: 'Query for name of the user, title and protocol'
       optional :statuses_ids, type: String,
                desc: 'Statuses ids, format: "3,5,7"'
       optional :users_ids, type: String,
@@ -28,17 +28,17 @@ module Search::Reports::Items
       optional :zoom, type: Integer,
                desc: 'Zooming level of the map'
     end
-    get "reports/items" do
+    get 'reports/items' do
       authenticate!
 
       search_params = safe_params.permit(
-        :begin_date, :end_date, :address, :query, :overdue, :clusterize,
-        :zoom, :position => [:latitude, :longitude, :distance]
+        :begin_date, :end_date, :address, :query, :overdue, :clusterize, :zoom
       )
 
       search_params[:paginator] = method(:paginate)
       search_params[:page] = safe_params[:page]
       search_params[:per_page] = safe_params[:per_page]
+      search_params[:position] = safe_params[:position]
 
       unless safe_params[:reports_categories_ids].blank?
         search_params[:category] = safe_params[:reports_categories_ids].split(',').map do |category_id|
@@ -71,7 +71,7 @@ module Search::Reports::Items
 
         {
           reports: Reports::Item::Entity.represent(results[:reports], only: return_fields, display_type: safe_params[:display_type]),
-          clusters: Reports::Cluster::Entity.represent(results[:clusters])
+          clusters: ClusterizeItems::Cluster::Entity.represent(results[:clusters])
         }
       else
         {
@@ -80,18 +80,16 @@ module Search::Reports::Items
                                                   user: current_user)
         }
       end
-
-
     end
 
-    desc "Search for report items on given category and status"
+    desc 'Search for report items on given category and status'
     paginate per_page: 25
     params do
       optional :address
       optional :description
     end
 
-    get "reports/:category_id/status/:status_id/items" do
+    get 'reports/:category_id/status/:status_id/items' do
       authenticate!
 
       report_category = Reports::Category.find(safe_params[:category_id])

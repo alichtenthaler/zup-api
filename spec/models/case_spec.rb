@@ -18,6 +18,6 @@ describe Case do
     end
 
     it { expect(@kase).to_not be_valid }
-    it { expect(@kase.errors.messages).to eql({initial_flow: [I18n.t('errors.messages.changed')]}) }
+    it { expect(@kase.errors.messages).to eql(initial_flow: [I18n.t('errors.messages.changed')]) }
   end
 end

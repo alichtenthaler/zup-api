@@ -6,7 +6,7 @@ class Trigger < ActiveRecord::Base
 
   belongs_to :user
   belongs_to :step
-  has_many   :trigger_conditions, dependent: :destroy
+  has_many :trigger_conditions, dependent: :destroy
 
   accepts_nested_attributes_for :trigger_conditions
 
@@ -15,14 +15,14 @@ class Trigger < ActiveRecord::Base
 
   validates :title, length: { maximum: 100 }, presence: true
   validates :action_values, :trigger_conditions, presence: true
-  validates :action_type, inclusion: {in: ACTION_TYPES}, presence: true
+  validates :action_type, inclusion: { in: ACTION_TYPES }, presence: true
 
-  after_create   :add_trigger_on_step
-  before_update  :set_draft, unless: :draft_changed?
-  before_update  :remove_trigger_on_step, if: -> { active_changed? and not active }
+  after_create :add_trigger_on_step
+  before_update :set_draft, unless: :draft_changed?
+  before_update :remove_trigger_on_step, if: -> { active_changed? && !active }
   before_destroy :remove_trigger_on_step
 
-  def self.update_order!(ids, user = nil)
+  def self.update_order!(ids, _user = nil)
     step      = find(ids.first).step
     triggers  = step.triggers_versions
     order_ids = ids.inject({}) do |ids, id|
@@ -38,7 +38,7 @@ class Trigger < ActiveRecord::Base
   end
 
   def my_trigger_conditions(options = {}, live = false)
-    return trigger_conditions.where(options) if versions.blank? or live
+    return trigger_conditions.where(options) if versions.blank? || live
     Version.where('TriggerCondition', trigger_conditions_versions, options)
   end
 
@@ -47,6 +47,7 @@ class Trigger < ActiveRecord::Base
   end
 
   private
+
   def add_trigger_on_step
     trigger_versions = step.triggers_versions.dup
     trigger_versions.merge!(id.to_s => nil)

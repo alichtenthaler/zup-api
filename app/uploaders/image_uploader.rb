@@ -17,16 +17,16 @@ class ImageUploader < CarrierWave::Uploader::Base
     if Rails.env.test?
       "uploads/#{Rails.env}/"
     else
-      "uploads/"
+      'uploads/'
     end
   end
 
   # Resize image and convert to jpeg format
   def resize_and_optimize(width, height)
     manipulate! do |img|
-      img.format("jpg") do |c|
-        c.quality "70"
-        c.resize  "#{width}x#{height}"
+      img.format('jpg') do |c|
+        c.quality '70'
+        c.resize "#{width}x#{height}"
       end
 
       img

@@ -1,7 +1,7 @@
 module Reports::Comments
   class API < Grape::API
     namespace ':id/comments' do
-      desc "Get all comments from a report item"
+      desc 'Get all comments from a report item'
       params do
         requires :id, type: Integer, desc: 'The id of the report'
       end
@@ -18,14 +18,14 @@ module Reports::Comments
         }
       end
 
-      desc "Create a comment for the report item"
+      desc 'Create a comment for the report item'
       params do
         requires :id, type: Integer,
-                 desc: "The id of the report"
+                 desc: 'The id of the report'
         requires :visibility, type: Integer,
-                 desc: "0 = Public, 1 = Private, 2 = Internal"
+                 desc: '0 = Public, 1 = Private, 2 = Internal'
         optional :message, type: String,
-                 desc: "The message itself"
+                 desc: 'The message itself'
       end
       post do
         authenticate!
@@ -37,6 +37,11 @@ module Reports::Comments
         comment_params[:reports_item_id] = report.id
 
         comment = Reports::Comment.new(comment_params)
+
+        if [Reports::Comment::INTERNAL, Reports::Comment::PRIVATE].include?(comment.visibility)
+          validate_permission!(:edit, report)
+        end
+
         comment.save!
 
         unless comment.visibility == Reports::Comment::INTERNAL

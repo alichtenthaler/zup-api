@@ -3,5 +3,9 @@ require ::File.expand_path('../config/environment',  __FILE__)
 
 NewRelic::Agent.manual_start
 
+if Rails.env.profile?
+  use Rack::RubyProf, path: './tmp/profile'
+end
+
 run Rails.application
 

@@ -5,7 +5,7 @@ module Flows::Steps::Triggers
       get do
         authenticate!
         validate_permission!(:view, Trigger)
-        { triggers: Trigger::Entity.represent(Step.find(safe_params[:step_id]).triggers) }
+        { triggers: Trigger::Entity.represent(Step.find(safe_params[:step_id]).triggers, only: return_fields) }
       end
 
       desc 'Order all Triggers'
@@ -33,7 +33,7 @@ module Flows::Steps::Triggers
         parameters = safe_params.permit(:title, :description, :action_type, action_values: [],
                                         trigger_conditions_attributes: [:field_id, :condition_type, values: []])
         trigger = Step.find(safe_params[:step_id]).triggers.create!(parameters.merge(user: current_user))
-        { message: I18n.t(:trigger_created), trigger: Trigger::Entity.represent(trigger) }
+        { message: I18n.t(:trigger_created), trigger: Trigger::Entity.represent(trigger, only: return_fields) }
       end
 
       desc 'Update a Trigger'

@@ -1,4 +1,4 @@
-require "spec_helper"
+require 'spec_helper'
 
 describe Reports::ChangeItemCategory do
   let(:user) { create(:user) }
@@ -8,13 +8,13 @@ describe Reports::ChangeItemCategory do
 
   subject { described_class.new(item, new_category, new_status, user) }
 
-  describe "#process!" do
+  describe '#process!' do
     before do
       subject.process!
       item.reload
     end
 
-    it "updates the category" do
+    it 'updates the category' do
       expect(item.category).to eq(new_category)
       expect(item.status).to eq(new_status)
     end

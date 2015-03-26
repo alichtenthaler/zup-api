@@ -5,16 +5,11 @@ class UserAbility
 
   # TODO: Make this work with the Guest group.
   def initialize(given_user = nil)
-    @user = (given_user or User::Guest.new)
+    @user = (given_user || User::Guest.new)
     @permissions = user.permissions
 
-    # User can edit it's own info
-    can :edit, User do |u|
-      u.id == user.id
-    end
-
     if permissions.panel_access
-      can :access, "Panel"
+      can :access, 'Panel'
     end
 
     if permissions.create_reports_from_panel
@@ -27,10 +22,15 @@ class UserAbility
 
     if permissions.users_full_access
       can :manage, User
+    else
+      can :manage, User do |u|
+        ((permissions.group_edit || []) & u.groups.pluck(:id)).any?
+      end
     end
 
     if permissions.groups_full_access
       can :manage, Group
+      can :manage, User
     end
 
     if permissions.inventories_full_access
@@ -58,6 +58,12 @@ class UserAbility
       can :manage, Inventory::FormulaCondition
     end
 
+    # Users permissions
+    # User can edit it's own info
+    can :edit, User do |u|
+      u.id == user.id
+    end
+
     # Specific groups permissions
     can [:edit, :view], Group do |group|
       permissions.group_edit.include?(group.id)
@@ -73,7 +79,7 @@ class UserAbility
     end
 
     can :view, Reports::Category do |category|
-      permissions.reports_items_read_only.include?(category.id) ||
+      permissions.reports_items_read_public.include?(category.id) ||
       permissions.reports_items_create.include?(category.id) ||
       permissions.reports_items_delete.include?(category.id)
     end
@@ -90,24 +96,36 @@ class UserAbility
       permissions.inventories_items_delete.include?(category.id)
     end
 
+    can :view_all_items, Inventory::Category do |category|
+      permissions.inventories_items_edit.include?(category.id) ||
+      permissions.inventories_categories_edit.include?(category.id) ||
+      permissions.inventories_items_read_only.include?(category.id) ||
+      permissions.inventories_items_delete.include?(category.id)
+    end
+
     # Reports items permissions
     can [:view, :edit], Reports::Item do |report|
       permissions.reports_items_edit.include?(report.reports_category_id) ||
       permissions.reports_categories_edit.include?(report.reports_category_id)
     end
 
-    can :view, Reports::Item do |report|
-      permissions.reports_items_read_only.include?(report.reports_category_id) ||
-      permissions.reports_categories_edit.include?(report.reports_category_id)
-    end
-
     can [:view, :create], Reports::Item do |report|
-      permissions.reports_items_create.include?(report.reports_category_id)
+      permissions.reports_items_create.include?(report.reports_category_id) ||
+      permissions.reports_categories_edit.include?(report.reports_category_id)
     end
 
     can [:view, :delete], Reports::Item do |report|
       permissions.reports_items_delete.include?(report.reports_category_id) ||
       permissions.reports_categories_edit.include?(report.reports_category_id)
+    end
+
+    can :view, Reports::Item do |report|
+      permissions.reports_items_read_public.include?(report.reports_category_id) ||
+        permissions.reports_categories_edit.include?(report.reports_category_id)
+    end
+
+    can :view_private, Reports::Item do |report|
+      permissions.reports_items_read_private.include?(report.reports_category_id)
     end
 
     # Inventory items permissions
@@ -156,10 +174,10 @@ class UserAbility
       can_view_step         = permissions.can_view_step.include?(step.id)
       can_execute_all_steps = permissions.flow_can_execute_all_steps.include?(step.flow.id)
       can_view_all_steps    = permissions.flow_can_view_all_steps.include?(step.flow.id)
-      can_execute_step or can_view_step or can_execute_all_steps or can_view_all_steps
+      can_execute_step || can_view_step || can_execute_all_steps || can_view_all_steps
     end
 
-    can :show, Case do |kase|
+    can :show, Case do |_kase|
       # if user has any one these options should be understood that he can see Case
       can_execute_step      = permissions.can_execute_step.present?
       can_view_step         = permissions.can_view_step.present?
@@ -169,31 +187,31 @@ class UserAbility
     end
 
     can :update, Case do |kase|
-      kase.responsible_user_id == user.id or user.groups.pluck(:id).include? kase.responsible_group_id
+      kase.responsible_user_id == user.id || user.groups.pluck(:id).include?(kase.responsible_group_id)
     end
 
     can :delete, Case do |kase|
       flow_can_delete_all_cases = permissions.flow_can_delete_all_cases.include?(kase.initial_flow_id)
       flow_can_delete_own_cases = permissions.flow_can_delete_own_cases.include?(kase.initial_flow_id)
-      flow_can_delete_all_cases or (flow_can_delete_own_cases and (kase.responsible_user_id == user.id or user.groups.pluck(:id).include? kase.responsible_group_id))
+      flow_can_delete_all_cases || (flow_can_delete_own_cases && (kase.responsible_user_id == user.id || user.groups.pluck(:id).include?(kase.responsible_group_id)))
     end
 
     can :restore, Case do |kase|
       flow_can_delete_all_cases = permissions.flow_can_delete_all_cases.include?(kase.initial_flow_id)
       flow_can_delete_own_cases = permissions.flow_can_delete_own_cases.include?(kase.initial_flow_id)
-      flow_can_delete_all_cases or (flow_can_delete_own_cases and (kase.responsible_user_id == user.id or user.groups.pluck(:id).include? kase.responsible_group_id))
+      flow_can_delete_all_cases || (flow_can_delete_own_cases && (kase.responsible_user_id == user.id || user.groups.pluck(:id).include?(kase.responsible_group_id)))
     end
 
     can :create, CaseStep do |case_step|
       can_execute_step      = permissions.can_execute_step.include?(case_step.step.id)
       can_execute_all_steps = permissions.flow_can_execute_all_steps.include?(case_step.step.flow.id)
-      can_execute_step or can_execute_all_steps
+      can_execute_step || can_execute_all_steps
     end
 
     can :update, CaseStep do |case_step|
       can_execute_step      = permissions.can_execute_step.include?(case_step.step.id)
       can_execute_all_steps = permissions.flow_can_execute_all_steps.include?(case_step.step.flow.id)
-      can_execute_step or can_execute_all_steps
+      can_execute_step || can_execute_all_steps
     end
 
     can :show, CaseStep do |case_step|
@@ -201,14 +219,16 @@ class UserAbility
       can_view_step         = permissions.can_view_step.include?(case_step.step.id)
       can_execute_all_steps = permissions.flow_can_execute_all_steps.include?(case_step.step.flow.id)
       can_view_all_steps    = permissions.flow_can_view_all_steps.include?(case_step.step.flow.id)
-      can_execute_step or can_view_step or can_execute_all_steps or can_view_all_steps
+      can_execute_step || can_view_step || can_execute_all_steps || can_view_all_steps
     end
   end
 
   def inventory_categories_visible
     (permissions.inventories_categories_edit + \
      permissions.inventories_items_read_only + \
-     permissions.inventories_items_edit).uniq
+     permissions.inventories_items_edit + \
+     permissions.inventories_items_create + \
+     permissions.inventories_items_delete).uniq
   end
 
   def inventory_sections_visible
@@ -216,7 +236,12 @@ class UserAbility
   end
 
   def reports_categories_visible
-    (permissions.reports_items_read_only + permissions.reports_categories_edit).uniq
+    (permissions.reports_items_read_public + \
+     permissions.reports_items_read_private + \
+     permissions.reports_items_edit + \
+     permissions.reports_categories_edit + \
+     permissions.reports_items_create + \
+     permissions.reports_items_delete).uniq
   end
 
   def inventory_fields_visible

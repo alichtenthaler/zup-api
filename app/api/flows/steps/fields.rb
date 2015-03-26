@@ -5,7 +5,7 @@ module Flows::Steps::Fields
       get do
         authenticate!
         validate_permission!(:view, Field)
-        { fields: Field::Entity.represent(Step.find(safe_params[:step_id]).fields) }
+        { fields: Field::Entity.represent(Step.find(safe_params[:step_id]).fields, only: return_fields) }
       end
 
       desc 'Update order of Fields'
@@ -38,7 +38,7 @@ module Flows::Steps::Fields
         parameters.merge!(values: safe_params[:values], user: current_user)
 
         field = Step.find(safe_params[:step_id]).fields.create!(parameters)
-        { message: I18n.t(:field_created), field: Field::Entity.represent(field) }
+        { message: I18n.t(:field_created), field: Field::Entity.represent(field, only: return_fields) }
       end
 
       desc 'Update a Field'

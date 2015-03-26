@@ -4,10 +4,10 @@ class Settings < Settingslogic
   namespace Rails.env
 
   def self.can_send_email?(kind)
-    if !self.email_notification.all
+    if !email_notification.all
       return false
     end
 
-    self.email_notification[kind.to_s] || true
+    email_notification[kind.to_s] || true
   end
 end

@@ -3,8 +3,8 @@ class CategoryStatus < Grape::Validations::Base
   # Validator classes
   class String
     def self.valid?(content)
-      unless content.kind_of?(::String)
-        return "must be a String"
+      unless content.is_a?(::String)
+        return 'must be a String'
       end
     end
   end
@@ -12,7 +12,7 @@ class CategoryStatus < Grape::Validations::Base
   class HexaString
     def self.valid?(content)
       unless content =~ /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/i
-        return "must be a Hexadecimal String, format: #112233"
+        return 'must be a Hexadecimal String, format: #112233'
       end
     end
   end
@@ -20,7 +20,7 @@ class CategoryStatus < Grape::Validations::Base
   class Boolean
     def self.valid?(content)
       unless %w(true false).include?(content)
-        return "must be a Boolean (true or false)"
+        return 'must be a Boolean (true or false)'
       end
     end
   end
@@ -37,9 +37,9 @@ class CategoryStatus < Grape::Validations::Base
 
     errors = []
     params[attr_name].each do |k, status|
-      if k.nil? || k.kind_of?(Hash)
+      if k.nil? || k.is_a?(Hash)
         errors << Grape::Exceptions::Validation.new(
-          params: [@scope.full_name(attr_name)], message: "must be a valid hash"
+          params: [@scope.full_name(attr_name)], message: 'must be a valid hash'
         )
 
         return false
@@ -52,7 +52,7 @@ class CategoryStatus < Grape::Validations::Base
 
         message = false
         if status_params.nil?
-          message = "must be present"
+          message = 'must be present'
         else
           message = kind.valid?(status_params)
         end
@@ -66,8 +66,7 @@ class CategoryStatus < Grape::Validations::Base
     end unless params[attr_name].nil?
 
     if errors.any?
-      raise Grape::Exceptions::ValidationErrors, errors: errors
+      fail Grape::Exceptions::ValidationErrors, errors: errors
     end
   end
 end
-

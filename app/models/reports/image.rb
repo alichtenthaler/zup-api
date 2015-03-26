@@ -4,7 +4,7 @@ class Reports::Image < Reports::Base
   mount_uploader :image, ImageUploader
 
   def url
-    self.image.url
+    image.url
   end
 
   class Entity < Grape::Entity

@@ -8,7 +8,7 @@ class Group < ActiveRecord::Base
   before_validation :set_default_attributes
 
   scope :guest, -> { where(guest: true) }
-  default_scope -> { order("id ASC") }
+  default_scope -> { order('id ASC') }
 
   def self.with_permission(permission_name)
     joins(:permission)
@@ -16,8 +16,7 @@ class Group < ActiveRecord::Base
   end
 
   def self.that_includes_permission(permission_name, id)
-    @cached_groups ||= includes(:permission)
-    @cached_groups.select do |group|
+    includes(:permission).select do |group|
       group.permission.send(permission_name).include?(id)
     end
   end
@@ -31,10 +30,6 @@ class Group < ActiveRecord::Base
   def self.included_in_permission?(groups, permission_name, id)
     permission_array = ids_for_permission(groups, permission_name)
     permission_array.include?(id)
-  end
-
-  def self.clear_cache!
-    @cached_groups = nil
   end
 
   def typed_permissions
@@ -60,8 +55,9 @@ class Group < ActiveRecord::Base
   end
 
   private
-    def set_default_attributes
-      self.guest = false if guest.nil?
-      self.build_permission unless permission.present?
-    end
+
+  def set_default_attributes
+    self.guest = false if guest.nil?
+    build_permission unless permission.present?
+  end
 end

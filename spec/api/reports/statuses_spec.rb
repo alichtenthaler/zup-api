@@ -1,10 +1,10 @@
-require "spec_helper"
+require 'spec_helper'
 
 describe Reports::Statuses::API do
   let(:user) { create(:user) }
   let(:category) { create(:reports_category_with_statuses) }
 
-  describe "GET /reports/categories/:category_id/statuses" do
+  describe 'GET /reports/categories/:category_id/statuses' do
     before do
       get "/reports/categories/#{category.id}/statuses", nil, auth(user)
     end
@@ -16,8 +16,8 @@ describe Reports::Statuses::API do
     end
   end
 
-  describe "POST /reports/categories/:category_id/statuses"  do
-    context "with valid params do" do
+  describe 'POST /reports/categories/:category_id/statuses'  do
+    context 'with valid params do' do
       let(:valid_params) do
         JSON.parse <<-JSON
           {
@@ -34,7 +34,7 @@ describe Reports::Statuses::API do
         post "/reports/categories/#{category.id}/statuses", valid_params, auth(user)
       end
 
-      it "creates the new status" do
+      it 'creates the new status' do
         created_status = category.statuses.where(title: valid_params['title']).first
 
         expect(response.status).to eq(201)
@@ -49,10 +49,10 @@ describe Reports::Statuses::API do
     end
   end
 
-  describe "PUT /reports/categories/:category_id/statuses/:id"  do
+  describe 'PUT /reports/categories/:category_id/statuses/:id'  do
     let!(:status) { create(:status, :with_category, category: category) }
 
-    context "with valid params do" do
+    context 'with valid params do' do
       let(:valid_params) do
         JSON.parse <<-JSON
           {
@@ -69,7 +69,7 @@ describe Reports::Statuses::API do
         put "/reports/categories/#{category.id}/statuses/#{status.id}", valid_params, auth(user)
       end
 
-      it "creates the new status" do
+      it 'creates the new status' do
         created_status = category.statuses.where(title: valid_params['title']).first
 
         expect(response.status).to eq(200)
@@ -84,17 +84,16 @@ describe Reports::Statuses::API do
     end
   end
 
-  describe "DELETE /reports/categories/:category_id/statuses/:id"  do
+  describe 'DELETE /reports/categories/:category_id/statuses/:id'  do
     let!(:status) { create(:status, :with_category, category: category) }
 
     before do
       delete "/reports/categories/#{category.id}/statuses/#{status.id}", {}, auth(user)
     end
 
-    it "deletes the status" do
+    it 'deletes the status' do
       expect(response.status).to eq(200)
       expect(Reports::Status.find_by(id: status.id)).to be_nil
     end
   end
-
 end

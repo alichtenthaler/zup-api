@@ -6,7 +6,7 @@ module Flows::Steps
       get do
         authenticate!
         validate_permission!(:view, Step)
-        { steps: Step::Entity.represent(Flow.find(safe_params[:flow_id]).steps, display_type: safe_params[:display_type]) }
+        { steps: Step::Entity.represent(Flow.find(safe_params[:flow_id]).steps, only: return_fields, display_type: safe_params[:display_type]) }
       end
 
       desc 'Update order of Steps'
@@ -32,8 +32,11 @@ module Flows::Steps
         validate_permission!(:create, Step)
 
         parameters = safe_params.permit(:title, :conduction_mode_open, :step_type, :child_flow_id, :child_flow_version).merge(user: current_user)
-        step       = Flow.find(safe_params[:flow_id]).steps.create!(parameters)
-        { message: I18n.t(:step_created), step: Step::Entity.represent(step, display_type: 'full') }
+        if parameters[:child_flow_version].blank? && parameters[:child_flow_id].present?
+          parameters[:child_flow_version] = Flow.find(parameters[:child_flow_id]).the_version.version
+        end
+        step = Flow.find(safe_params[:flow_id]).steps.create!(parameters)
+        { message: I18n.t(:step_created), step: Step::Entity.represent(step, only: return_fields, display_type: 'full') }
       end
 
       desc 'Update a Step'
@@ -50,6 +53,9 @@ module Flows::Steps
 
         parameters = safe_params.permit(:title, :conduction_mode_open, :step_type, :child_flow_id, :child_flow_version).merge(user: current_user)
         step       = Flow.find(safe_params[:flow_id]).steps.find(safe_params[:id])
+        if parameters[:child_flow_version].blank? && parameters[:child_flow_id].present?
+          parameters[:child_flow_version] = Flow.find(parameters[:child_flow_id]).the_version.version
+        end
         { message: I18n.t(:step_updated) } if step.update!(parameters)
       end
 
@@ -60,7 +66,7 @@ module Flows::Steps
         validate_permission!(:view, Step)
 
         step = Flow.find(safe_params[:flow_id]).steps.find(safe_params[:id])
-        { step: Step::Entity.represent(step, display_type: safe_params[:display_type]) }
+        { step: Step::Entity.represent(step, only: return_fields, display_type: safe_params[:display_type]) }
       end
 
       desc 'Delete a Step'
@@ -123,7 +129,7 @@ module Flows::Steps
         validate_permission!(:view, Step)
 
         step = Flow.find(safe_params[:flow_id]).steps.find(safe_params[:id]).version(safe_params[:step_version].to_i)
-        { step: Step::Entity.represent(step, display_type: safe_params[:display_type]) }
+        { step: Step::Entity.represent(step, only: return_fields, display_type: safe_params[:display_type]) }
       end
 
       mount Flows::Steps::Fields::API

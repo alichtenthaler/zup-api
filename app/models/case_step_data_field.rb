@@ -3,12 +3,12 @@ class CaseStepDataField < ActiveRecord::Base
   include EncodedFileUploadable
 
   accepts_multiple_images_for :case_step_data_images
-  accepts_multiple_files_for  :case_step_data_attachments
+  accepts_multiple_files_for :case_step_data_attachments
 
   belongs_to :field
   belongs_to :case_step
-  has_many   :case_step_data_images
-  has_many   :case_step_data_attachments
+  has_many :case_step_data_images
+  has_many :case_step_data_attachments
 
   default_scope { order(:field_id) }
 

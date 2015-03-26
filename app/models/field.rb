@@ -13,7 +13,7 @@ class Field < ActiveRecord::Base
   belongs_to :step
   belongs_to :category_inventory, class_name: 'Inventory::Category', foreign_key: :category_inventory_id
   belongs_to :category_report,    class_name: 'Reports::Category',   foreign_key: :category_report_id
-  has_many   :case_step_fields
+  has_many :case_step_fields
 
   default_scope -> { order(id: :asc) }
   scope :active,    -> { where(active: true) }
@@ -23,15 +23,15 @@ class Field < ActiveRecord::Base
   validates :field_type, inclusion: { in: VALID_TYPES }
   validates :origin_field_id, presence: true, if: -> { %w{previous_field category_inventory_field}.include? field_type }
   validates :values, presence: true, if: -> { %w{checkbox radio}.include? field_type }
-  validate  :category_inventory_present?, if: -> { field_type == 'category_inventory_field' }
+  validate :category_inventory_present?, if: -> { field_type == 'category_inventory_field' }
 
-  after_create   :add_field_on_step
-  before_save    :set_origin_field_version, if: :origin_field_id?
-  before_update  :set_draft, unless: :draft_changed?
-  before_update  :remove_step_on_flow, if: -> { active_changed? and not active }
+  after_create :add_field_on_step
+  before_save :set_origin_field_version, if: :origin_field_id?
+  before_update :set_draft, unless: :draft_changed?
+  before_update :remove_step_on_flow, if: -> { active_changed? && !active }
   before_destroy :remove_step_on_flow
 
-  def self.update_order!(ids, user = nil)
+  def self.update_order!(ids, _user = nil)
     step      = find(ids.first).step
     fields    = step.fields_versions
     order_ids = ids.inject({}) do |ids, id|
@@ -51,10 +51,11 @@ class Field < ActiveRecord::Base
   end
 
   def required?
-    requirements.present? and requirements['presence'] == 'true'
+    requirements.present? && requirements['presence'] == 'true'
   end
 
   private
+
   def category_inventory_present?
     category   = step.my_fields(field_type: 'category_inventory').first
     category ||= get_flow.my_steps(step_type: 'form').map do |step_form|
@@ -69,7 +70,7 @@ class Field < ActiveRecord::Base
   end
 
   def set_origin_field_version
-    return if field_type != 'previous_field' or origin_field_version.present?
+    return if field_type != 'previous_field' || origin_field_version.present?
     field = Field.find_by(origin_field_id)
     self.origin_field_version = field.versions.try(:last).try(:id)
   end

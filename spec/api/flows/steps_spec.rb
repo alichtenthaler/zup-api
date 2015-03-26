@@ -6,7 +6,7 @@ describe Flows::Steps::API do
 
   describe 'on create' do
     let!(:flow)        { create(:flow_without_steps) }
-    let(:valid_params) { {title: 'Success', step_type: :flow} }
+    let(:valid_params) { { title: 'Success', step_type: :flow } }
 
     context 'no authentication' do
       before { post "/flows/#{flow.id}/steps", valid_params }
@@ -28,14 +28,14 @@ describe Flows::Steps::API do
             before { post "/flows/#{flow.id}/steps", {}, auth(user) }
 
             it { expect(response.status).to be_a_bad_request }
-            it { expect(response.body).to be_an_error({'title' => [I18n.t('activerecord.errors.messages.blank')]}) }
+            it { expect(response.body).to be_an_error('title' => [I18n.t('activerecord.errors.messages.blank')]) }
           end
 
           context 'because step type isn\'t flow or form' do
             before { post "/flows/#{flow.id}/steps", valid_params.merge(step_type: :invalid), auth(user) }
 
             it { expect(response.status).to be_a_bad_request }
-            it { expect(response.body).to be_an_error({'step_type' => [I18n.t('activerecord.errors.messages.inclusion')]}) }
+            it { expect(response.body).to be_an_error('step_type' => [I18n.t('activerecord.errors.messages.inclusion')]) }
           end
         end
 
@@ -50,7 +50,7 @@ describe Flows::Steps::API do
             it { expect(parsed_body['step']).to be_an_entity_of(step, display_type: 'full') }
 
             it 'should update steps_versions on flow' do
-              expect(step.flow.steps_versions).to eql({step.id.to_s => nil})
+              expect(step.flow.steps_versions).to eql(step.id.to_s => nil)
             end
            end
 
@@ -64,7 +64,7 @@ describe Flows::Steps::API do
             it { expect(parsed_body['step']).to be_an_entity_of(step, display_type: 'full') }
 
             it 'should update steps_versions on flow' do
-              expect(step.flow.steps_versions).to eql({step.id.to_s => nil})
+              expect(step.flow.steps_versions).to eql(step.id.to_s => nil)
             end
           end
         end
@@ -75,7 +75,7 @@ describe Flows::Steps::API do
   describe 'on update' do
     let(:flow)         { create(:flow) }
     let!(:step)        { flow.steps.first }
-    let(:valid_params) { {title: 'New Title'} }
+    let(:valid_params) { { title: 'New Title' } }
 
     context 'no authentication' do
       before { put "/flows/#{flow.id}/steps/#{step.id}", valid_params }
@@ -97,14 +97,14 @@ describe Flows::Steps::API do
             before { put "/flows/#{flow.id}/steps/#{step.id}", {}, auth(user) }
 
             it { expect(response.status).to be_a_bad_request }
-            it { expect(response.body).to be_an_error({'title' => [I18n.t('activerecord.errors.messages.blank')]}) }
+            it { expect(response.body).to be_an_error('title' => [I18n.t('activerecord.errors.messages.blank')]) }
           end
 
           context 'because step type isn\'t flow or form' do
             before { put "/flows/#{flow.id}/steps/#{step.id}", valid_params.merge(step_type: :invalid), auth(user) }
 
             it { expect(response.status).to be_a_bad_request }
-            it { expect(response.body).to be_an_error({'step_type' => [I18n.t('activerecord.errors.messages.inclusion')]}) }
+            it { expect(response.body).to be_an_error('step_type' => [I18n.t('activerecord.errors.messages.inclusion')]) }
           end
 
           context 'because not found' do
@@ -183,7 +183,7 @@ describe Flows::Steps::API do
 
       context 'and user can manage steps' do
         context 'when sent display_type full' do
-          before { get "/flows/#{flow.id}/steps", {display_type: 'full'}, auth(user) }
+          before { get "/flows/#{flow.id}/steps", { display_type: 'full' }, auth(user) }
 
           it { expect(response.status).to be_a_success_request }
           it { expect(parsed_body['steps']).to include_an_entity_of(step, display_type: 'full') }
@@ -241,7 +241,7 @@ describe Flows::Steps::API do
     let!(:flow)        { create(:flow_with_more_steps) }
     let(:step)         { flow.steps.first }
     let(:other_step)   { flow.steps.second }
-    let(:valid_params) { { ids: [other_step.id, step.id]} }
+    let(:valid_params) { { ids: [other_step.id, step.id] } }
 
     context 'no authentication' do
       before { put "/flows/#{flow.id}/steps", valid_params }
@@ -260,7 +260,7 @@ describe Flows::Steps::API do
       context 'and user can manage steps' do
         context 'and failure' do
           context 'because not found' do
-            before { put "/flows/#{flow.id}/steps", {ids:[123456789]}, auth(user) }
+            before { put "/flows/#{flow.id}/steps", { ids:[123456789] }, auth(user) }
 
             it { expect(response.status).to be_a_not_found }
             it { expect(response.body).to be_an_error('Couldn\'t find Step with id=123456789 [WHERE "steps"."flow_id" = $1]') }
@@ -277,7 +277,7 @@ describe Flows::Steps::API do
           it { expect(response.body).to be_a_success_message_with(I18n.t(:steps_order_updated)) }
 
           it 'should has steps_versions on flow' do
-            expect(reload_flow.steps_versions).to eql({steps_ids.first => nil, steps_ids.last => nil})
+            expect(reload_flow.steps_versions).to eql(steps_ids.first => nil, steps_ids.last => nil)
           end
         end
       end
@@ -285,7 +285,7 @@ describe Flows::Steps::API do
   end
 
   describe 'PUT permissions' do
-    let(:valid_params) { {group_ids: [user.groups.first.id], permission_type: 'can_view_step'} }
+    let(:valid_params) { { group_ids: [user.groups.first.id], permission_type: 'can_view_step' } }
     let!(:flow)        { create(:flow) }
     let(:step)         { flow.steps.first }
 
@@ -325,7 +325,7 @@ describe Flows::Steps::API do
   end
 
   describe 'DELETE permissions' do
-    let(:valid_params) { {group_ids: [user.groups.first.id], permission_type: 'can_view_step'} }
+    let(:valid_params) { { group_ids: [user.groups.first.id], permission_type: 'can_view_step' } }
     let!(:flow)        { create(:flow) }
     let(:step)         { flow.steps.first }
 

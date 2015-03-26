@@ -4,7 +4,7 @@ class CaseStepDataImage < ActiveRecord::Base
   belongs_to :case_step_data
 
   def url
-    self.image.url
+    image.url
   end
 
   class Entity < Grape::Entity

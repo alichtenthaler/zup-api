@@ -1,9 +1,9 @@
 module Search::Groups
   class API < Grape::API
-    desc "Search for groups"
+    desc 'Search for groups'
     paginate per_page: 25
     params do
-      optional :name, type: String, desc: "The name of the group to search for"
+      optional :name, type: String, desc: 'The name of the group to search for'
     end
     get :groups do
       authenticate!

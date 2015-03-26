@@ -19,6 +19,6 @@ class AlertMailer < ZupMailer
 
     user_emails = users.map(&:email)
 
-    mail bcc: user_emails, subject: "Alerta de inventário de item"
+    mail bcc: user_emails, subject: 'Alerta de inventário de item'
   end
 end

@@ -19,7 +19,7 @@ module Reports
       if user.push_notification_available?
         NotificationPusher.perform_async(user.id,
           "Seu relato mudou para o status '#{new_status.title}'",
-          item.id, "report"
+          item.id, 'report'
         )
       end
     end
@@ -27,8 +27,8 @@ module Reports
     def notify_new_comment!
       if user.push_notification_available?
         NotificationPusher.perform_async(user.id,
-          "Existe um novo comentário da prefeitura para um relato que você realizou",
-          item.id, "report"
+          'Existe um novo comentário da prefeitura para um relato que você realizou',
+          item.id, 'report'
         )
       end
     end

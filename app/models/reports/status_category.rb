@@ -33,13 +33,29 @@ class Reports::StatusCategory < Reports::Base
     })
   }
 
+  class Entity < Grape::Entity
+    delegate :id, :title, :color, to: :status, allow_nil: true
+
+    expose :id
+    expose :private
+    expose :title
+    expose :color
+    expose :initial
+    expose :final
+    expose :active
+
+    def status
+      object.status
+    end
+  end
+
   private
 
   def set_default_attributes
-    self.initial = self.status.initial if self.initial.nil?
-    self.final = self.status.final if self.final.nil?
-    self.active = self.status.active if self.active.nil?
-    self.private = self.status.private if self.private.nil?
+    self.initial = status.initial if initial.nil?
+    self.final = status.final if final.nil?
+    self.active = status.active if active.nil?
+    self.private = status.private if private.nil?
 
     true
   end

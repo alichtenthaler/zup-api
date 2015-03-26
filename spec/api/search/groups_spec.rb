@@ -1,17 +1,17 @@
-require "spec_helper"
+require 'spec_helper'
 
 describe Search::Groups::API do
   let(:user) { create(:user) }
 
-  context "GET /search/groups" do
+  context 'GET /search/groups' do
     let(:groups) { create_list(:group, 5) }
 
-    context "by name" do
-      it "returns the correct groups" do
+    context 'by name' do
+      it 'returns the correct groups' do
         group = groups.sample
         group.update(name: 'Nome de teste')
 
-        get "/search/groups?name=teste", nil, auth(user)
+        get '/search/groups?name=teste', nil, auth(user)
         expect(response.status).to eq(200)
         body = parsed_body
 

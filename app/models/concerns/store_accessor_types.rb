@@ -12,7 +12,6 @@ module StoreAccessorTypes
       end
     end
 
-
     def treat_as_array(*attributes)
       attributes.each do |attr|
         class_eval <<-METHODS, __FILE__, __LINE__ + 1

@@ -8,8 +8,8 @@ class Inventory::FormulaCondition < Inventory::Base
     includes
   )
 
-  belongs_to :formula, class_name: "Inventory::Formula", foreign_key: "inventory_formula_id"
-  belongs_to :field, class_name: "Inventory::Field", foreign_key: 'inventory_field_id'
+  belongs_to :formula, class_name: 'Inventory::Formula', foreign_key: 'inventory_formula_id'
+  belongs_to :field, class_name: 'Inventory::Field', foreign_key: 'inventory_field_id'
 
   validates :operator, presence: true, inclusion: { in: OPERATORS }
   validates :field, presence: true
@@ -17,7 +17,7 @@ class Inventory::FormulaCondition < Inventory::Base
   # Override the setter to allow
   # accepting images and string values
   def content=(content)
-    if !content.kind_of?(Array)
+    if !content.is_a?(Array)
       write_attribute(:content, [content])
     else
       super
@@ -30,5 +30,14 @@ class Inventory::FormulaCondition < Inventory::Base
     else
       super
     end
+  end
+
+  class Entity < Grape::Entity
+    expose :id
+    expose :inventory_formula_id
+    expose :inventory_field_id
+    expose :operator
+    expose :field
+    expose :content
   end
 end

@@ -1,19 +1,19 @@
-require "spec_helper"
+require 'spec_helper'
 
 describe Reports::ItemHistories::API do
   let(:item) { create(:reports_item) }
   let(:user) { create(:user) }
 
-  describe "GET /reports/items/:id/history" do
-    subject {
+  describe 'GET /reports/items/:id/history' do
+    subject do
       get "/reports/items/#{item.id}/history", valid_params, auth(user)
-    }
+    end
 
-    context "no params" do
+    context 'no params' do
       let!(:histories) { create_list(:reports_history, 5, :status, item: item) }
       let(:valid_params) { Hash.new }
 
-      it "returns everything" do
+      it 'returns everything' do
         subject
         expect(response.status).to eq(200)
 
@@ -24,7 +24,7 @@ describe Reports::ItemHistories::API do
       end
     end
 
-    context "by date" do
+    context 'by date' do
       let!(:correct_histories) do
         create_list(:reports_history, 3, :status,
                     item: item, created_at: Date.new(2014, 1, 9))
@@ -42,7 +42,7 @@ describe Reports::ItemHistories::API do
         }
       end
 
-      it "returns the correct histories" do
+      it 'returns the correct histories' do
         subject
         expect(response.status).to eq(200)
 
@@ -53,7 +53,7 @@ describe Reports::ItemHistories::API do
       end
     end
 
-    context "by user" do
+    context 'by user' do
       let(:other_user) { create(:user) }
       let!(:correct_histories) do
         create_list(:reports_history, 3, :status,
@@ -68,7 +68,7 @@ describe Reports::ItemHistories::API do
         }
       end
 
-      it "returns the correct histories" do
+      it 'returns the correct histories' do
         subject
         expect(response.status).to eq(200)
 
@@ -79,7 +79,7 @@ describe Reports::ItemHistories::API do
       end
     end
 
-    context "by kind" do
+    context 'by kind' do
       let!(:correct_histories) do
         create_list(:reports_history, 3, :status,
                     item: item)
@@ -93,7 +93,7 @@ describe Reports::ItemHistories::API do
         }
       end
 
-      it "returns the correct histories" do
+      it 'returns the correct histories' do
         subject
         expect(response.status).to eq(200)
 
@@ -104,7 +104,7 @@ describe Reports::ItemHistories::API do
       end
     end
 
-    context "by object" do
+    context 'by object' do
       let(:status) { create(:status) }
       let!(:correct_histories) do
         create_list(:reports_history, 3, :status,
@@ -119,7 +119,7 @@ describe Reports::ItemHistories::API do
         }
       end
 
-      it "returns the correct histories" do
+      it 'returns the correct histories' do
         subject
         expect(response.status).to eq(200)
 
@@ -128,9 +128,6 @@ describe Reports::ItemHistories::API do
           h['id']
         end).to match_array(correct_histories.map(&:id))
       end
-
     end
-
   end
 end
-

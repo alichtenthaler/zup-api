@@ -3,15 +3,13 @@ require File.expand_path('../boot', __FILE__)
 require 'rails/all'
 require 'sprockets/railtie'
 require 'oj'
-require 'oj_mimic_json'
 
 # Require the gems listed in Gemfile, including any gems
 # you've limited to :test, :development, or :production.
 Bundler.require(*Rails.groups)
 
 class ActiveRecordOverrideRailtie < Rails::Railtie
-  initializer 'active_record.initialize_database.override' do |app|
-
+  initializer 'active_record.initialize_database.override' do |_app|
     ActiveSupport.on_load(:active_record) do
       if url = (ENV['DATABASE_URL'] || ENV['WERCKER_POSTGRESQL_URL'])
         ActiveRecord::Base.connection_pool.disconnect!
@@ -50,24 +48,24 @@ module ZupApi
     # config.i18n.load_path += Dir[Rails.root.join('my', 'locales', '*.{rb,yml}').to_s]
     config.i18n.default_locale = :'pt-BR'
 
-    config.encoding = "utf-8"
+    config.encoding = 'utf-8'
 
     require 'rack/cors'
     config.middleware.use Rack::Cors do
       allow do
         origins '*'
-        resource '*', :headers => :any, :methods => [:get, :post, :put, :delete, :patch], :expose => ['Link', 'Total']
+        resource '*', headers: :any, methods: [:get, :post, :put, :delete, :patch], expose: ['Link', 'Total']
       end
     end
 
     ActionMailer::Base.smtp_settings = {
-      :address        => ENV['SMTP_ADDRESS'],
-      :port           => ENV['SMTP_PORT'],
-      :authentication => ENV['SMTP_AUTH'] || :plain,
-      :user_name      => ENV['SMTP_USER'],
-      :password       => ENV['SMTP_PASS'],
-      :domain         => ENV['WEB_DOMAIN'] || 'zup.cognita.ntxdev.com.br',
-      :enable_starttls_auto => (ENV['SMTP_TTLS'] == 'true')
+      address: ENV['SMTP_ADDRESS'],
+      port: ENV['SMTP_PORT'],
+      authentication: ENV['SMTP_AUTH'] || :plain,
+      user_name: ENV['SMTP_USER'],
+      password: ENV['SMTP_PASS'],
+      domain: ENV['WEB_DOMAIN'] || 'zup.cognita.ntxdev.com.br',
+      enable_starttls_auto: (ENV['SMTP_TTLS'] == 'true')
     }
   end
 end

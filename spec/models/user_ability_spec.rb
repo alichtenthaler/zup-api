@@ -1,13 +1,12 @@
-require "spec_helper"
+require 'spec_helper'
 
 describe UserAbility do
   let(:user) { create(:user, groups: []) }
 
   subject { described_class.new(user) }
 
-  context "manage permissions" do
-
-    context "managing users" do
+  context 'manage permissions' do
+    context 'managing users' do
       let(:other_user) { create(:user) }
       let(:group) do
         g = create(:group)
@@ -16,7 +15,7 @@ describe UserAbility do
         g
       end
 
-      it "can manage the given entity" do
+      it 'can manage the given entity' do
         user.groups << group
         expect(subject.can?(:manage, User)).to be_truthy
         expect(subject.can?(:manage, user)).to be_truthy
@@ -29,13 +28,13 @@ describe UserAbility do
       end
     end
 
-    context "managing groups" do
+    context 'managing groups' do
       let(:other_group) { create(:group) }
       let(:group) { create(:group) }
 
       before { user.groups << group }
 
-      it "can manage the given group" do
+      it 'can manage the given group' do
         group.permission.group_edit = [other_group.id]
         group.save!
         expect(subject.can?(:edit, other_group)).to be_truthy
@@ -45,6 +44,5 @@ describe UserAbility do
         expect(subject.can?(:edit, other_group)).to be_falsy
       end
     end
-
   end
 end

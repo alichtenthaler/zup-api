@@ -1,7 +1,7 @@
 class Inventory::Section < Inventory::Base
-  belongs_to :category, class_name: "Inventory::Category", foreign_key: "inventory_category_id"
-  has_many :fields, class_name: "Inventory::Field",
-                    foreign_key: "inventory_section_id",
+  belongs_to :category, class_name: 'Inventory::Category', foreign_key: 'inventory_category_id'
+  has_many :fields, class_name: 'Inventory::Field',
+                    foreign_key: 'inventory_section_id',
                     autosave: true,
                     dependent: :destroy
 
@@ -28,11 +28,11 @@ class Inventory::Section < Inventory::Base
   end
 
   def groups_can_view
-    Group.that_includes_permission(:inventory_sections_can_view, self.id).map(&:id)
+    Group.that_includes_permission(:inventory_sections_can_view, id).map(&:id)
   end
 
   def groups_can_edit
-    Group.that_includes_permission(:inventory_sections_can_edit, self.id).map(&:id)
+    Group.that_includes_permission(:inventory_sections_can_edit, id).map(&:id)
   end
 
   class Entity < Grape::Entity
@@ -62,8 +62,9 @@ class Inventory::Section < Inventory::Base
   end
 
   private
-    def set_default_attributes
-      self.required = false if required.nil?
-      true
-    end
+
+  def set_default_attributes
+    self.required = false if required.nil?
+    true
+  end
 end

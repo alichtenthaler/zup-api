@@ -19,7 +19,7 @@ class Inventory::UpdateItemData
 
       check_formulas
     else
-      raise ActiveRecord::RecordInvalid.new(item.represented_data)
+      fail ActiveRecord::RecordInvalid.new(item.represented_data)
     end
 
     item

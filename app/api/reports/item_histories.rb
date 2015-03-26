@@ -8,8 +8,7 @@ module Reports::ItemHistories
 
     namespace :items do
       route_param :item_id do
-
-        desc "Search history entries for a report item"
+        desc 'Search history entries for a report item'
         params do
           optional :kind, type: String, desc: 'O tipo do histórico'
           optional :created_at, type: Hash,
@@ -35,7 +34,6 @@ module Reports::ItemHistories
             histories: Reports::ItemHistory::Entity.represent(results)
           }
         end
-
       end
     end
   end

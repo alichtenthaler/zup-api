@@ -1,8 +1,7 @@
-require "grape/validators/category_status"
+require 'grape/validators/category_status'
 
 module Reports::Statuses
   class API < Grape::API
-
     helpers do
       def load_category
         Reports::Category.find(params[:category_id])
@@ -22,13 +21,13 @@ module Reports::Statuses
         }
       end
 
-      desc "Create a status for the reports category"
+      desc 'Create a status for the reports category'
       params do
-        requires :title, type: String, desc: "The status title (maximum 160)"
-        requires :color, type: String, desc: "Color in hexadecimal format"
-        requires :initial, type: String, desc: "If the status is initial"
-        requires :final, type: String, desc: "If the status is final"
-        optional :active, type: String, desc: "If the status is active to use"
+        requires :title, type: String, desc: 'The status title (maximum 160)'
+        requires :color, type: String, desc: 'Color in hexadecimal format'
+        requires :initial, type: String, desc: 'If the status is initial'
+        requires :final, type: String, desc: 'If the status is final'
+        optional :active, type: String, desc: 'If the status is active to use'
       end
       post do
         validate_permission!(:edit, Reports::Category)
@@ -45,13 +44,13 @@ module Reports::Statuses
         }
       end
 
-      desc "Update status for the category"
+      desc 'Update status for the category'
       params do
-        optional :title, type: String, desc: "The status title (maximum 160)"
-        optional :color, type: String, desc: "Color in hexadecimal format"
-        optional :initial, type: String, desc: "If the status is initial"
-        optional :final, type: String, desc: "If the status is final"
-        optional :active, type: String, desc: "If the status is active to use"
+        optional :title, type: String, desc: 'The status title (maximum 160)'
+        optional :color, type: String, desc: 'Color in hexadecimal format'
+        optional :initial, type: String, desc: 'If the status is initial'
+        optional :final, type: String, desc: 'If the status is final'
+        optional :active, type: String, desc: 'If the status is active to use'
       end
       put ':id' do
         validate_permission!(:edit, Reports::Category)
@@ -67,15 +66,14 @@ module Reports::Statuses
         }
       end
 
-      desc "Delete status of category"
+      desc 'Delete status of category'
       delete ':id' do
-        validate_permission!(:destroy, Reports::Category)
+        validate_permission!(:delete, Reports::Category)
 
         category = load_category
         status = category.statuses.find(safe_params[:id])
         status.destroy!
       end
     end
-
   end
 end

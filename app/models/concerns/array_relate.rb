@@ -1,6 +1,7 @@
 module ArrayRelate
   extend ActiveSupport::Concern
 
+  # TODO: Make this module support monomorphic attributes
   module ClassMethods
     def array_belongs_to(attr_name, options = {})
       ids_column = set_ids_column(attr_name)
@@ -17,7 +18,7 @@ module ArrayRelate
     private
 
     def creates_reader(attr_name, ids_column, polymorphic_column)
-      class_eval <<-METHOD
+      class_eval <<-METHOD, __FILE__, __LINE__ + 1
         def #{attr_name}
           return [] if #{ids_column}.blank? || #{polymorphic_column}.blank?
 
@@ -35,7 +36,7 @@ module ArrayRelate
     end
 
     def creates_writer(attr_name, ids_column, polymorphic_column)
-      class_eval <<-METHOD
+      class_eval <<-METHOD, __FILE__, __LINE__ + 1
         def #{attr_name}=(objs)
           return [] if objs.blank?
           objs = [objs] unless objs.is_a?(Array)
@@ -47,7 +48,7 @@ module ArrayRelate
     end
 
     def creates_entity_class_getter(polymorphic_column)
-      class_eval <<-METHOD
+      class_eval <<-METHOD, __FILE__, __LINE__ + 1
         def object_entity_class
           return nil if #{polymorphic_column}.blank?
           "\#{#{polymorphic_column}\}::Entity".constantize
@@ -56,7 +57,7 @@ module ArrayRelate
     end
 
     def set_ids_column(attr_name)
-      fail "The first argument is obligatory" unless attr_name
+      fail 'The first argument is obligatory' unless attr_name
 
       if attr_name.is_a?(String)
         attr_name

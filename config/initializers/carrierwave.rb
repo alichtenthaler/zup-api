@@ -1,9 +1,9 @@
 if (Rails.env.production? || Rails.env.deployment?) && !(ENV['AWS_ACCESS_KEY_ID'].nil? || ENV['AWS_SECRET_ACCESS_KEY'].nil?)
   CarrierWave.configure do |config|
     config.fog_credentials = {
-        :provider => 'AWS',
-        :aws_access_key_id => ENV['AWS_ACCESS_KEY_ID'],
-        :aws_secret_access_key => ENV['AWS_SECRET_ACCESS_KEY']
+        provider: 'AWS',
+        aws_access_key_id: ENV['AWS_ACCESS_KEY_ID'],
+        aws_secret_access_key: ENV['AWS_SECRET_ACCESS_KEY']
     }
 
     config.fog_directory = ENV['AWS_DEFAULT_IMAGE_BUCKET']

@@ -1,9 +1,9 @@
 class Reports::Status < Reports::Base
   has_and_belongs_to_many :categories,
-    class_name: "Reports::Category",
-    join_table: "reports_statuses_reports_categories",
-    foreign_key: "reports_status_id",
-    association_foreign_key: "reports_category_id"
+    class_name: 'Reports::Category',
+    join_table: 'reports_statuses_reports_categories',
+    foreign_key: 'reports_status_id',
+    association_foreign_key: 'reports_category_id'
 
   has_many :reports_items, class_name: 'Reports::Item', foreign_key: 'reports_status_id'
 
@@ -11,10 +11,9 @@ class Reports::Status < Reports::Base
     class_name: 'Reports::StatusCategory',
     foreign_key: 'reports_status_id'
   has_many :categories,
-    class_name: "Reports::Category",
+    class_name: 'Reports::Category',
     through: :status_categories,
     source: :category
-
 
   validates :color, css_hex_color: true
   validates :title, presence: true, uniqueness: true
@@ -61,12 +60,13 @@ class Reports::Status < Reports::Base
   end
 
   private
-    def set_default_attributes
-      self.initial = false if self.initial.nil?
-      self.final = false if self.final.nil?
-      self.active = true if self.active.nil?
-      self.private = false if self.private.nil?
 
-      true
-    end
+  def set_default_attributes
+    self.initial = false if initial.nil?
+    self.final = false if final.nil?
+    self.active = true if active.nil?
+    self.private = false if private.nil?
+
+    true
+  end
 end

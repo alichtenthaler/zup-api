@@ -10,7 +10,7 @@ class Reports::Category < Reports::Base
     foreign_key: 'reports_category_id',
     dependent: :destroy
   has_many :statuses,
-    class_name: "Reports::Status",
+    class_name: 'Reports::Status',
     through: :status_categories,
     source: :status
 
@@ -36,7 +36,7 @@ class Reports::Category < Reports::Base
   expose_multiple_versions :icon, :marker
 
   def update_statuses!(statuses)
-    raise 'statuses is not an array' unless statuses.kind_of?(Array)
+    fail 'statuses is not an array' unless statuses.is_a?(Array)
     initial_used, final_used = false, false
 
     statuses = statuses.map do |status|
@@ -44,7 +44,7 @@ class Reports::Category < Reports::Base
 
       if status_params['initial'].present?
         if status_params['initial'] == true && initial_used
-          raise 'A report status must only have a single initial status'
+          fail 'A report status must only have a single initial status'
         end
 
         initial_used = true
@@ -59,7 +59,7 @@ class Reports::Category < Reports::Base
       status_params['active'] = convert_to_boolean(status_params['active'])
       status_params['private'] = convert_to_boolean(status_params['private'])
 
-      report_status = Reports::Status.where("LOWER(title) = LOWER(?)", status_params['title']).first
+      report_status = Reports::Status.where('LOWER(title) = LOWER(?)', status_params['title']).first
 
       unless report_status
         report_status = Reports::Status.create(
@@ -79,7 +79,7 @@ class Reports::Category < Reports::Base
     end
 
     unless initial_used && final_used
-      raise 'A initial and final status must be defined'
+      fail 'A initial and final status must be defined'
     end
 
     self.status_categories = statuses.map do |info|
@@ -87,7 +87,7 @@ class Reports::Category < Reports::Base
       status.save!
 
       # Create the many-to-many mapping
-      self.status_categories.create_with(
+      status_categories.create_with(
         initial: params['initial'],
         final: params['final'],
         active: params['active'],
@@ -97,7 +97,7 @@ class Reports::Category < Reports::Base
   end
 
   def original_icon
-    self.icon.to_s
+    icon.to_s
   end
 
   class Entity < Grape::Entity
@@ -113,7 +113,7 @@ class Reports::Category < Reports::Base
     expose :user_response_time
     expose :allows_arbitrary_position
     expose :parent_id
-    expose :statuses, using: Reports::Status::Entity
+    expose :status_categories, as: :statuses, using: Reports::StatusCategory::Entity
     expose :confidential
 
     with_options(if: { display_type: :full }) do
@@ -126,11 +126,12 @@ class Reports::Category < Reports::Base
   end
 
   protected
-    def convert_to_boolean(value)
-      if value.kind_of?(String)
-        value = (value == "false") ? false : true
-      end
 
-      value
+  def convert_to_boolean(value)
+    if value.is_a?(String)
+      value = (value == 'false') ? false : true
     end
+
+    value
+  end
 end

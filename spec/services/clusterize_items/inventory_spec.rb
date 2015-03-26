@@ -1,8 +1,7 @@
-require "spec_helper"
+require 'spec_helper'
 
-describe Inventory::ClusterizeItems do
-
-  context "items with similar positions" do
+describe ClusterizeItems::Inventory do
+  context 'items with similar positions' do
     let(:category) { create(:inventory_category) }
     let!(:items) do
       create_list(:inventory_item, 10, category: category)
@@ -10,7 +9,7 @@ describe Inventory::ClusterizeItems do
 
     subject { described_class.new(Inventory::Item.scoped, 3) }
 
-    it "returns only one cluster" do
+    it 'returns only one cluster' do
       expect(subject.results[:clusters].size).to eq(1)
       expect(subject.results[:items].size).to eq(0)
 
@@ -18,5 +17,4 @@ describe Inventory::ClusterizeItems do
       expect(clusters_count).to eq(10)
     end
   end
-
 end

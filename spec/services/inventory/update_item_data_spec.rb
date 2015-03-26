@@ -1,4 +1,4 @@
-require "spec_helper"
+require 'spec_helper'
 
 describe Inventory::UpdateItemData do
   let!(:category) { create(:inventory_category) }
@@ -13,13 +13,13 @@ describe Inventory::UpdateItemData do
     }
   end
 
-  context "updating an existant item" do
-    it "updates the item" do
+  context 'updating an existant item' do
+    it 'updates the item' do
       described_class.new(item, item_params['data'], user).update!
       expect(item_data.reload.content).to eq('updated content')
     end
 
-    it "creates a history entry" do
+    it 'creates a history entry' do
       described_class.new(item, item_params['data'], user).update!
 
       entry = item.histories.last
@@ -28,7 +28,7 @@ describe Inventory::UpdateItemData do
     end
   end
 
-  context "updating an existant item with options" do
+  context 'updating an existant item with options' do
     let!(:field) { create(:inventory_field, section: category.sections[0], kind: 'radio') }
     let!(:field_option) { create(:inventory_field_option, field: field) }
     let(:item_data) { item.data.find_by(inventory_field_id: field.id) }

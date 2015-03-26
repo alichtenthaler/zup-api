@@ -3,7 +3,7 @@ module BoundaryValidation
 
   def check_position_within_boundary
     if CityShape.validation_enabled?
-      attr = self.class.instance_variable_get("@attr_check_against_boundary")
+      attr = self.class.instance_variable_get('@attr_check_against_boundary')
       position = send(attr)
 
       unless CityShape.contains?(position.latitude, position.longitude)

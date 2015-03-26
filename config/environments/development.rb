@@ -32,9 +32,9 @@ ZupApi::Application.configure do
 
   # Adds profiling tool to development
   if ::Rack.const_defined?('PerftoolsProfiler')
-    config.middleware.use ::Rack::PerftoolsProfiler, mode: :walltime, :default_printer => 'text', bundler: true
+    config.middleware.use ::Rack::PerftoolsProfiler, mode: :walltime, default_printer: 'text', bundler: true
   end
 
-  ActiveSupport::Dependencies.autoload_paths << File::join( Rails.root, 'app/api')
+  ActiveSupport::Dependencies.autoload_paths << File.join(Rails.root, 'app/api')
   ActiveSupport::Dependencies.explicitly_unloadable_constants << 'API'
 end

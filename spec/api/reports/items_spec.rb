@@ -65,7 +65,7 @@ describe Reports::Items::API do
       # expect(body['images'][1]['url']).to eq('/uploads/' + valid_params[:images][1].original_filename)
     end
 
-    it "create a new report with uploaded images instead of encoded ones" do
+    it 'create a new report with uploaded images instead of encoded ones' do
       valid_params[:images] = [
         fixture_file_upload('images/valid_report_item_photo.jpg'),
         fixture_file_upload('images/valid_report_item_photo.jpg')
@@ -93,7 +93,7 @@ describe Reports::Items::API do
       expect(body['images'][1]['low']).to_not be_empty
     end
 
-    it "accepts passing an user_id as argument" do
+    it 'accepts passing an user_id as argument' do
       other_user = create(:user)
       valid_params[:user_id] = other_user.id
 
@@ -103,7 +103,7 @@ describe Reports::Items::API do
       expect(category.reports.last.reporter).to eq(user)
     end
 
-    it "creates a confidential report" do
+    it 'creates a confidential report' do
       valid_params[:confidential] = true
 
       post "/reports/#{category.id}/items", valid_params, auth(user)
@@ -111,13 +111,13 @@ describe Reports::Items::API do
       expect(category.reports.last.confidential).to be_truthy
     end
 
-    context "from panel" do
+    context 'from panel' do
       subject do
         post "/reports/#{category.id}/items", valid_params, auth(user)
       end
 
-      context "user has permission to create from panel" do
-        it "allows creation of the report" do
+      context 'user has permission to create from panel' do
+        it 'allows creation of the report' do
           valid_params[:from_panel] = true
           subject
 
@@ -130,12 +130,31 @@ describe Reports::Items::API do
           GroupPermission.where(group_id: user.groups.pluck(:id)).update_all(create_reports_from_panel: false, reports_full_access: false)
         end
 
-        it "disallows creation of the report" do
+        it 'disallows creation of the report' do
           valid_params[:from_panel] = true
           subject
 
           expect(response.status).to_not eq(201)
         end
+      end
+    end
+
+    context 'user with permission to edit reports category' do
+      let(:group) { create(:group) }
+
+      subject do
+        post "/reports/#{category.id}/items", valid_params, auth(user)
+      end
+
+      before do
+        group.permission.update(reports_categories_edit: [category.id])
+        user.update!(groups: [group])
+      end
+
+      it 'allows creation of the report' do
+        subject
+
+        expect(response.status).to eq(201)
       end
     end
   end
@@ -144,7 +163,7 @@ describe Reports::Items::API do
     let(:existent_item) { create(:reports_item_with_images, category: category) }
 
     it 'updates an existent report' do
-      put "/reports/#{category.id.to_s}/items/#{existent_item.id}",
+      put "/reports/#{category.id}/items/#{existent_item.id}",
           valid_params, auth(user)
       expect(response.status).to eq(200)
       body = parsed_body['report']
@@ -173,7 +192,7 @@ describe Reports::Items::API do
       old_image_url = existent_item.images.first.url
       old_image_url2 = existent_item.images.last.url
 
-      put "/reports/#{category.id.to_s}/items/#{existent_item.id}", valid_params, auth(user)
+      put "/reports/#{category.id}/items/#{existent_item.id}", valid_params, auth(user)
       expect(response.status).to eq(200)
       body = parsed_body['report']
 
@@ -181,19 +200,19 @@ describe Reports::Items::API do
       expect(existent_item.reload.images.last.url).to eq(old_image_url2)
     end
 
-    context "updating the status" do
-      it "is able to update the status passing status_id" do
+    context 'updating the status' do
+      it 'is able to update the status passing status_id' do
         status = category.statuses.final.first
         valid_params['status_id'] = status.id
 
         expect(existent_item.id).to_not eq(status.id)
-        put "/reports/#{category.id.to_s}/items/#{existent_item.id}", valid_params, auth(user)
+        put "/reports/#{category.id}/items/#{existent_item.id}", valid_params, auth(user)
         expect(response.status).to eq(200)
         body = parsed_body['report']
         expect(body['status']['id']).to eq(status.id)
       end
 
-      context "when the status is private" do
+      context 'when the status is private' do
         let(:status) { create(:status) }
 
         before do
@@ -211,7 +230,7 @@ describe Reports::Items::API do
             category.status_categories.private.first.status.id
 
           expect(existent_item.reports_status_id).to_not eq(status.id)
-          put "/reports/#{category.id.to_s}/items/#{existent_item.id}", valid_params, auth(user)
+          put "/reports/#{category.id}/items/#{existent_item.id}", valid_params, auth(user)
           expect(response.status).to eq(200)
           body = parsed_body['report']
           expect(body['status']['id']).to eq(status.id)
@@ -220,20 +239,20 @@ describe Reports::Items::API do
       end
     end
 
-    it "is able to update the report category" do
+    it 'is able to update the report category' do
       new_category = create(:reports_category_with_statuses)
 
       valid_params = {
         'category_id' => new_category.id
       }
 
-      put "/reports/#{category.id.to_s}/items/#{existent_item.id}", valid_params, auth(user)
+      put "/reports/#{category.id}/items/#{existent_item.id}", valid_params, auth(user)
       expect(parsed_body['report']['category']['id']).to eq(new_category.id)
     end
 
-    it "changes the param to confidential" do
+    it 'changes the param to confidential' do
       valid_params['confidential'] = true
-      put "/reports/#{category.id.to_s}/items/#{existent_item.id}", valid_params, auth(user)
+      put "/reports/#{category.id}/items/#{existent_item.id}", valid_params, auth(user)
       expect(response.status).to eq(200)
       body = parsed_body['report']
       expect(body['confidential']).to be_truthy
@@ -247,7 +266,7 @@ describe Reports::Items::API do
       other_category.statuses.first
     end
 
-    context "valid category and status" do
+    context 'valid category and status' do
       let(:valid_params) do
         JSON.parse <<-JSON
           {
@@ -257,7 +276,7 @@ describe Reports::Items::API do
         JSON
       end
 
-      it "updates the category and status of the item correctly" do
+      it 'updates the category and status of the item correctly' do
         put "/reports/#{item.category.id}/items/#{item.id}/change_category", valid_params, auth(user)
         item.reload
 
@@ -267,28 +286,27 @@ describe Reports::Items::API do
     end
   end
 
-
   context 'GET /reports/items' do
-    context "no filters" do
+    context 'no filters' do
       let!(:reports) do
         create_list(:reports_item_with_images, 20, category: category)
       end
 
-      it "return all reports ordenated and paginated" do
+      it 'return all reports ordenated and paginated' do
         get '/reports/items?page=2&per_page=15&sort=id&order=asc&return_fields=id',
             nil, auth(user)
         expect(response.status).to eq(200)
         body = parsed_body
 
-        expect(body).to include("reports")
+        expect(body).to include('reports')
         expect(body['reports'].size).to eq(5)
 
         expect(
-          body['reports'].map {|r| r['id'] }
+          body['reports'].map { |r| r['id'] }
         ).to match_array(reports[15..19].map(&:id))
       end
 
-      it "returns inventory_categories and comments on listing" do
+      it 'returns inventory_categories and comments on listing' do
         get '/reports/items', { display_type: 'full' }, auth(user)
         expect(response.status).to eq(200)
         body = parsed_body
@@ -298,7 +316,7 @@ describe Reports::Items::API do
       end
     end
 
-    context "user filter" do
+    context 'user filter' do
       let!(:reports) do
         create_list(
           :reports_item_with_images, 12,
@@ -319,12 +337,12 @@ describe Reports::Items::API do
         JSON
       end
 
-      it "returns all reports for user" do
+      it 'returns all reports for user' do
         get '/reports/items?return_fields=id', valid_params, auth(user)
         expect(response.status).to eq(200)
         body = parsed_body
 
-        expect(body).to include("reports")
+        expect(body).to include('reports')
         expect(body['reports'].size).to eq(12)
         body['reports'].each do |r|
           expect(Reports::Item.find(r['id']).user_id).to eq(user.id)
@@ -332,7 +350,7 @@ describe Reports::Items::API do
       end
     end
 
-    context "category filter" do
+    context 'category filter' do
       let!(:reports) do
         create_list(
           :reports_item_with_images, 16,
@@ -352,12 +370,12 @@ describe Reports::Items::API do
         JSON
       end
 
-      it "returns all reports for category" do
+      it 'returns all reports for category' do
         get '/reports/items?return_fields=category_id', valid_params, auth(user)
         expect(response.status).to eq(200)
         body = parsed_body
 
-        expect(body).to include("reports")
+        expect(body).to include('reports')
         expect(body['reports'].size).to eq(16)
         body['reports'].each do |r|
           expect(r['category_id']).to eq(category.id)
@@ -365,7 +383,7 @@ describe Reports::Items::API do
       end
     end
 
-    context "date filter" do
+    context 'date filter' do
       let!(:reports) do
         reports = create_list(
           :reports_item_with_images, 3
@@ -389,7 +407,7 @@ describe Reports::Items::API do
         JSON
       end
 
-      it "returns all reports in the date range" do
+      it 'returns all reports in the date range' do
         get '/reports/items?return_fields=id', valid_params, auth(user)
         expect(response.status).to eq(200)
         body = parsed_body
@@ -401,8 +419,8 @@ describe Reports::Items::API do
         end
       end
 
-      it "returns all reports even with one param" do
-        valid_params.delete("begin_date")
+      it 'returns all reports even with one param' do
+        valid_params.delete('begin_date')
 
         get '/reports/items', valid_params, auth(user)
         expect(response.status).to eq(200)
@@ -412,7 +430,7 @@ describe Reports::Items::API do
         expect(body['reports'].map { |r| r['id'] }).to match_array(reports.map(&:id))
       end
 
-      context "return the right report even in a different timezone" do
+      context 'return the right report even in a different timezone' do
         let(:valid_params) do
           JSON.parse <<-JSON
             {
@@ -430,7 +448,7 @@ describe Reports::Items::API do
           end
         end
 
-        it "returns all reports in the date range" do
+        it 'returns all reports in the date range' do
           get '/reports/items?return_fields=id', valid_params, auth(user)
           expect(response.status).to eq(200)
           body = parsed_body
@@ -444,7 +462,7 @@ describe Reports::Items::API do
       end
     end
 
-    context "statuses filter" do
+    context 'statuses filter' do
       let!(:status) { category.statuses.where(initial: false).first }
       let!(:reports) do
         create_list(
@@ -467,8 +485,8 @@ describe Reports::Items::API do
         JSON
       end
 
-      it "returns all reports with correct statuses" do
-        get "/reports/items?return_fields=id", valid_params, auth(user)
+      it 'returns all reports with correct statuses' do
+        get '/reports/items?return_fields=id', valid_params, auth(user)
         expect(response.status).to eq(200)
         body = parsed_body
 
@@ -476,10 +494,10 @@ describe Reports::Items::API do
         expect(body['reports'].map { |r| r['id'] }).to match_array(reports.map { |r| r.id })
       end
 
-      it "accepts only one id as argument" do
-        valid_params["statuses"] = status.id
+      it 'accepts only one id as argument' do
+        valid_params['statuses'] = status.id
 
-        get "/reports/items?return_fields=id", valid_params, auth(user)
+        get '/reports/items?return_fields=id', valid_params, auth(user)
         expect(response.status).to eq(200)
         body = parsed_body
 
@@ -489,7 +507,7 @@ describe Reports::Items::API do
       end
     end
 
-    context "multiple filters" do
+    context 'multiple filters' do
       let!(:reports) do
         create_list(
           :reports_item_with_images, 11,
@@ -511,12 +529,12 @@ describe Reports::Items::API do
         JSON
       end
 
-      it "returns all reports for category" do
+      it 'returns all reports for category' do
         get '/reports/items?return_fields=id', valid_params, auth(user)
         expect(response.status).to eq(200)
         body = parsed_body
 
-        expect(body).to include("reports")
+        expect(body).to include('reports')
         expect(body['reports'].size).to eq(11)
         body['reports'].each do |r|
           expect(Reports::Item.find(r['id']).user_id).to eq(user.id)
@@ -524,7 +542,7 @@ describe Reports::Items::API do
       end
     end
 
-    context "guest group" do
+    context 'guest group' do
       let(:other_category) { create(:reports_category_with_statuses) }
       let!(:reports) do
         create_list(
@@ -541,13 +559,13 @@ describe Reports::Items::API do
 
       before do
         Group.guest.each do |group|
-          group.permission.reports_items_read_only = [category.id]
+          group.permission.reports_items_read_public = [category.id]
           group.save!
         end
       end
 
-      it "only can see the category it has the permission" do
-        get "/reports/items?return_fields=id"
+      it 'only can see the category it has the permission' do
+        get '/reports/items?return_fields=id'
         expect(response.status).to eq(200)
         body = parsed_body
 
@@ -563,7 +581,7 @@ describe Reports::Items::API do
     let(:user) { create(:user) }
     let(:item) { create(:reports_item_with_images, :with_feedback) }
 
-    it "returns the report data" do
+    it 'returns the report data' do
       get "/reports/items/#{item.id}", nil
       expect(response.status).to eq(200)
       report = parsed_body['report']
@@ -583,10 +601,10 @@ describe Reports::Items::API do
       expect(report['feedback']).to be_present
     end
 
-    context "if the user that created is the same" do
+    context 'if the user that created is the same' do
       let(:item) { create(:reports_item_with_images, :with_feedback, user: user) }
 
-      it "shows the protocol" do
+      it 'shows the protocol' do
         get "/reports/items/#{item.id}?return_fields=id,protocol", nil, auth(user)
         expect(response.status).to eq(200)
         report = parsed_body['report']
@@ -612,15 +630,15 @@ describe Reports::Items::API do
       end
     end
 
-    context "if the user has admin privileges" do
+    context 'if the user can see private report data' do
       let(:item) { create(:reports_item_with_images) }
 
       before do
-        user.groups.first.permission.update(panel_access: true)
+        user.groups.first.permission.update(reports_items_read_private: [item.category.id])
         user.save!
       end
 
-      it "does show the protocol" do
+      it 'does show the protocol' do
         get "/reports/items/#{item.id}?return_fields=id,protocol", nil, auth(user)
         expect(response.status).to eq(200)
         report = parsed_body['report']
@@ -633,7 +651,7 @@ describe Reports::Items::API do
   context 'DELETE /reports/items/:id' do
     let!(:item) { create(:reports_item_with_images) }
 
-    it "removes a report item" do
+    it 'removes a report item' do
       delete "/reports/items/#{item.id}", {}, auth(user)
       expect(response.status).to eq(204)
 
@@ -647,7 +665,7 @@ describe Reports::Items::API do
     it 'should retrieve a list of reports from a given category' do
       get '/reports/' + category.id.to_s + '/items'
       expect(response.status).to eq(200)
-      body = parsed_body["reports"]
+      body = parsed_body['reports']
 
       expect(body.count).to eq(3)
 
@@ -661,7 +679,7 @@ describe Reports::Items::API do
       end
     end
 
-    context "search by position" do
+    context 'search by position' do
       let(:empty_category) { create(:reports_category_with_statuses) }
       let(:valid_params) do
         JSON.parse <<-JSON
@@ -676,7 +694,7 @@ describe Reports::Items::API do
         JSON
       end
 
-      it "returns closer report positions when passed position arg" do
+      it 'returns closer report positions when passed position arg' do
         # Creating items
         points_nearby = [
           [-23.5989650, -46.6836310],
@@ -695,7 +713,7 @@ describe Reports::Items::API do
         nearby_items = points_nearby.map do |latlng|
           create(
             :reports_item_with_images,
-            position: RGeo::Geographic::simple_mercator_factory.point(latlng[1], latlng[0]),
+            position: RGeo::Geographic.simple_mercator_factory.point(latlng[1], latlng[0]),
             category: empty_category
           )
         end
@@ -703,7 +721,7 @@ describe Reports::Items::API do
         distant_items = points_distant.map do |latlng|
           create(
             :reports_item_with_images,
-            position: RGeo::Geographic::simple_mercator_factory.point(latlng[1], latlng[0]),
+            position: RGeo::Geographic.simple_mercator_factory.point(latlng[1], latlng[0]),
             category: empty_category
           )
         end
@@ -716,22 +734,22 @@ describe Reports::Items::API do
         expect(response.status).to eq(200)
         body = parsed_body
 
-        expect(body["reports"].map { |i| i["id"] }).to match_array(nearby_items.map { |i| i["id"] })
+        expect(body['reports'].map { |i| i['id'] }).to match_array(nearby_items.map { |i| i['id'] })
       end
     end
   end
 
   context 'GET /reports/inventory/:invetory_item_id/items' do
     let(:inventory_item) { create(:inventory_item) }
-    let!(:items) {
+    let!(:items) do
       create_list(:reports_item_with_images, 3,
                      category: category, inventory_item: inventory_item)
-    }
+    end
 
     it 'should retrieve a list of reports from a given category' do
       get '/reports/inventory/' + inventory_item.id.to_s + '/items'
       expect(response.status).to eq(200)
-      body = parsed_body["reports"]
+      body = parsed_body['reports']
       expect(body.count).to eq(3)
 
       body.each do |report|
@@ -746,10 +764,10 @@ describe Reports::Items::API do
   end
 
   context 'GET /reports/users/:user_id/items' do
-    let!(:items) {
+    let!(:items) do
       create_list(:reports_item_with_images, 3,
                      category: category, user: user)
-    }
+    end
 
     it 'should retrieve a list of reports from a given user' do
       get '/reports/users/' + user.id.to_s + '/items'
@@ -773,10 +791,10 @@ describe Reports::Items::API do
   end
 
   context 'GET /reports/users/me/items' do
-    let!(:items) {
+    let!(:items) do
       create_list(:reports_item_with_images, 3,
                      category: category, user: user)
-    }
+    end
 
     it 'should retrieve a list of reports from the current user' do
       get '/reports/users/me/items?token=' + {}.auth(user)[:token]

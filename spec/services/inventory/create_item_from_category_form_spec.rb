@@ -1,12 +1,11 @@
-require "spec_helper"
+require 'spec_helper'
 
 describe Inventory::CreateItemFromCategoryForm do
   let!(:category) { create(:inventory_category_with_sections) }
   let!(:user) { create(:user) }
 
-  context "item creation" do
-
-    context "valid params" do
+  context 'item creation' do
+    context 'valid params' do
       let(:item_params) do
         fields = category.fields
         item_params = {}
@@ -18,8 +17,7 @@ describe Inventory::CreateItemFromCategoryForm do
         item_params
       end
 
-
-      it "creates the item" do
+      it 'creates the item' do
         described_class.new(
           category: category,
           user: user,
@@ -31,11 +29,11 @@ describe Inventory::CreateItemFromCategoryForm do
         expect(item.data.size).to eq(category.fields.size)
       end
 
-      context "with image field" do
+      context 'with image field' do
         let!(:images_field_id) do
           category.sections.last.fields.create(
-            title: "Imagens",
-            kind: "images",
+            title: 'Imagens',
+            kind: 'images',
             position: 0
           ).id
         end
@@ -44,15 +42,15 @@ describe Inventory::CreateItemFromCategoryForm do
           item_params = {}
 
           fields.each do |field|
-            unless field.kind == "images"
+            unless field.kind == 'images'
               item_params[field.id] = 'Rua do Banco'
             else
               item_params[field.id] = [
                 {
-                  "content" => Base64.encode64(fixture_file_upload('images/valid_report_item_photo.jpg').read)
+                  'content' => Base64.encode64(fixture_file_upload('images/valid_report_item_photo.jpg').read)
                 },
                 {
-                  "content" => Base64.encode64(fixture_file_upload('images/valid_report_item_photo.jpg').read)
+                  'content' => Base64.encode64(fixture_file_upload('images/valid_report_item_photo.jpg').read)
                 }
               ]
             end
@@ -77,8 +75,8 @@ describe Inventory::CreateItemFromCategoryForm do
       end
     end
 
-    context "with invalid params" do
-      context "required fields missing" do
+    context 'with invalid params' do
+      context 'required fields missing' do
         let(:item_params) do
           fields = category.fields
           item_params = {}
@@ -102,12 +100,10 @@ describe Inventory::CreateItemFromCategoryForm do
           )
         end
 
-        it "creates the item" do
+        it 'creates the item' do
           expect { subject.create! }.to raise_error
         end
       end
     end
-
   end
-
 end

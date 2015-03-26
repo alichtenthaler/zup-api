@@ -22,7 +22,7 @@ class Inventory::UpdateStatusWithFormulas
 
         Inventory::CreateHistoryEntry.new(item, user)
                                      .create('status',
-                                             'Fórmula mudou o estatus do item.',
+                                             'Fórmula mudou o status do item.',
                                              formula)
       end
     end

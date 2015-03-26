@@ -2,7 +2,8 @@ class Inventory::SearchItems
   attr_reader :fields, :categories, :position_params,
               :limit, :sort, :order, :address, :statuses,
               :created_at, :updated_at, :title, :users,
-              :query, :user, :clusterize, :zoom
+              :query, :user, :clusterize, :zoom, :page, :per_page,
+              :paginator
 
   def initialize(user, opts = {})
     @position_params = opts[:position]
@@ -21,24 +22,14 @@ class Inventory::SearchItems
     @user = user
     @clusterize = opts[:clusterize]
     @zoom = opts[:zoom]
+    @page = opts[:page]
+    @per_page = opts[:per_page] || 25
+    @paginator = opts[:paginator]
   end
 
   def search
     scope = Inventory::Item.includes(:category, :user, data: [{ field: :field_options }, :images, :attachments])
     permissions = UserAbility.new(user)
-
-    sort = self.sort
-    if sort &&
-        sort.in?('title', 'inventory_category_id', 'created_at', 'updated_at', 'id') &&
-        order.downcase.in?('desc', 'asc')
-
-      if sort == 'title'
-        scope = scope.order("title #{order}, sequence #{order}")
-      else
-        scope = scope.order("#{sort} #{order.to_sym}")
-      end
-
-    end
 
     if query
       scope = scope.like_search(
@@ -61,7 +52,24 @@ class Inventory::SearchItems
         categories_ids = categories_user_can_see
       end
 
-      scope = scope.where(inventory_category_id: categories_ids)
+      if user
+        permission_statement = ''
+        Inventory::Category.where(id: categories_ids).each_with_index do |category, i|
+          if i > 0
+            permission_statement += ' OR '
+          end
+
+          if permissions.can?(:view_all_items, category)
+            permission_statement = "(inventory_category_id = #{category.id})"
+          else
+            permission_statement = "(inventory_category_id = #{category.id} AND user_id = #{user.id})"
+          end
+        end
+      else
+        permission_statement = { inventory_category_id: categories_ids }
+      end
+
+      scope = scope.where(permission_statement)
     elsif categories_ids && categories_ids.any?
       scope = scope.where(inventory_category_id: categories_ids)
     end
@@ -86,12 +94,12 @@ class Inventory::SearchItems
                         position_params
                       end
 
-      statement = ""
-      position_hash.each do |index, p|
+      statement = ''
+      position_hash.each do |_index, p|
         latlon = "POINT(#{p[:longitude].to_f} #{p[:latitude].to_f})"
 
         unless statement.blank?
-          statement += " OR "
+          statement += ' OR '
         end
 
         statement += <<-SQL
@@ -125,10 +133,10 @@ class Inventory::SearchItems
         scope = scope.where(inventory_items: { created_at: begin_date..end_date })
       elsif created_at[:begin]
         begin_date = DateTime.parse(created_at[:begin])
-        scope = scope.where("inventory_items.created_at >= ?", begin_date)
+        scope = scope.where('inventory_items.created_at >= ?', begin_date)
       elsif created_at[:end]
         end_date = DateTime.parse(created_at[:end])
-        scope = scope.where("inventory_items.created_at <= ?", end_date)
+        scope = scope.where('inventory_items.created_at <= ?', end_date)
       end
     end
 
@@ -140,10 +148,10 @@ class Inventory::SearchItems
         scope = scope.where(updated_at: begin_date..end_date)
       elsif updated_at[:begin]
         begin_date = DateTime.parse(updated_at[:begin])
-        scope = scope.where("updated_at >= ?", begin_date)
+        scope = scope.where('updated_at >= ?', begin_date)
       elsif updated_at[:end]
         end_date = DateTime.parse(updated_at[:end])
-        scope = scope.where("updated_at <= ?", end_date)
+        scope = scope.where('updated_at <= ?', end_date)
       end
     end
 
@@ -155,8 +163,40 @@ class Inventory::SearchItems
       scope = Inventory::SearchItemsByFields.new(scope, fields).scope_with_filters
     end
 
+    sort = self.sort
+    if sort && !clusterize &&
+      sort.in?('title', 'inventory_category_id', 'created_at', 'updated_at', 'id', 'user_name') &&
+      order.downcase.in?('desc', 'asc')
+
+      if sort == 'user_name'
+        sort = 'users.name'
+      elsif sort == 'id'
+        sort = 'inventory_items.id'
+      end
+
+      if scope.is_a?(Array)
+      end
+
+      scope = Inventory::Item.from("(#{scope.to_sql}) inventory_items").joins(:user)
+                .preload(
+                  :category, user: :groups, data: [field: :field_options]
+                )
+
+      if sort == 'title'
+        scope = scope.order("title #{order}, sequence #{order}")
+      else
+        scope = scope.order("#{sort} #{order.downcase}")
+      end
+
+      if paginator.present?
+        scope = paginator.call(scope)
+      end
+    elsif position_params.blank?
+      scope = scope.paginate(page: page, per_page: per_page)
+    end
+
     if position_params && clusterize
-      Inventory::ClusterizeItems.new(scope, zoom).results
+      ClusterizeItems::Inventory.new(scope, zoom).results
     else
       scope
     end

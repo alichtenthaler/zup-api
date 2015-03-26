@@ -1,6 +1,5 @@
 namespace :groups do
-
-  desc "Convert old permissions (hstore) to the new structure"
+  desc 'Convert old permissions (hstore) to the new structure'
   task migrate_permissions: :environment do
     # Getting all groups
     groups = Group.all
@@ -52,10 +51,9 @@ namespace :groups do
         if permission.save
           puts "[SUCCESS] Permissions for group ##{group.id} migrated successfully"
         else
-          puts "[ERROR] Error migrating permissions for the group"
+          puts '[ERROR] Error migrating permissions for the group'
         end
       end
     end
   end
-
 end

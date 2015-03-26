@@ -1,21 +1,21 @@
 class Inventory::FormulaValidator
   OPERATIONS = {
-    "equal_to" => lambda do |content, condition_content|
+    'equal_to' => lambda do |content, condition_content|
       content == condition_content
     end,
-    "greater_than" => lambda do |content, condition_content|
+    'greater_than' => lambda do |content, condition_content|
       content > condition_content.to_i
     end,
-    "lesser_than" => lambda do |content, condition_content|
+    'lesser_than' => lambda do |content, condition_content|
       content < condition_content.to_i
     end,
-    "different" => lambda do |content, condition_content|
+    'different' => lambda do |content, condition_content|
       content != condition_content
     end,
-    "between" => lambda do |content, condition_content|
+    'between' => lambda do |content, condition_content|
       condition_content.include?(content)
     end,
-    "includes" => lambda do |content, condition_content|
+    'includes' => lambda do |content, condition_content|
       content.downcase[condition_content.downcase]
     end
   }
@@ -32,7 +32,7 @@ class Inventory::FormulaValidator
       return false unless condition_satisfied?(condition)
     end
 
-    return true
+    true
   end
 
   private
@@ -48,5 +48,4 @@ class Inventory::FormulaValidator
 
     OPERATIONS[operator].call(content, condition.content)
   end
-
 end

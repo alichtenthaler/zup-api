@@ -1,11 +1,11 @@
 # Read about factories at https://github.com/thoughtbot/factory_girl
 
 FactoryGirl.define do
-  factory :inventory_status, :class => 'Inventory::Status' do
+  factory :inventory_status, class: 'Inventory::Status' do
     sequence :title do |n|
       "Status #{n}"
     end
-    color "#ff0000"
+    color '#ff0000'
     association :category, factory: :inventory_category
   end
 end

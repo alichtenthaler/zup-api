@@ -14,10 +14,10 @@ module Flows::ResolutionStates
         parameters  = safe_params.permit(:title, :default).merge(user: current_user)
 
         old_default = flow.resolution_states.find_by_default(true)
-        old_default.update!(default: false, user: current_user) if safe_params[:default] and old_default.present?
+        old_default.update!(default: false, user: current_user) if safe_params[:default] && old_default.present?
         resolution = flow.resolution_states.create!(parameters)
 
-        { message: I18n.t(:resolution_state_created), resolution_state: ResolutionState::Entity.represent(resolution) }
+        { message: I18n.t(:resolution_state_created), resolution_state: ResolutionState::Entity.represent(resolution, only: return_fields) }
       end
 
       desc 'Update a Resolution State'
@@ -31,7 +31,7 @@ module Flows::ResolutionStates
 
         resolution  = Flow.find(safe_params[:flow_id]).resolution_states.find(safe_params[:id])
         old_default = Flow.find(safe_params[:flow_id]).resolution_states.find_by_default(true)
-        old_default.update!(default: false, user: current_user) if safe_params[:default] and old_default.present?
+        old_default.update!(default: false, user: current_user) if safe_params[:default] && old_default.present?
         parameters = safe_params.permit(:title, :default).merge(user: current_user)
         { message: I18n.t(:resolution_state_updated) } if resolution.update!(parameters)
       end

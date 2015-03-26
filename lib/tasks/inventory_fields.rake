@@ -16,7 +16,7 @@ namespace :inventory_fields do
       # Update reference for inventory item data
       data = Inventory::ItemData.where(inventory_field_id: field.id)
 
-      Parallel.each(data, in_threads: 4) do |item_data|
+      Parallel.each(data, in_threads: 4) do |_item_data|
         data.each do |item_data|
           content = item_data.read_attribute(:content)
 
@@ -33,7 +33,6 @@ namespace :inventory_fields do
           puts "Migrated information about item data ##{item_data.id}"
         end
       end
-
     end
   end
 end

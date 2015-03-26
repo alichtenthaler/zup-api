@@ -1,4 +1,4 @@
-require "spec_helper"
+require 'spec_helper'
 
 describe Reports::Stats::API do
   let(:user) { create(:user) }
@@ -18,7 +18,7 @@ describe Reports::Stats::API do
     JSON
   end
 
-  it "returns correct stats" do
+  it 'returns correct stats' do
     get '/reports/stats', valid_params, auth(user)
     expect(response.status).to eq(200)
     body = parsed_body
@@ -34,7 +34,7 @@ describe Reports::Stats::API do
     expect(returned_count).to eq(7)
   end
 
-  it "accepts no arguments and return all categories stats" do
+  it 'accepts no arguments and return all categories stats' do
     get '/reports/stats', nil, auth(user)
     expect(response.status).to eq(200)
     body = parsed_body
@@ -42,7 +42,7 @@ describe Reports::Stats::API do
     expect(body['stats'].size).to eq(Reports::Category.count)
   end
 
-  context "with private status" do
+  context 'with private status' do
     let!(:status) { create(:status) }
 
     before do

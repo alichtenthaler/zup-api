@@ -6,7 +6,7 @@ describe Flows::ResolutionStates::API do
 
   describe 'on create' do
     let!(:flow)        { create(:flow_without_relation) }
-    let(:valid_params) { {title: 'Success', default: true} }
+    let(:valid_params) { { title: 'Success', default: true } }
 
     context 'no authentication' do
       before { post "/flows/#{flow.id}/resolution_states", valid_params }
@@ -28,7 +28,7 @@ describe Flows::ResolutionStates::API do
             before { post "/flows/#{flow.id}/resolution_states", {}, auth(user) }
 
             it { expect(response.status).to be_a_bad_request }
-            it { expect(response.body).to be_an_error({'title' => [I18n.t('activerecord.errors.messages.blank')]}) }
+            it { expect(response.body).to be_an_error('title' => [I18n.t('activerecord.errors.messages.blank')]) }
           end
         end
 
@@ -62,7 +62,7 @@ describe Flows::ResolutionStates::API do
   describe 'on update' do
     let(:flow)         { create(:flow) }
     let!(:resolution)  { flow.resolution_states.first }
-    let(:valid_params) { {title: 'Success', default: true} }
+    let(:valid_params) { { title: 'Success', default: true } }
 
     context 'no authentication' do
       before { put "/flows/#{flow.id}/resolution_states/#{resolution.id}", valid_params }
@@ -84,7 +84,7 @@ describe Flows::ResolutionStates::API do
             before { put "/flows/#{flow.id}/resolution_states/#{resolution.id}", {}, auth(user) }
 
             it { expect(response.status).to be_a_bad_request }
-            it { expect(response.body).to be_an_error({'title' => [I18n.t('activerecord.errors.messages.blank')]}) }
+            it { expect(response.body).to be_an_error('title' => [I18n.t('activerecord.errors.messages.blank')]) }
           end
 
           context 'because not found' do

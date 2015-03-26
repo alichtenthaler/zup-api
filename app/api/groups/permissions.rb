@@ -1,6 +1,5 @@
 module Groups::Permissions
   class API < Grape::API
-
     helpers do
       def load_group(group_id = params[:group_id])
         Group.find(group_id)
@@ -9,8 +8,7 @@ module Groups::Permissions
 
     route_param :group_id do
       namespace :permissions do
-
-        desc "Return all permissions, by type and object"
+        desc 'Return all permissions, by type and object'
         get do
           authenticate!
 
@@ -22,7 +20,7 @@ module Groups::Permissions
           permissions.fetch
         end
 
-        desc "Add permissions to a group"
+        desc 'Add permissions to a group'
         params do
           optional :objects_ids, type: Array,
                   desc: 'Array of ids of the object type'
@@ -45,7 +43,6 @@ module Groups::Permissions
             permission_class = GroupPermission::TYPES[permissions_type][permission_name]
             next unless permission_class
 
-
             if permission_class == Array
               objects_ids = params[:objects_ids].map(&:to_i)
               permissions.add_with_objects(permission_name, objects_ids)
@@ -55,11 +52,11 @@ module Groups::Permissions
           end
 
           {
-            message: "Permissões atualizadas com sucesso."
+            message: 'Permissões atualizadas com sucesso.'
           }
         end
 
-        desc "Remove permissions from a group"
+        desc 'Remove permissions from a group'
         params do
           requires :permission, type: String,
                    desc: 'Permission name'
@@ -87,13 +84,10 @@ module Groups::Permissions
           end
 
           {
-            message: "Permissão removida com sucesso."
+            message: 'Permissão removida com sucesso.'
           }
         end
-
-
       end
     end
-
   end
 end

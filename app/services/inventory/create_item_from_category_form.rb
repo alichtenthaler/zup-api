@@ -2,7 +2,7 @@ class Inventory::CreateItemFromCategoryForm
   attr_reader :category, :user, :item_params,
               :status
 
-  def initialize(opts={})
+  def initialize(opts = {})
     @category = opts[:category]
     @user = opts[:user]
     @item_params = opts[:data]
@@ -18,7 +18,7 @@ class Inventory::CreateItemFromCategoryForm
       representer.inject_to_data!
       representer.item.save!
     else
-      raise ActiveRecord::RecordInvalid.new(representer)
+      fail ActiveRecord::RecordInvalid.new(representer)
     end
 
     item

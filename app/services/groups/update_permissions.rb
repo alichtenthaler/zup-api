@@ -1,8 +1,6 @@
 module Groups
   class UpdatePermissions
-
     def self.update(groups_ids, object, permission_name)
-
       if groups_ids && groups_ids.any?
         # Remove permission of groups_ids
         Group.that_includes_permission(permission_name, object.id).each do |group|
@@ -18,7 +16,6 @@ module Groups
           end
         end
       end
-
     end
   end
 end

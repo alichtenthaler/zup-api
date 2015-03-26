@@ -51,7 +51,7 @@ describe Reports::Categories::API do
       expect(body['error'].keys).to match_array(['title', 'color', 'initial', 'final', 'active', 'private'])
     end
 
-    it "creates a subcategory" do
+    it 'creates a subcategory' do
       category = create(:reports_category)
 
       valid_params[:parent_id] = category.id
@@ -72,11 +72,11 @@ describe Reports::Categories::API do
       expect(body['id']).to eq(category.id)
     end
 
-    context "category with subcategory" do
+    context 'category with subcategory' do
       let!(:subcategory) { create(:reports_category_with_statuses, parent_category: category) }
 
-      it "should return the subcategories" do
-        get "/reports/categories/#{category.id}", { display_type: 'full' }
+      it 'should return the subcategories' do
+        get "/reports/categories/#{category.id}", display_type: 'full'
         expect(response.status).to eq(200)
         body = parsed_body
         expect(body['category']['subcategories']).to_not be_empty
@@ -89,9 +89,10 @@ describe Reports::Categories::API do
     let!(:categories) { create_list(:reports_category_with_statuses, 3) }
 
     it 'displays a list of categories including control properties' do
-      get '/reports/categories?display_type=full', nil, auth(user)
-      body = parsed_body["categories"]
+      get '/reports/categories?display_type=full&return_fields=id,icon,marker,statuses,resolution_time,user_response_time,allows_arbitrary_position,created_at,updated_at,active', nil, auth(user)
+      expect(response.status).to eq(200)
 
+      body = parsed_body['categories']
       expect(body.count).to eq(3)
 
       body.each do |category|
@@ -111,9 +112,9 @@ describe Reports::Categories::API do
       end
     end
 
-    it 'displays a lit of categories, excluding control properties' do
+    it 'displays a list of categories, excluding control properties' do
       get '/reports/categories', nil, auth(user)
-      body = parsed_body["categories"]
+      body = parsed_body['categories']
 
       expect(body.count).to eq(3)
 
@@ -131,6 +132,21 @@ describe Reports::Categories::API do
         expect(category).to_not include('created_at')
         expect(category).to_not include('updated_at')
         expect(category).to_not include('active')
+      end
+    end
+
+    context 'subcategories_flat param' do
+      let!(:subcategories) { create(:reports_category, parent_id: categories.first.id) }
+
+      context 'if param is set to true' do
+        it 'returns subcategories along with categories' do
+          get '/reports/categories?subcategories_flat=true'
+          expect(response.status).to eq(200)
+
+          expect(parsed_body['categories'].map do |c|
+                   c['id']
+                 end).to match(Reports::Category.pluck(:id))
+        end
       end
     end
   end
@@ -157,10 +173,10 @@ describe Reports::Categories::API do
       expect(category[:marker]).to_not be_empty
     end
 
-    context "updating the confidentiality of reports" do
+    context 'updating the confidentiality of reports' do
       let(:category) { create(:reports_category_with_statuses) }
 
-      it "updates the confidential flag" do
+      it 'updates the confidential flag' do
         valid_params[:confidential] = true
         put '/reports/categories/' + category.id.to_s, valid_params, auth(user)
         expect(response.status).to eq(204)

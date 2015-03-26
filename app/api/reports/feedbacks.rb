@@ -1,7 +1,7 @@
 module Reports::Feedbacks
   class API < Grape::API
     namespace ':id/feedback' do
-      desc "Get the feedback for the report item"
+      desc 'Get the feedback for the report item'
       params do
         requires :id, type: Integer, desc: 'The id of the report'
       end
@@ -16,14 +16,14 @@ module Reports::Feedbacks
         }
       end
 
-      desc "Create a feedback for the report item"
+      desc 'Create a feedback for the report item'
       params do
         requires :id, type: Integer,
-                 desc: "The id of the report"
+                 desc: 'The id of the report'
         requires :kind, type: String,
                  desc: "The kind of the feedback, can be 'positive' or 'negative'"
         optional :content, type: String,
-                 desc: "The content of the report item"
+                 desc: 'The content of the report item'
         optional :images, type: Array,
                desc: 'An array of images(post data or encoded on base64) for this feedback'
       end
@@ -34,18 +34,16 @@ module Reports::Feedbacks
 
         if report.category.user_response_time.present?
           unless report.can_receive_feedback?
-            error!("A solicitação ainda não foi resolvida ou o prazo já expirou", 401)
+            error!('A solicitação ainda não foi resolvida ou o prazo já expirou', 401)
           end
         else
-          error!("A solicitação não aceita feedback após a resolução", 401)
+          error!('A solicitação não aceita feedback após a resolução', 401)
         end
 
         feedback_params = safe_params.permit(:kind, :content)
 
         feedback_params[:user_id] = current_user.id
-        feedback_params.merge!({
-          reports_item_id: safe_params[:id]
-        })
+        feedback_params.merge!(reports_item_id: safe_params[:id])
 
         feedback = report.create_feedback!(feedback_params)
 

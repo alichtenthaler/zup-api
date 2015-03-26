@@ -1,97 +1,97 @@
-require "spec_helper"
+require 'spec_helper'
 
 describe ListUsers do
   let(:users) { create_list(:user, 20) }
 
-  context "searching by name" do
+  context 'searching by name' do
     let(:correct_user) do
       user = users.sample
-      user.update(name: "Test Name")
+      user.update(name: 'Test Name')
       user
     end
 
-    context "using like search" do
+    context 'using like search' do
       let(:valid_params) do
         {
-          name: "Test"
+          name: 'Test'
         }
       end
 
       subject { described_class.new(valid_params) }
 
-      it "returns only the user with part of the name" do
+      it 'returns only the user with part of the name' do
         users = subject.fetch
         expect(users).to match_array([correct_user])
       end
     end
 
-    context "using common search" do
+    context 'using common search' do
       let(:wrong_user) do
         users.delete(correct_user)
         user - users.sample
-        user.update(name: "Test Wrong")
+        user.update(name: 'Test Wrong')
         user
       end
       let(:valid_params) do
         {
-          name: "Test Name"
+          name: 'Test Name'
         }
       end
 
       subject { described_class.new(valid_params) }
 
-      it "returns only the user with part of the name" do
+      it 'returns only the user with part of the name' do
         users = subject.fetch
         expect(users).to match_array([correct_user])
       end
     end
   end
 
-  context "searching by email" do
+  context 'searching by email' do
     let(:correct_user) do
       user = users.sample
-      user.update(email: "test@gmail.com")
+      user.update(email: 'test@gmail.com')
       user
     end
 
-    context "using like search" do
+    context 'using like search' do
       let(:valid_params) do
         {
-          email: "test"
+          email: 'test'
         }
       end
 
       subject { described_class.new(valid_params) }
 
-      it "returns only the user with part of the name" do
+      it 'returns only the user with part of the name' do
         users = subject.fetch
         expect(users).to match_array([correct_user])
       end
     end
 
-    context "using common search" do
+    context 'using common search' do
       let(:wrong_user) do
         users.delete(correct_user)
         user - users.sample
-        user.update(name: "gmail@test.com")
+        user.update(name: 'gmail@test.com')
         user
       end
       let(:valid_params) do
         {
-          email: "test@gmail.com"
+          email: 'test@gmail.com'
         }
       end
 
       subject { described_class.new(valid_params) }
 
-      it "returns only the user with part of the name" do
+      it 'returns only the user with part of the name' do
         users = subject.fetch
         expect(users).to match_array([correct_user])
       end
     end
   end
 
-  context "searching by groups" do
+  context 'searching by groups' do
     let(:group) { create(:group) }
     let(:correct_user) do
       user = users.sample
@@ -107,7 +107,7 @@ describe ListUsers do
 
     subject { described_class.new(valid_params) }
 
-    it "returns only the user with the defined group" do
+    it 'returns only the user with the defined group' do
       users = subject.fetch
       expect(users).to match_array([correct_user])
     end

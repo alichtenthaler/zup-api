@@ -8,6 +8,10 @@ class Inventory::FieldOption < Inventory::Base
     where(inventory_field_options: { disabled: false })
   }
 
+  scope :sorted, -> {
+    order(value: :asc)
+  }
+
   # Disable this field option
   def disable!
     update!(disabled: true)

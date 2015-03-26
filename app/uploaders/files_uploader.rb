@@ -3,7 +3,7 @@ class FilesUploader < CarrierWave::Uploader::Base
     if Rails.env.test?
       "uploads/#{Rails.env}/"
     else
-      "uploads/"
+      'uploads/'
     end
   end
 end

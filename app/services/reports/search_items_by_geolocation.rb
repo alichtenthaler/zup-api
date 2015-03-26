@@ -20,20 +20,20 @@ module Reports
     private
 
     def build_sql_statement(position_hash)
-      statement = ""
+      statement = ''
 
-      position_hash.each do |index, p|
+      position_hash.each do |_index, p|
         # Distance in meters
         distance = p[:distance].to_i
 
         unless statement.blank?
-          statement += " OR "
+          statement += ' OR '
         end
 
         statement += <<-SQL
           ST_DWithin(
-            ST_MakePoint(#{p[:longitude].to_f}, #{p[:latitude].to_f})::geography,
-            reports_items.position, #{distance}
+            ST_SetSRID(ST_MakePoint(#{p[:longitude].to_f}, #{p[:latitude].to_f}), 4326)::geography,
+            ST_SetSRID(reports_items.position, 4326), #{distance}
           )
         SQL
       end

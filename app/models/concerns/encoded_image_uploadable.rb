@@ -91,5 +91,4 @@ module EncodedImageUploadable
       METHODS
     end
   end
-
 end

@@ -11,13 +11,13 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20150318055535) do
+ActiveRecord::Schema.define(version: 20150324061354) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
+  enable_extension "postgis"
   enable_extension "hstore"
   enable_extension "pg_trgm"
-  enable_extension "postgis"
   enable_extension "postgis_topology"
 
   create_table "access_keys", force: true do |t|
@@ -74,6 +74,9 @@ ActiveRecord::Schema.define(version: 20150318055535) do
   end
 
   add_index "case_steps", ["case_id"], :name => "index_case_steps_on_case_id"
+  add_index "case_steps", ["created_by_id", "updated_by_id"], :name => "index_case_steps_on_created_by_id_and_updated_by_id"
+  add_index "case_steps", ["responsible_group_id"], :name => "index_case_steps_on_responsible_group_id"
+  add_index "case_steps", ["responsible_user_id"], :name => "index_case_steps_on_responsible_user_id"
   add_index "case_steps", ["step_id"], :name => "index_case_steps_on_step_id"
 
   create_table "cases", force: true do |t|
@@ -92,7 +95,11 @@ ActiveRecord::Schema.define(version: 20150318055535) do
     t.string   "old_status"
   end
 
+  add_index "cases", ["created_by_id", "updated_by_id"], :name => "index_cases_on_created_by_id_and_updated_by_id"
+  add_index "cases", ["initial_flow_id", "flow_version"], :name => "index_cases_on_initial_flow_id_and_flow_version"
   add_index "cases", ["initial_flow_id"], :name => "index_cases_on_initial_flow_id"
+  add_index "cases", ["original_case_id"], :name => "index_cases_on_original_case_id"
+  add_index "cases", ["status"], :name => "index_cases_on_status"
 
   create_table "cases_log_entries", force: true do |t|
     t.integer  "user_id"
@@ -142,6 +149,9 @@ ActiveRecord::Schema.define(version: 20150318055535) do
     t.boolean  "draft",                 default: true
   end
 
+  add_index "fields", ["active"], :name => "index_fields_on_active"
+  add_index "fields", ["draft"], :name => "index_fields_on_draft"
+  add_index "fields", ["field_type"], :name => "index_fields_on_field_type"
   add_index "fields", ["step_id"], :name => "index_fields_on_step_id"
 
   create_table "flows", force: true do |t|
@@ -159,6 +169,10 @@ ActiveRecord::Schema.define(version: 20150318055535) do
     t.json     "resolution_states_versions", default: {}
     t.json     "steps_versions",             default: {}
   end
+
+  add_index "flows", ["initial"], :name => "index_flows_on_initial"
+  add_index "flows", ["status", "current_version", "draft"], :name => "index_flows_on_status_and_current_version_and_draft"
+  add_index "flows", ["step_id"], :name => "index_flows_on_step_id"
 
   create_table "group_permissions", force: true do |t|
     t.integer  "group_id"
@@ -204,7 +218,7 @@ ActiveRecord::Schema.define(version: 20150318055535) do
     t.boolean  "inventories_formulas_full_access",     default: false
     t.integer  "group_edit",                           default: [],    array: true
     t.integer  "group_read_only",                      default: [],    array: true
-    t.integer  "reports_items_read_only",              default: [],    array: true
+    t.integer  "reports_items_read_public",            default: [],    array: true
     t.integer  "reports_items_create",                 default: [],    array: true
     t.integer  "reports_items_edit",                   default: [],    array: true
     t.integer  "reports_items_delete",                 default: [],    array: true
@@ -215,6 +229,7 @@ ActiveRecord::Schema.define(version: 20150318055535) do
     t.integer  "inventories_items_delete",             default: [],    array: true
     t.integer  "inventories_categories_edit",          default: [],    array: true
     t.integer  "inventories_category_manage_triggers", default: [],    array: true
+    t.integer  "reports_items_read_private",           default: [],    array: true
   end
 
   add_index "group_permissions", ["can_execute_step"], :name => "index_group_permissions_on_can_execute_step"
@@ -361,6 +376,20 @@ ActiveRecord::Schema.define(version: 20150318055535) do
     t.string  "attachment"
   end
 
+  create_table "inventory_item_data_histories", force: true do |t|
+    t.integer  "inventory_item_history_id",                  null: false
+    t.integer  "inventory_item_data_id",                     null: false
+    t.string   "previous_content"
+    t.string   "new_content"
+    t.integer  "previous_selected_options_ids", default: [], null: false, array: true
+    t.integer  "new_selected_options_ids",      default: [], null: false, array: true
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  add_index "inventory_item_data_histories", ["inventory_item_data_id"], :name => "index_item_data_histories_on_item_data_id"
+  add_index "inventory_item_data_histories", ["inventory_item_history_id"], :name => "index_item_data_histories_on_item_history_id"
+
   create_table "inventory_item_data_images", force: true do |t|
     t.integer  "inventory_item_data_id"
     t.string   "image"
@@ -402,8 +431,6 @@ ActiveRecord::Schema.define(version: 20150318055535) do
 
   add_index "inventory_items", ["inventory_category_id"], :name => "index_inventory_items_on_inventory_category_id"
   add_index "inventory_items", ["inventory_status_id"], :name => "index_inventory_items_on_inventory_status_id"
-  add_index "inventory_items", ["sequence"], :name => "sequence_idx"
-  add_index "inventory_items", ["title"], :name => "title_idx"
   add_index "inventory_items", ["user_id"], :name => "index_inventory_items_on_user_id"
 
   create_table "inventory_sections", force: true do |t|
@@ -578,6 +605,9 @@ ActiveRecord::Schema.define(version: 20150318055535) do
     t.integer  "user_id"
   end
 
+  add_index "resolution_states", ["active"], :name => "index_resolution_states_on_active"
+  add_index "resolution_states", ["default"], :name => "index_resolution_states_on_default"
+  add_index "resolution_states", ["draft"], :name => "index_resolution_states_on_draft"
   add_index "resolution_states", ["flow_id"], :name => "index_resolution_states_on_flow_id"
 
   create_table "steps", force: true do |t|
@@ -597,7 +627,9 @@ ActiveRecord::Schema.define(version: 20150318055535) do
     t.json     "triggers_versions",    default: {}
   end
 
+  add_index "steps", ["draft"], :name => "index_steps_on_draft"
   add_index "steps", ["flow_id"], :name => "index_steps_on_flow_id"
+  add_index "steps", ["step_type", "flow_id", "active"], :name => "index_steps_on_step_type_and_flow_id_and_active"
 
   create_table "trigger_conditions", force: true do |t|
     t.integer  "field_id"
@@ -612,6 +644,8 @@ ActiveRecord::Schema.define(version: 20150318055535) do
     t.integer  "user_id"
   end
 
+  add_index "trigger_conditions", ["active"], :name => "index_trigger_conditions_on_active"
+  add_index "trigger_conditions", ["draft"], :name => "index_trigger_conditions_on_draft"
   add_index "trigger_conditions", ["field_id"], :name => "index_trigger_conditions_on_field_id"
   add_index "trigger_conditions", ["trigger_id"], :name => "index_trigger_conditions_on_trigger_id"
 
@@ -629,6 +663,8 @@ ActiveRecord::Schema.define(version: 20150318055535) do
     t.json     "trigger_conditions_versions", default: {}
   end
 
+  add_index "triggers", ["active"], :name => "index_triggers_on_active"
+  add_index "triggers", ["draft"], :name => "index_triggers_on_draft"
   add_index "triggers", ["step_id"], :name => "index_triggers_on_step_id"
 
   create_table "users", force: true do |t|

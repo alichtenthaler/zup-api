@@ -1,7 +1,7 @@
-require "spec_helper"
+require 'spec_helper'
 
 describe Users::API do
-  context "POST /authenticate" do
+  context 'POST /authenticate' do
     let(:user) { create(:user, password: '123456') }
     let(:valid_params) do
       JSON.parse <<-JSON
@@ -12,20 +12,20 @@ describe Users::API do
       JSON
     end
 
-    it "returns the user and the access key if successful" do
-      post "/authenticate", valid_params
+    it 'returns the user and the access key if successful' do
+      post '/authenticate', valid_params
       response.status.should == 201
       parsed_body['token'].should == user.last_access_key
     end
 
-    it "returns error message" do
+    it 'returns error message' do
       valid_params[:password] = 'wrongpassword'
-      post "/authenticate", valid_params
+      post '/authenticate', valid_params
       response.status.should == 401
-      parsed_body.should include("error")
+      parsed_body.should include('error')
     end
 
-    context "passing device token and type" do
+    context 'passing device token and type' do
       let(:device_token) { SecureRandom.hex }
       let(:device_type) { 'ios' }
 
@@ -34,8 +34,8 @@ describe Users::API do
         valid_params['device_type'] = device_type
       end
 
-      it "updates the user" do
-        post "/authenticate", valid_params
+      it 'updates the user' do
+        post '/authenticate', valid_params
         expect(response.status).to eq(201)
         user.reload
         expect(user.device_token).to eq(device_token)
@@ -44,11 +44,11 @@ describe Users::API do
     end
   end
 
-  context "DELETE /sign_out" do
+  context 'DELETE /sign_out' do
     let(:user) { create(:user) }
     let(:access_key) { user.access_keys.last }
 
-    it "expires the access key" do
+    it 'expires the access key' do
       delete '/sign_out', token: access_key.key
       expect(response.status).to eq(200)
 
@@ -58,7 +58,7 @@ describe Users::API do
     end
   end
 
-  context "PUT /recover_password" do
+  context 'PUT /recover_password' do
     let(:user) { create(:user) }
     let(:valid_params) do
       JSON.parse <<-JSON
@@ -68,15 +68,15 @@ describe Users::API do
       JSON
     end
 
-    it "sends a reset password e-mail" do
+    it 'sends a reset password e-mail' do
       expect(user.reset_password_token).to be_blank
-      put "/recover_password", valid_params
+      put '/recover_password', valid_params
       expect(response.status).to eq(200)
       expect(user.reload.reset_password_token).to_not be_blank
     end
   end
 
-  context "PUT /reset_password" do
+  context 'PUT /reset_password' do
     let(:user) { user = create(:user) }
     let(:valid_params) do
       JSON.parse <<-JSON
@@ -87,11 +87,11 @@ describe Users::API do
       JSON
     end
 
-    it "resets the user password" do
+    it 'resets the user password' do
       User.request_password_recovery(user.email)
       user.reload
 
-      put "/reset_password", valid_params
+      put '/reset_password', valid_params
       expect(response.status).to eq(200)
 
       user.reload
@@ -99,7 +99,7 @@ describe Users::API do
     end
   end
 
-  context "POST /users" do
+  context 'POST /users' do
     let!(:guest_group) { create(:guest_group) }
     let(:valid_params) do
       JSON.parse <<-JSON
@@ -120,42 +120,42 @@ describe Users::API do
       JSON
     end
 
-    it "creates a user if every required param is ok" do
-      post "/users", valid_params
+    it 'creates a user if every required param is ok' do
+      post '/users', valid_params
       expect(response.status).to eq(201)
       last_user = User.last
-      expect(last_user.email).to eq("johnk12@gmail.com")
+      expect(last_user.email).to eq('johnk12@gmail.com')
 
       body = parsed_body
-      expect(body).to include("message")
-      expect(body).to include("user")
-      expect(body["user"]["email"]).to eq("johnk12@gmail.com")
-      expect(body["user"]["encrypted_password"]).to be_nil
-      expect(body["user"]["updated_at"]).to be_blank
-      expect(body["user"]["facebook_user_id"]).to eq(12345678)
-      expect(body["user"]["device_token"]).to_not be_blank
-      expect(body["user"]["device_type"]).to_not be_blank
+      expect(body).to include('message')
+      expect(body).to include('user')
+      expect(body['user']['email']).to eq('johnk12@gmail.com')
+      expect(body['user']['encrypted_password']).to be_nil
+      expect(body['user']['updated_at']).to be_blank
+      expect(body['user']['facebook_user_id']).to eq(12345678)
+      expect(body['user']['device_token']).to_not be_blank
+      expect(body['user']['device_type']).to_not be_blank
       expect(last_user.groups).to include(guest_group)
     end
 
-    it "returns error message if a required param is missing" do
-      valid_params.delete("email")
-      post "/users", valid_params
+    it 'returns error message if a required param is missing' do
+      valid_params.delete('email')
+      post '/users', valid_params
       expect(response.status).to eq(400)
       body = parsed_body
 
-      expect(body).to include("error")
-      expect(body['error']).to include("email")
-      expect(body['error']['email']).to include("não pode ficar em branco")
+      expect(body).to include('error')
+      expect(body['error']).to include('email')
+      expect(body['error']['email']).to include('não pode ficar em branco')
     end
 
-    context "setting the groups" do
+    context 'setting the groups' do
       let(:groups) { create_list(:group, 3) }
 
-      it "sets the group" do
+      it 'sets the group' do
         valid_params['groups_ids'] = groups.map(&:id)
 
-        post "/users", valid_params
+        post '/users', valid_params
         expect(response.status).to eq(201)
         last_user = User.last
 
@@ -164,7 +164,7 @@ describe Users::API do
     end
   end
 
-  context "GET /users/:id" do
+  context 'GET /users/:id' do
     let(:user) { create(:user) }
 
     it "returns user's data" do
@@ -172,52 +172,52 @@ describe Users::API do
       expect(response.status).to eq(200)
 
       body = parsed_body
-      expect(body).to include("user")
+      expect(body).to include('user')
 
-      expect(body["user"]["id"]).to eq(user.id)
-      expect(body["user"]["email"]).to eq(user.email)
-      expect(body["user"]["encrypted_password"]).to be_nil
-      expect(body["user"]["updated_at"]).to be_blank
+      expect(body['user']['id']).to eq(user.id)
+      expect(body['user']['email']).to eq(user.email)
+      expect(body['user']['encrypted_password']).to be_nil
+      expect(body['user']['updated_at']).to be_blank
     end
 
     it "returns error message if id doesn't exists" do
-      get "/users/1231231"
+      get '/users/1231231'
       expect(response.status).to eq(404)
       body = parsed_body
-      expect(body).to include("error")
-      expect(body["error"]).to match(/Couldn't find/)
+      expect(body).to include('error')
+      expect(body['error']).to match(/Couldn't find/)
     end
   end
 
-  context "GET /me" do
+  context 'GET /me' do
     let(:user) { create(:user) }
     it "returns the signed user's data" do
-      get "/me", nil, auth(user)
+      get '/me', nil, auth(user)
       expect(response.status).to eq(200)
       body = parsed_body
 
-      expect(body).to include("user")
-      expect(body["user"]["id"]).to eq(user.id)
-      expect(body["user"]["encrypted_password"]).to be_nil
-      expect(body["user"]["updated_at"]).to be_blank
+      expect(body).to include('user')
+      expect(body['user']['id']).to eq(user.id)
+      expect(body['user']['encrypted_password']).to be_nil
+      expect(body['user']['updated_at']).to be_blank
     end
 
-    it "accepts the token on header" do
-      get "/me", nil, auth(user)
+    it 'accepts the token on header' do
+      get '/me', nil, auth(user)
       expect(response.status).to eq(200)
     end
   end
 
-  context "DELETE /me" do
+  context 'DELETE /me' do
     let(:user) { create(:user) }
 
-    it "destroys current user" do
-      delete "/me", nil, auth(user)
+    it 'destroys current user' do
+      delete '/me', nil, auth(user)
       expect(User.find_by(id: user.id)).to be_disabled
     end
   end
 
-  context "PUT /users" do
+  context 'PUT /users' do
     let(:user) { create(:user, password: '123456') }
 
     let(:valid_params) do
@@ -231,12 +231,13 @@ describe Users::API do
     it "updates user's info" do
       put "/users/#{user.id}", valid_params, auth(user)
       expect(response.status).to eq(200)
-      expect(user.reload.email).to eq("anotheremail@gmail.com")
+      expect(user.reload.email).to eq('anotheremail@gmail.com')
     end
 
-    context "changing password" do
+    context 'changing password' do
       before do
-        user.groups = Group.guest
+        group = create(:guest_group)
+        user.groups = [group]
         user.save!
       end
 
@@ -263,7 +264,7 @@ describe Users::API do
         expect(user.reload.encrypted_password).to_not eq(old_password_hash)
       end
 
-      context "user manager changing the password" do
+      context 'user manager changing the password' do
         let(:manager) { create(:user, groups: []) }
         let(:group) { create(:group) }
 
@@ -281,7 +282,7 @@ describe Users::API do
     end
   end
 
-  context "DELETE /users/:id" do
+  context 'DELETE /users/:id' do
     let(:user) { create(:user) }
     let(:other_user) { create(:user) }
 
@@ -292,14 +293,38 @@ describe Users::API do
     end
 
     it "can't destroy user account if it doesn't have permission to" do
-      user.groups.first.permission.update(users_full_access: false)
+      group = create(:group)
+      user.groups = [group]
+      user.save!
+
       delete "/users/#{other_user.id}", nil, auth(user)
       expect(response.status).to eq(403)
     end
   end
 
-  context "GET /users" do
-    let!(:user) { create(:user, name: "Burns", email: "burns@test.com") }
+  context 'PUT /users/:id/enable' do
+    let(:user) { create(:user, :disabled) }
+    let(:other_user) { create(:user, :disabled) }
+
+    it "enables user's account again" do
+      put "/users/#{user.id}/enable", nil, auth(user)
+      expect(response.status).to eq(200)
+      expect(User.find_by(id: user.id)).to be_enabled
+    end
+
+    it "can't enable user account if it doesn't have permission to" do
+      group = create(:group)
+      user.groups = [group]
+      user.save!
+
+      put "/users/#{other_user.id}/enable", nil, auth(user)
+      expect(response.status).to eq(403)
+      expect(User.find_by(id: other_user.id)).to be_disabled
+    end
+  end
+
+  context 'GET /users' do
+    let!(:user) { create(:user, name: 'Burns', email: 'burns@test.com') }
     let!(:users) { create_list(:user, 5) }
     let!(:group) { create(:group) }
     let(:valid_params) do
@@ -312,66 +337,66 @@ describe Users::API do
       JSON
     end
 
-    it "returns all users if no filter is selected" do
-      get "/users", nil, auth(user)
+    it 'returns all users if no filter is selected' do
+      get '/users', nil, auth(user)
       expect(response.status).to eq(200)
       body = parsed_body
 
-      expect(body).to include("users")
-      expect(body["users"].size).to eq(6)
-      expect(body["users"].first["id"]).to_not be_nil
+      expect(body).to include('users')
+      expect(body['users'].size).to eq(6)
+      expect(body['users'].first['id']).to_not be_nil
     end
 
-    it "returns the user that satisfy the filter" do
-      valid_params.delete("groups")
-      get "/users", valid_params, auth(user)
+    it 'returns the user that satisfy the filter' do
+      valid_params.delete('groups')
+      get '/users', valid_params, auth(user)
       expect(response.status).to eq(200)
       body = parsed_body
 
-      expect(body).to include("users")
-      expect(body["users"].first["id"]).to eq(user.id)
+      expect(body).to include('users')
+      expect(body['users'].first['id']).to eq(user.id)
     end
 
-    it "retuns the user that is on the group" do
-      valid_params.delete("name")
-      valid_params.delete("email")
+    it 'retuns the user that is on the group' do
+      valid_params.delete('name')
+      valid_params.delete('email')
 
       group.users << user
       group.save
 
-      get "/users", valid_params, auth(user)
+      get '/users', valid_params, auth(user)
       expect(response.status).to eq(200)
       body = parsed_body
 
-      expect(body).to include("users")
-      expect(body["users"].first["id"]).to eq(user.id)
-      expect(body["users"].size).to eq(1)
+      expect(body).to include('users')
+      expect(body['users'].first['id']).to eq(user.id)
+      expect(body['users'].size).to eq(1)
     end
   end
 
-  describe "GET /users/unsubscribe/:token" do
+  describe 'GET /users/unsubscribe/:token' do
     let(:url) { "/users/unsubscribe/#{token}" }
 
     subject { get url }
 
-    context "with valid token" do
+    context 'with valid token' do
       let(:user) { create(:user) }
       let(:token) { user.unsubscribe_email_token }
 
-      it "unsubscribes user" do
+      it 'unsubscribes user' do
         subject
         expect(user.reload.email_notifications).to be_falsy
       end
     end
 
-    context "with non-existent token" do
+    context 'with non-existent token' do
       let(:token) { SecureRandom.hex }
 
-      it "returns error message" do
+      it 'returns error message' do
         subject
         body = parsed_body
 
-        expect(body['message']).to eq("Usuário não encontrado")
+        expect(body['message']).to eq('Usuário não encontrado')
       end
     end
   end

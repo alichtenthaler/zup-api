@@ -1,7 +1,7 @@
 module Reports::Webhooks
   class API < Grape::API
     namespace :webhooks do
-      desc "Receives a new report"
+      desc 'Receives a new report'
       params do
         requires :external_category_id, type: Integer
         requires :is_solicitation, type: Boolean
@@ -26,7 +26,11 @@ module Reports::Webhooks
         }
       end
 
-      desc "Updates a report"
+      desc 'Updates a reports status'
+      params do
+        optional :status, type: Hash
+        optional :comments, type: Array
+      end
       put ':uuid' do
         uuid = params[:uuid]
 

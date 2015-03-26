@@ -1,4 +1,4 @@
-require "spec_helper"
+require 'spec_helper'
 
 describe Reports::UpdateItemStatus do
   subject { described_class.new(item) }
@@ -12,24 +12,24 @@ describe Reports::UpdateItemStatus do
     )
   end
 
-  describe "#set_status" do
+  describe '#set_status' do
     let(:item) { create(:reports_item, category: category) }
 
-    it "sets the item status to given status" do
+    it 'sets the item status to given status' do
       subject.set_status(status)
       expect(item.status).to eq(status)
     end
 
-    it "builds a new history entry for status" do
+    it 'builds a new history entry for status' do
       subject.set_status(status)
       expect(item.status_history.last.new_status).to eq(status)
     end
   end
 
-  describe "#update_status!" do
+  describe '#update_status!' do
     let(:item) { create(:reports_item, category: category) }
 
-    context "valid status from same category" do
+    context 'valid status from same category' do
       it "updates the item's status" do
         subject.update_status!(status)
 
@@ -38,13 +38,13 @@ describe Reports::UpdateItemStatus do
       end
     end
 
-    context "valid status with no relation with the company" do
+    context 'valid status with no relation with the company' do
       let(:different_status) { create(:status) }
 
-      it "raises an error" do
-        expect {
+      it 'raises an error' do
+        expect do
           subject.update_status!(different_status)
-        }.to raise_error(/Status doesn't belongs to category/)
+        end.to raise_error(/Status doesn't belongs to category/)
       end
     end
   end

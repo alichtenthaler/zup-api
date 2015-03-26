@@ -78,6 +78,10 @@ module Reports::Items
           Reports::NotifyUser.new(report).notify_report_creation!
         end
 
+        if Webhook.enabled?
+          SendReportThroughWebhook.perform_async(report.id)
+        end
+
         { report: Reports::Item::Entity.represent(report, display_type: 'full', user: current_user, only: return_fields) }
       end
     end
@@ -144,7 +148,6 @@ module Reports::Items
           Reports::UpdateItemStatus.new(report, current_user).update_status!(new_status)
         end
 
-
         {
           report: Reports::Item::Entity.represent(
             report, display_type: 'full', user: current_user
@@ -189,24 +192,24 @@ module Reports::Items
     # TODO: remove other options for searching, make this the only
     # endpoint for listing reports.
     # TODO: Move this to a namespace "items"
-    desc "Retrieve a list of reports, you can use a list of params do filter"
+    desc 'Retrieve a list of reports, you can use a list of params do filter'
     paginate per_page: 25
     params do
       optional :inventory_item_id, type: Integer,
-               desc: "Inventory item id to filter for"
+               desc: 'Inventory item id to filter for'
       optional :category_id, type: Integer,
-               desc: "Report category to filter for"
+               desc: 'Report category to filter for'
       optional :user_id, type: Integer,
-               desc: "User id to filter for"
+               desc: 'User id to filter for'
       optional :begin_date, type: DateTime,
-               desc: "The minimum date to filter"
+               desc: 'The minimum date to filter'
       optional :end_date, type: DateTime,
-               desc: "The maximum date to filter"
+               desc: 'The maximum date to filter'
       optional :statuses,
                desc: "Statuses id to filter, you can
                pass a single id or an array of ids"
       optional :display_type, type: String,
-               desc: "Display type for report data"
+               desc: 'Display type for report data'
       optional :limit, type: Integer,
                desc: 'The maximum number to reports to return'
       optional :sort, type: String,
@@ -282,10 +285,10 @@ module Reports::Items
     end
 
     # TODO: Move to a namespace "items"
-    desc "Returns data for report"
+    desc 'Returns data for report'
     params do
       optional :display_type, type: String,
-               desc: "Display type for report data"
+               desc: 'Display type for report data'
       requires :id, type: Integer, desc: "The report's ID"
     end
     get 'items/:id' do
@@ -301,7 +304,6 @@ module Reports::Items
       }
     end
 
-    # TODO Permissions
     desc 'Destroy a report item'
     params do
       requires :id, type: Integer, desc: "The report's ID"
@@ -310,7 +312,7 @@ module Reports::Items
       authenticate!
 
       report = Reports::Item.find(params[:id])
-      validate_permission!(:destroy, report)
+      validate_permission!(:delete, report)
 
       if report.destroy
         status 204
@@ -383,7 +385,6 @@ module Reports::Items
         paginator: method(:paginate)
       ).search
 
-
       {
         reports: Reports::Item::Entity.represent(
           reports,
@@ -398,7 +399,7 @@ module Reports::Items
     paginate per_page: 25
     params do
       optional :display_type, type: String,
-               desc: "Display type for report"
+               desc: 'Display type for report'
       optional :position, type: Hash,
                desc: 'Position parameters for search'
       optional :limit, type: Integer,

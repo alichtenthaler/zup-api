@@ -26,8 +26,8 @@ module PasswordAuthenticable
 
   # Encrypts the user password
   def encrypt_password
-    unless self.password.blank?
-      unless self.salt
+    unless password.blank?
+      unless salt
         begin
           self.salt = SecureRandom.hex
         end while self.class.find_by(salt: salt)
@@ -51,16 +51,16 @@ module PasswordAuthenticable
   def check_password(password_to_compare, c = nil)
     c = encrypted_password unless c
 
-    return PasswordAuthenticable.eql_time_cmp(
+    PasswordAuthenticable.eql_time_cmp(
       c,
-      PasswordAuthenticable.crypt(password_to_compare, self.salt)
+      PasswordAuthenticable.crypt(password_to_compare, salt)
     )
   end
 
   # Generate a token for password resetting
   def generate_reset_password_token!
     token = SecureRandom.hex
-    self.update(reset_password_token: token)
+    update(reset_password_token: token)
   end
 
   def should_require_password_fields?
@@ -75,7 +75,7 @@ module PasswordAuthenticable
     # and the current_password
     # or the informed one is inequal to current
     # and is not resetting the password
-    if !permissions.can?(:manage, User) &&
+    if !permissions.can?(:manage, self) &&
        !new_record? &&
        password.present? &&
        (
@@ -107,7 +107,7 @@ module PasswordAuthenticable
     # Generate a reset password token and
     # send e-mail.
     def request_password_recovery(email)
-      user = self.find_by(email: email)
+      user = find_by(email: email)
 
       if user
         user.generate_reset_password_token!
@@ -121,7 +121,7 @@ module PasswordAuthenticable
 
     # Resets the password
     def reset_password(token, new_password)
-      user = self.find_by(reset_password_token: token)
+      user = find_by(reset_password_token: token)
 
       if user
         user.resetting_password = true
@@ -140,9 +140,9 @@ module PasswordAuthenticable
     cmp = b.bytes.to_a
 
     result = 0
-    a.bytes.each_with_index {|c,i|
+    a.bytes.each_with_index do |c, i|
       result |= c ^ cmp[i]
-    }
+    end
 
     result == 0
   end

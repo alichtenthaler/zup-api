@@ -1,11 +1,11 @@
-require "rails_helper"
+require 'rails_helper'
 
 describe Reports::CreateItemFromWebhook do
   let!(:category) { create(:reports_category_with_statuses) }
 
   subject { described_class.new(valid_params) }
 
-  context "#create!" do
+  context '#create!' do
     let(:encoded_image) do
       Base64.encode64(fixture_file_upload('images/valid_report_item_photo.jpg').read).force_encoding(Encoding::UTF_8)
     end
@@ -16,30 +16,32 @@ describe Reports::CreateItemFromWebhook do
         is_solicitation: false,
         latitude: -13.12427698396538,
         longitude: -21.385812899349485,
-        description: "Este é um relato de exemplo",
-        address: "Av. Paulista, 130",
-        reference: "Próximo à Gazeta",
+        description: 'Este é um relato de exemplo',
+        address: 'Av. Paulista, 130',
+        reference: 'Próximo à Gazeta',
         images: [
-          { 'mime-type' => "image/png", data: encoded_image }
+          { 'mime-type' => 'image/png', data: encoded_image }
         ],
         status: {
-          name: "Em andamento"
+          name: 'Em andamento'
         },
         user: {
-          email: "usuario@zup.com.br",
-          name: "Usuário de Teste"
+          email: 'usuario@zup.com.br',
+          name: 'Usuário de Teste'
         },
         comments: [{
           user: {
-            email: "admin@zup.com.br",
-            name: "Administrador"
+            email: 'admin@zup.com.br',
+            name: 'Administrador'
           },
-          message: "Este é um comentário"
+          message: 'Este é um comentário'
         }]
       }
     end
 
-    it "creates the report item" do
+    it 'creates the report item' do
+      expect(subject).to receive(:find_category).and_return(category)
+
       report = subject.create!
 
       expect(report.external_category_id).to eq(3)
@@ -49,14 +51,14 @@ describe Reports::CreateItemFromWebhook do
       expect(report.position.x).to eq(-21.385812899349485)
 
       comment = report.comments.last
-      expect(comment.message).to eq("Este é um comentário")
-      expect(comment.author.email).to eq("admin@zup.com.br")
+      expect(comment.message).to eq('Este é um comentário')
+      expect(comment.author.email).to eq('admin@zup.com.br')
 
       image = report.images.last
       expect(image).to_not be_nil
 
       status = report.status
-      expect(status.title).to eq("Em andamento")
+      expect(status.title).to eq('Em andamento')
     end
   end
 end

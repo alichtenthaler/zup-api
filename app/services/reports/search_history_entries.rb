@@ -1,6 +1,6 @@
 module Reports
   class SearchHistoryEntries
-    attr_reader :item_id, :kind, :created_at, :user_id, :object_id
+    attr_reader :item_id, :kind, :created_at, :user_id, :object_id, :paginator
 
     def initialize(params = {})
       @item_id = params[:item_id]
@@ -8,6 +8,7 @@ module Reports
       @created_at = params[:created_at]
       @user_id = params[:user_id]
       @object_id = params[:object_id]
+      @paginator = params[:paginator]
     end
 
     def search
@@ -37,13 +38,13 @@ module Reports
         if begin_date && end_date
           scope = scope.where(reports_item_histories: { created_at: begin_date..end_date })
         elsif begin_date
-          scope = scope.where("reports_item_histories.created_at >= ?", begin_date)
+          scope = scope.where('reports_item_histories.created_at >= ?', begin_date)
         elsif end_date
-          scope = scope.where("reports_item_histories.created_at <= ?", end_date)
+          scope = scope.where('reports_item_histories.created_at <= ?', end_date)
         end
       end
 
-      scope
+      paginator.call(scope)
     end
   end
 end

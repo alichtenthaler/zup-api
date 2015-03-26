@@ -1,17 +1,17 @@
-require "spec_helper"
+require 'spec_helper'
 
 describe Search::Users::API do
   let(:user) { create(:user) }
 
-  context "GET /search/users" do
+  context 'GET /search/users' do
     let!(:users) { create_list(:user, 5) }
 
-    context "by name" do
-      it "returns the correct users" do
+    context 'by name' do
+      it 'returns the correct users' do
         any_user = users.sample
         any_user.update(name: 'Nome de teste')
 
-        get "/search/users?name=teste", nil, auth(user)
+        get '/search/users?name=teste', nil, auth(user)
         expect(response.status).to eq(200)
         body = parsed_body
 
@@ -20,12 +20,12 @@ describe Search::Users::API do
       end
     end
 
-    context "by email" do
-      it "returns the correct users" do
+    context 'by email' do
+      it 'returns the correct users' do
         any_user = users.sample
         any_user.update(email: 'teste@gmail.com')
 
-        get "/search/users?email=tes", nil, auth(user)
+        get '/search/users?email=tes', nil, auth(user)
         expect(response.status).to eq(200)
         body = parsed_body
 
@@ -34,7 +34,7 @@ describe Search::Users::API do
       end
     end
 
-    context "sorting" do
+    context 'sorting' do
       let(:correct_order_users) do
         (users << user).sort_by do |user|
           user.name
@@ -42,13 +42,13 @@ describe Search::Users::API do
       end
       let(:valid_params) do
         {
-          sort: "name",
-          order: "asc"
+          sort: 'name',
+          order: 'asc'
         }
       end
 
-      it "returns the users on the correct position" do
-        get "/search/users", valid_params, auth(user)
+      it 'returns the users on the correct position' do
+        get '/search/users', valid_params, auth(user)
         expect(response.status).to eq(200)
         users = parsed_body['users']
 
@@ -60,7 +60,7 @@ describe Search::Users::API do
     end
   end
 
-  context "GET /search/groups/:group_id/users" do
+  context 'GET /search/groups/:group_id/users' do
     let!(:group) { create(:group) }
     let!(:users) do
       users = create_list(:user, 5)
@@ -71,7 +71,7 @@ describe Search::Users::API do
     end
     let!(:wrong_users) { create_list(:user, 3) }
 
-    it "returns the correct users from the group" do
+    it 'returns the correct users from the group' do
       any_user = users.sample
       any_user.update(name: 'Nome de teste')
 
@@ -82,14 +82,14 @@ describe Search::Users::API do
       expect(body['users']).to_not be_empty
       users_ids = body['users'].map { |u| u['id'] }
 
-      expect(users_ids).to     include(any_user.id)
+      expect(users_ids).to include(any_user.id)
       expect(users_ids).to_not include(wrong_users.map(&:id))
       users.delete(any_user)
       expect(users_ids).to_not include(users.map(&:id))
     end
 
-    context "by email" do
-      it "returns the correct users" do
+    context 'by email' do
+      it 'returns the correct users' do
         any_user = users.sample
         any_user.update(email: 'teste@gmail.com')
 
@@ -102,7 +102,7 @@ describe Search::Users::API do
       end
     end
 
-    context "sorting" do
+    context 'sorting' do
       let(:correct_order_users) do
         users.sort_by do |user|
           user.name
@@ -110,12 +110,12 @@ describe Search::Users::API do
       end
       let(:valid_params) do
         {
-          sort: "name",
-          order: "asc"
+          sort: 'name',
+          order: 'asc'
         }
       end
 
-      it "returns the users on the correct position" do
+      it 'returns the users on the correct position' do
         get "/search/groups/#{group.id}/users", valid_params, auth(user)
         expect(response.status).to eq(200)
 

@@ -8,7 +8,7 @@ class CreateInventoryFieldOptions < ActiveRecord::Migration
       t.timestamps
     end
 
-    add_index "inventory_field_options", ["inventory_field_id"],
-      name: "index_inventory_field_options_on_inventory_field_id"
+    add_index 'inventory_field_options', ['inventory_field_id'],
+      name: 'index_inventory_field_options_on_inventory_field_id'
   end
 end

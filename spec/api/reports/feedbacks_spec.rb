@@ -3,13 +3,13 @@ require 'rails_helper'
 describe Reports::Feedbacks::API do
   let(:user) { create(:user) }
 
-  context "GET /reports/:id/feedback" do
+  context 'GET /reports/:id/feedback' do
     let!(:report) { create(:reports_item) }
     let!(:feedback) do
       create(:reports_feedback, reports_item: report)
     end
 
-    it "returns feedbacks for the report" do
+    it 'returns feedbacks for the report' do
       get "/reports/#{report.id}/feedback", nil, auth(user)
       expect(response.status).to eq(200)
       body = parsed_body
@@ -18,20 +18,20 @@ describe Reports::Feedbacks::API do
     end
   end
 
-  context "POST /reports/:id/feedback" do
+  context 'POST /reports/:id/feedback' do
     let(:report) { create(:reports_item) }
     let(:valid_params) do
         {
-          "kind" => "positive",
-          "content" => "Deu tudo certo",
-          "images" => [
+          'kind' => 'positive',
+          'content' => 'Deu tudo certo',
+          'images' => [
             Base64.encode64(fixture_file_upload('images/valid_report_item_photo.jpg').read),
             Base64.encode64(fixture_file_upload('images/valid_report_item_photo.jpg').read)
           ]
         }
     end
 
-    it "creates the feedback for the report" do
+    it 'creates the feedback for the report' do
       Reports::UpdateItemStatus.new(report).update_status!(report.category.statuses.final.first)
 
       post "/reports/#{report.id}/feedback", valid_params, auth(user)

@@ -1,11 +1,11 @@
-require "spec_helper"
+require 'spec_helper'
 
 describe Inventory::ItemDataRepresenter do
   let!(:item) { create(:inventory_item) }
   subject { described_class.factory(item) }
 
-  describe "#initialize" do
-    it "for each field title, it creates an attribute" do
+  describe '#initialize' do
+    it 'for each field title, it creates an attribute' do
       item.category.fields.each do |field|
         expect { subject.send(field.title) }.to_not raise_error
       end
@@ -18,10 +18,10 @@ describe Inventory::ItemDataRepresenter do
     end
   end
 
-  describe "#attributes=" do
-    it "changes the value of the accessor" do
+  describe '#attributes=' do
+    it 'changes the value of the accessor' do
       random_field = item.category.fields.where(kind: 'text').sample
-      test_data = "Test"
+      test_data = 'Test'
 
       expect(subject.send(random_field.title)).to_not eq(test_data)
       subject.attributes = { random_field.id => test_data }
@@ -30,34 +30,34 @@ describe Inventory::ItemDataRepresenter do
 
     it "raises error if field doesn't exists" do
       expect do
-        subject.attributes = { 123123141 => "Test" }
+        subject.attributes = { 123123141 => 'Test' }
       end.to raise_error
     end
 
-    context "converting data types" do
+    context 'converting data types' do
       let(:random_field) { item.category.fields.sample }
       before do
         random_field.update(kind: 'integer')
       end
 
-      it "converts the content to specified class" do
-        test_data = "10"
+      it 'converts the content to specified class' do
+        test_data = '10'
         subject.attributes = { random_field.id => test_data }
         expect(subject.send(random_field.title)).to eq(10)
       end
     end
   end
 
-  describe "#inject_to_data!" do
-    context "updates the item_data instance" do
+  describe '#inject_to_data!' do
+    context 'updates the item_data instance' do
       let(:random_field) { item.category.fields.where(kind: 'text').sample }
-      let(:test_data) { "Test" }
+      let(:test_data) { 'Test' }
 
       before do
         subject.attributes = { random_field.id => test_data }
       end
 
-      it "changes the value of existant item_datas of the item" do
+      it 'changes the value of existant item_datas of the item' do
         item_data_of_field = item.data.select { |id| id.field == random_field }.first
 
         expect(item_data_of_field.content).to_not eq(test_data)
@@ -85,9 +85,9 @@ describe Inventory::ItemDataRepresenter do
     context "validates field's requirement" do
       let(:random_field) { item.category.fields.sample }
 
-      context "with integer type" do
-        let(:test_data) { "20" }
-        context "maximum" do
+      context 'with integer type' do
+        let(:test_data) { '20' }
+        context 'maximum' do
           before do
             random_field.update(kind: 'integer', maximum: 10)
             subject.attributes = { random_field.id => test_data }
@@ -99,7 +99,7 @@ describe Inventory::ItemDataRepresenter do
           end
         end
 
-        context "minimum" do
+        context 'minimum' do
           before do
             random_field.update(kind: 'integer', minimum: 30)
             subject.attributes = { random_field.id => test_data }
@@ -117,16 +117,16 @@ describe Inventory::ItemDataRepresenter do
             subject.attributes = { random_field.id => '' }
           end
 
-          it "returns true and no error" do
+          it 'returns true and no error' do
             subject.inject_to_data!
             expect(subject.errors).to_not include(random_field.title.to_sym)
           end
         end
       end
 
-      context "with float type" do
-        let(:test_data) { "20.3" }
-        context "maximum" do
+      context 'with float type' do
+        let(:test_data) { '20.3' }
+        context 'maximum' do
           before do
             random_field.update(kind: 'decimal', maximum: 20)
             subject.attributes = { random_field.id => test_data }
@@ -138,7 +138,7 @@ describe Inventory::ItemDataRepresenter do
           end
         end
 
-        context "minimum" do
+        context 'minimum' do
           before do
             random_field.update(kind: 'decimal', minimum: 21)
             subject.attributes = { random_field.id => test_data }
@@ -151,10 +151,10 @@ describe Inventory::ItemDataRepresenter do
         end
       end
 
-      context "with string type" do
-        let(:test_data) { "estevao.am@gmail.com" }
+      context 'with string type' do
+        let(:test_data) { 'estevao.am@gmail.com' }
 
-        context "maximum" do
+        context 'maximum' do
           before do
             random_field.update(kind: 'email', maximum: 4)
             subject.attributes = { random_field.id => test_data }
@@ -166,7 +166,7 @@ describe Inventory::ItemDataRepresenter do
           end
         end
 
-        context "minimum" do
+        context 'minimum' do
           before do
             random_field.update(kind: 'email', minimum: 21)
             subject.attributes = { random_field.id => test_data }

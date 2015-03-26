@@ -1,7 +1,7 @@
 class CreateGroupsUsersTable < ActiveRecord::Migration
   def change
-    create_table :groups_users_tables, if: false do |t|
-      create_table :groups_users, :id => false do |t|
+    create_table :groups_users_tables, if: false do |_t|
+      create_table :groups_users, id: false do |t|
         t.references :group
         t.references :user
       end

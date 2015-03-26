@@ -1,11 +1,11 @@
 module CaseHelper
   def fields_params
     return [] if safe_params[:fields].blank?
-    safe_params[:fields].map { |field| {field_id: field['id'].to_i, value: field['value'].to_s} }
+    safe_params[:fields].map { |field| { field_id: field['id'].to_i, value: field['value'].to_s } }
   end
 
   def split_param(key)
-    safe_params[key] and safe_params[key].split(',').map(&:to_i)
+    safe_params[key] && safe_params[key].split(',').map(&:to_i)
   end
 
   def filter_params
@@ -22,9 +22,9 @@ module CaseHelper
 
   def run_triggers(step, kase)
     trigger_type, trigger_values, trigger_description = nil
-    triggers = step.try(:my_triggers, {active: true})
+    triggers = step.try(:my_triggers, active: true)
 
-    if triggers.present? and fields_params.present?
+    if triggers.present? && fields_params.present?
       triggers.each do |trigger|
         case_step  = kase.case_steps.find_by(step_id: step.id)
         conditions = trigger.my_trigger_conditions(active: true).map do |condition|
@@ -53,7 +53,7 @@ module CaseHelper
         end
       end
     end
-    {type: trigger_type, value: trigger_values, description: trigger_description}
+    { type: trigger_type, value: trigger_values, description: trigger_description }
   end
 
   def compare_trigger_condition?(condition, data_fields)

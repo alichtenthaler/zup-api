@@ -5,7 +5,7 @@ describe Flows::API, versioning: true do
   let(:guest_user) { create(:guest_user) }
 
   describe 'on create' do
-    let(:valid_params) { {title: 'title test', description: 'description test'} }
+    let(:valid_params) { { title: 'title test', description: 'description test' } }
 
     context 'no authentication' do
       before { post '/flows', valid_params }
@@ -27,7 +27,7 @@ describe Flows::API, versioning: true do
             before { post '/flows', {}, auth(user) }
 
             it { expect(response.status).to be_a_bad_request }
-            it { expect(response.body).to be_an_error({'title' => [I18n.t('activerecord.errors.messages.blank')]}) }
+            it { expect(response.body).to be_an_error('title' => [I18n.t('activerecord.errors.messages.blank')]) }
           end
         end
 
@@ -71,7 +71,7 @@ describe Flows::API, versioning: true do
 
         context 'successfully' do
           context 'when sent display_type full' do
-            before { get "/flows/#{flow.id}", {display_type: 'full'}, auth(user) }
+            before { get "/flows/#{flow.id}", { display_type: 'full' }, auth(user) }
 
             it { expect(response.status).to be_a_success_request }
             it { expect(parsed_body['flow']).to be_an_entity_of(flow.reload, display_type: 'full') }
@@ -126,7 +126,7 @@ describe Flows::API, versioning: true do
   end
 
   describe 'on update' do
-    let(:valid_params) { {title: 'new title test'} }
+    let(:valid_params) { { title: 'new title test' } }
     let(:flow)         { create(:flow, initial: true, resolution_states: [build(:resolution_state, default: false)]) }
 
     context 'no authentication' do
@@ -146,10 +146,10 @@ describe Flows::API, versioning: true do
       context 'and user can manage flows' do
         context 'and failure' do
           context 'because validations fields' do
-            before { put "/flows/#{flow.id}", {title: ''}, auth(user) }
+            before { put "/flows/#{flow.id}", { title: '' }, auth(user) }
 
             it { expect(response.status).to be_a_bad_request }
-            it { expect(response.body).to be_an_error({'title' => [I18n.t('activerecord.errors.messages.blank')]}) }
+            it { expect(response.body).to be_an_error('title' => [I18n.t('activerecord.errors.messages.blank')]) }
           end
         end
 
@@ -243,7 +243,7 @@ describe Flows::API, versioning: true do
           before do
             flow
             other_flow.update!(initial: true, updated_by: user)
-            get '/flows', {initial: true}, auth(user)
+            get '/flows', { initial: true }, auth(user)
           end
 
           it { expect(response.status).to be_a_success_request }
@@ -277,7 +277,7 @@ describe Flows::API, versioning: true do
       context 'and user can manage flows' do
         context 'successfully' do
           context 'when sent display_type full' do
-            before { get "/flows/#{flow.id}/ancestors", {display_type: 'full'}, auth(user) }
+            before { get "/flows/#{flow.id}/ancestors", { display_type: 'full' }, auth(user) }
 
             it { expect(response.status).to be_a_success_request }
             it { expect(parsed_body['flows']).to include_an_entity_of(flow.reload) }
@@ -304,7 +304,7 @@ describe Flows::API, versioning: true do
     before { flow.publish(user) }
 
     context 'no authentication' do
-      before { put "/flows/#{flow.id}/version", {new_version: 1} }
+      before { put "/flows/#{flow.id}/version", new_version: 1 }
       it     { expect(response.status).to be_an_unauthorized }
     end
 
@@ -312,7 +312,7 @@ describe Flows::API, versioning: true do
       context 'and user can\'t manage flows' do
         let(:error) { I18n.t(:permission_denied, action: I18n.t(:manage), table_name: I18n.t(:flows)) }
 
-        before { put "/flows/#{flow.id}/version", {new_version: 1}, auth(guest_user) }
+        before { put "/flows/#{flow.id}/version", { new_version: 1 }, auth(guest_user) }
         it     { expect(response.status).to be_a_forbidden }
         it     { expect(parsed_body).to be_an_error(error) }
       end
@@ -320,7 +320,7 @@ describe Flows::API, versioning: true do
       context 'and user can manage flows' do
         context 'failure' do
           context 'when sent new_version ID is not included on Version IDs of this Flow' do
-            before { put "/flows/#{flow.id}/version", {new_version: 10}, auth(user) }
+            before { put "/flows/#{flow.id}/version", { new_version: 10 }, auth(user) }
 
             it { expect(response.status).to be_a_bad_request }
             it { expect(parsed_body).to be_an_error(I18n.t(:version_isnt_valid)) }
@@ -332,8 +332,8 @@ describe Flows::API, versioning: true do
             let!(:old_version) { flow.versions.last.id }
             let(:new_version)  { flow.versions.last.id }
             let!(:kase) do
-              case_params = {step_id: flow.steps.first.id, initial_flow_id: flow.id, initial_flow_version: old_version,
-                             fields: [{id: flow.steps.first.fields.first.id, value: '1'}]}
+              case_params = { step_id: flow.steps.first.id, initial_flow_id: flow.id, initial_flow_version: old_version,
+                             fields: [{ id: flow.steps.first.fields.first.id, value: '1' }] }
               user.groups.first.permission.update(can_execute_step: [case_params[:step_id]])
               post '/cases', case_params, auth(user)
               Case.first
@@ -354,7 +354,7 @@ describe Flows::API, versioning: true do
               expect(flow.reload.the_version.version.id).to eql new_version
               # ensuring the old_version isnt equal to new_version
               expect(old_version).to_not eql new_version
-              put "/flows/#{flow.id}/version", {new_version: old_version}, auth(user)
+              put "/flows/#{flow.id}/version", { new_version: old_version }, auth(user)
             end
 
             it { expect(response.status).to be_a_success_request }
@@ -368,7 +368,7 @@ describe Flows::API, versioning: true do
   end
 
   describe 'PUT permissions' do
-    let(:valid_params) { {group_ids: [user.groups.first.id], permission_type: 'flow_can_view_all_steps'} }
+    let(:valid_params) { { group_ids: [user.groups.first.id], permission_type: 'flow_can_view_all_steps' } }
     let!(:flow)        { create(:flow) }
 
     context 'no authentication' do
@@ -407,7 +407,7 @@ describe Flows::API, versioning: true do
   end
 
   describe 'DELETE permissions' do
-    let(:valid_params) { {group_ids: [user.groups.first.id], permission_type: 'flow_can_view_all_steps'} }
+    let(:valid_params) { { group_ids: [user.groups.first.id], permission_type: 'flow_can_view_all_steps' } }
     let!(:flow)        { create(:flow) }
 
     context 'no authentication' do

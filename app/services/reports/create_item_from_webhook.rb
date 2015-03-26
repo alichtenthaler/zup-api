@@ -95,21 +95,18 @@ module Reports
 
     def find_or_create_status!(parameters, category)
       name = parameters[:name]
-      status = Reports::Status.find_or_create_by(title: name)
+      status = Reports::Status.create_with(color: '#cccccc')
+                              .find_or_create_by!(title: name)
 
-      category.status_categories.create(
-        status: status
+      category.status_categories.find_or_create_by!(
+        reports_status_id: status.id
       )
 
       status
     end
 
     def find_category(external_category_id)
-      Reports::Category.first
-    end
-
-    def generate_uuid
-      SecureRandom.uuid
+      Reports::Category.find(external_category_id)
     end
   end
 end

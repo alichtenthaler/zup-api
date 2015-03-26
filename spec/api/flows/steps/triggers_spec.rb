@@ -12,9 +12,9 @@ describe Flows::Steps::Triggers::API do
       {
         'title'              => 'Trigger 1',
         'action_type'        => 'disable_steps',
-        'action_values'      => [1,2,3],
+        'action_values'      => [1, 2, 3],
         'trigger_conditions_attributes' => [
-          {'field_id' => field.id, 'condition_type' => '==', 'values' => [1]}
+          { 'field_id' => field.id, 'condition_type' => '==', 'values' => [1] }
         ]
       }
     end
@@ -34,7 +34,7 @@ describe Flows::Steps::Triggers::API do
         context 'and failure' do
           context 'because validations fields' do
             let(:errors) do
-              {'title'                         => [I18n.t('activerecord.errors.messages.blank')],
+              { 'title'                         => [I18n.t('activerecord.errors.messages.blank')],
                'trigger_conditions_attributes' => [I18n.t('activerecord.errors.messages.blank')],
                'action_type'                   => [I18n.t('activerecord.errors.messages.blank')],
                'action_values'                 => [I18n.t('activerecord.errors.messages.blank')]
@@ -58,7 +58,7 @@ describe Flows::Steps::Triggers::API do
           it { expect(parsed_body['trigger']).to be_an_entity_of(trigger) }
 
           it 'should has update triggers_versions on Step' do
-            expect(step.reload.triggers_versions).to eql({trigger.id.to_s => nil})
+            expect(step.reload.triggers_versions).to eql(trigger.id.to_s => nil)
           end
         end
       end
@@ -75,16 +75,15 @@ describe Flows::Steps::Triggers::API do
         'action_type'   => 'disable_steps',
         'action_values' => [3],
         'trigger_conditions_attributes' => [
-          {'field_id' => field.id, 'condition_type' => '>', 'values' => [1]},
-          {'field_id' => field.id, 'condition_type' => '<', 'values' => [10]}
+          { 'field_id' => field.id, 'condition_type' => '>', 'values' => [1] },
+          { 'field_id' => field.id, 'condition_type' => '<', 'values' => [10] }
         ]
       }
     end
 
     before do
-      params_to_create = {'title'=>'Trigger 1','action_type'=>'disable_steps',
-                          'action_values'=>[1,2,3],'trigger_conditions_attributes'=>
-                          [{'field_id'=>field.id,'condition_type'=>'==','values'=>[1]}]}
+      params_to_create = { 'title' => 'Trigger 1', 'action_type' => 'disable_steps',
+                          'action_values' => [1, 2, 3], 'trigger_conditions_attributes' =>                           [{ 'field_id' => field.id, 'condition_type' => '==', 'values' => [1] }] }
       post "/flows/#{flow.id}/steps/#{step.id}/triggers", params_to_create, auth(user)
       @trigger = Trigger.last
     end
@@ -119,7 +118,7 @@ describe Flows::Steps::Triggers::API do
           it { expect(response.body).to be_a_success_message_with(I18n.t(:trigger_updated)) }
 
           it 'should has update triggers_versions on Step' do
-            expect(trigger.step.reload.triggers_versions).to eql({trigger.id.to_s => nil})
+            expect(trigger.step.reload.triggers_versions).to eql(trigger.id.to_s => nil)
           end
         end
       end
@@ -132,9 +131,8 @@ describe Flows::Steps::Triggers::API do
     let(:field) { step.fields.first }
 
     before do
-      params_to_create = {'title'=>'Trigger 1','action_type'=>'disable_steps',
-                          'action_values'=>[1,2,3],'trigger_conditions_attributes'=>
-                          [{'field_id'=>field.id,'condition_type'=>'==','values'=>[1]}]}
+      params_to_create = { 'title' => 'Trigger 1', 'action_type' => 'disable_steps',
+                          'action_values' => [1, 2, 3], 'trigger_conditions_attributes' =>                           [{ 'field_id' => field.id, 'condition_type' => '==', 'values' => [1] }] }
       post "/flows/#{flow.id}/steps/#{step.id}/triggers", params_to_create, auth(user)
       @trigger = Trigger.last
     end
@@ -177,9 +175,8 @@ describe Flows::Steps::Triggers::API do
 
     before do
       3.times do |n|
-        params_to_create = {'title'=>"Trigger #{n}",'action_type'=>'disable_steps',
-                            'action_values'=>[n],'trigger_conditions_attributes'=>
-                            [{'field_id'=>field.id,'condition_type'=>'==','values'=>[1]}]}
+        params_to_create = { 'title' => "Trigger #{n}", 'action_type' => 'disable_steps',
+                            'action_values' => [n], 'trigger_conditions_attributes' =>                             [{ 'field_id' => field.id, 'condition_type' => '==', 'values' => [1] }] }
         post "/flows/#{flow.id}/steps/#{step.id}/triggers", params_to_create, auth(user)
       end
       triggers  = Trigger.all
@@ -214,13 +211,12 @@ describe Flows::Steps::Triggers::API do
     let!(:flow)        { create(:flow, steps: [build(:step_type_form)]) }
     let(:step)         { flow.steps.first }
     let(:field)        { step.fields.first }
-    let(:valid_params) { {ids: [@trigger2.id, @trigger3.id, @trigger1.id]} }
+    let(:valid_params) { { ids: [@trigger2.id, @trigger3.id, @trigger1.id] } }
 
     before do
       3.times do |n|
-        params_to_create = {'title'=>"Trigger #{n}",'action_type'=>'disable_steps',
-                            'action_values'=>[n],'trigger_conditions_attributes'=>
-                            [{'field_id'=>field.id,'condition_type'=>'==','values'=>[1]}]}
+        params_to_create = { 'title' => "Trigger #{n}", 'action_type' => 'disable_steps',
+                            'action_values' => [n], 'trigger_conditions_attributes' =>                             [{ 'field_id' => field.id, 'condition_type' => '==', 'values' => [1] }] }
         post "/flows/#{flow.id}/steps/#{step.id}/triggers", params_to_create, auth(user)
       end
       triggers  = Trigger.all
@@ -247,9 +243,9 @@ describe Flows::Steps::Triggers::API do
         it { expect(response.body).to be_a_success_message_with(I18n.t(:trigger_order_updated)) }
 
         it 'should has triggers_versions on Step' do
-          expect(step.reload.triggers_versions).to eql({@trigger2.id.to_s => nil,
+          expect(step.reload.triggers_versions).to eql(@trigger2.id.to_s => nil,
                                                         @trigger3.id.to_s => nil,
-                                                        @trigger1.id.to_s => nil})
+                                                        @trigger1.id.to_s => nil)
         end
       end
     end
