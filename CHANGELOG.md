@@ -1,5 +1,8 @@
 # CHANGELOG
 
+## v1.4.2-p5
+* Correção ao adicionar permissões
+
 ## v1.4.2-p4
 * Integração via webhook
 * Correções nos mapas

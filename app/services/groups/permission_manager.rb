@@ -89,6 +89,12 @@ module Groups
         klass = Reports::Category
       elsif permission_name['inventories']
         klass = Inventory::Category
+      elsif permission_name['groups']
+        klass = Group
+      elsif permission_name['users']
+        klass = User
+      else
+        return
       end
 
       objects_ids.each do |id|
