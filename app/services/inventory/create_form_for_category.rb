@@ -153,7 +153,8 @@ class Inventory::CreateFormForCategory
 
     options_params = {
       size: field['size'],
-      label: field['label']
+      label: field['label'],
+      location: field['location']
     }
 
     {

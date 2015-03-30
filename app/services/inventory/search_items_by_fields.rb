@@ -75,13 +75,18 @@ module Inventory
       end
 
       if queries.size > 1
-        i = 0
-        queries = queries.map do |query|
-          i += 1
-          Inventory::Item.select("inv#{i}.*").from(Arel.sql("(#{query.to_sql}) as inv#{i}"))
+        # We need to put and index here, to not cause
+        # any conflicts when dealing with multiple scopes
+        queries = queries.map.with_index do |query, i|
+          Inventory::Item.select("inv#{i}.*")
+                         .from(Arel.sql("(#{query.to_sql}) as inv#{i}"))
         end
 
-        intersection = queries.inject(queries.shift) { |inter, q| inter.intersect(q) }
+        # Intersect all queries
+        intersection = queries.inject(queries.shift) do |inter, q|
+          Arel::Nodes::Intersect.new(inter.ast, q.ast)
+        end
+
         Inventory::Item.from(Arel.sql("(#{intersection.to_sql}) as inventory_items"))
       else
         Inventory::Item.from(Arel.sql("(#{queries.first.to_sql}) as inventory_items"))

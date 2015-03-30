@@ -12,7 +12,7 @@ module Cases
       end
       post do
         authenticate!
-        initial_flow = Flow.find_initial(safe_params[:initial_flow_id]).the_version(0)
+        initial_flow = Flow.find_initial(safe_params[:initial_flow_id]).the_version
         step = initial_flow.get_new_step_to_case
         return error!(I18n.t(:flow_not_published), 400) if initial_flow.version.blank?
         return error!(I18n.t(:step_not_found), 404)     unless step.try(:active)
@@ -238,7 +238,7 @@ module Cases
           return error!(I18n.t(:case_is_already_transfered), 400) if kase.status == 'transfer'
           validate_permission!(:update, kase)
 
-          initial_flow = Flow.find_by(id: safe_params[:flow_id]).the_version(0)
+          initial_flow = Flow.find_by(id: safe_params[:flow_id]).the_version
           new_kase     = initial_flow.cases.create!(created_by: current_user, original_case_id: kase.id,
                                                     flow_version: initial_flow.version.id)
           kase.update!(status: 'transfer')

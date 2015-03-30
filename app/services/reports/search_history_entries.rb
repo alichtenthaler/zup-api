@@ -23,7 +23,8 @@ module Reports
       end
 
       if kind
-        scope = scope.where(kind: kind)
+        terms = kind[','] ? kind.split(',') : kind
+        scope = scope.where(kind: terms)
       end
 
       if object_id

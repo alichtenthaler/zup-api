@@ -16,7 +16,11 @@ class Inventory::FormulaValidator
       condition_content.include?(content)
     end,
     'includes' => lambda do |content, condition_content|
-      content.downcase[condition_content.downcase]
+      if content.is_a?(String)
+        content.downcase[condition_content.downcase]
+      elsif content.is_a?(Array)
+        (condition_content & content).any?
+      end
     end
   }
 
@@ -42,8 +46,8 @@ class Inventory::FormulaValidator
     field = condition.field
     content = item.represented_data.send(field.title)
 
-    if !content.blank? && field.use_options?
-      content = Inventory::FieldOption.find(content[0]).value
+    if field.use_options? && !content.is_a?(Array)
+      content = [content]
     end
 
     OPERATIONS[operator].call(content, condition.content)

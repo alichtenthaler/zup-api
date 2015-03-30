@@ -31,12 +31,14 @@ module Flows
         params do
           optional :display_type, type: String,  desc: 'Display type for Flow'
           optional :version,      type: Integer, desc: 'Version ID (last version by default)'
+          optional :draft,        type: Boolean, desc: 'Draft or Live version (false by default)'
         end
         get do
           authenticate!
           validate_permission!(:view, Flow)
 
-          { flow: Flow::Entity.represent(Flow.find(safe_params[:id]).the_version(safe_params[:version]), only: return_fields, display_type: safe_params[:display_type]) }
+          flow = Flow.find(safe_params[:id]).the_version(safe_params[:draft], safe_params[:version])
+          { flow: Flow::Entity.represent(flow, only: return_fields, display_type: safe_params[:display_type]) }
         end
 
         desc 'Delete a flow'

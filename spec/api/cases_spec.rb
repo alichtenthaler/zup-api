@@ -26,7 +26,7 @@ describe Cases::API, versioning: true do
         flow.steps.first.fields.create title: 'Newsletter',      field_type: 'radio', values: { yes: 'Yes', no: 'No' }, requirements: { presence: true }
         flow.steps.first.fields.create title: 'Country',         field_type: 'select', values: { brazil: 'Brazil', usa: 'USA' }
         flow.publish(user)
-        flow.the_version(0)
+        flow.the_version
       end
       let(:inventory_field_id) { inventory_item.category.fields.first.id }
       let(:inventory_item)     { create(:inventory_item) }
@@ -128,7 +128,7 @@ describe Cases::API, versioning: true do
         fields.create title: 'user_age',   field_type: 'integer', requirements: { presence: true, minimum: 1, maximum: 150 }
         fields.create title: 'user_email', field_type: 'email'
         flow.publish(user)
-        flow.the_version(0)
+        flow.the_version
       end
       let(:fields) { flow.my_steps.first.my_fields }
       let(:valid_params) do

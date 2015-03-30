@@ -537,6 +537,7 @@ Content-Type: application/json
 | steps_versions             | Array      | Array de Hash com a chave sendo o ID da Etapa e o valor sendo o ID da Versão (exibindo a ordem das Etapas) |
 | resolution_states_versions | Array      | Array de Hash com a chave sendo o ID do Estado de Resolução e o valor sendo o ID da Versão                 |
 | my_steps_flows             | Array      | Array de Etapas e quando for do tipo Fluxo retorna o Fluxo Filho (my_child_flow) e suas Etapas (my_steps). |
+| current_version            | Integer    | Versão usável, que será utilizada quando tentar criar um Caso. |
 
 **Sem display_type**
 ```json

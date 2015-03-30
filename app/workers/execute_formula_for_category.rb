@@ -7,9 +7,11 @@ class ExecuteFormulaForCategory
 
     if user && formula
       # Get all inventory items and check the formula against it
-      formula.category.items.each do |item|
-        service = Inventory::UpdateStatusWithFormulas.new(item, user, [formula])
-        service.check_and_update!
+      items = formula.category.items
+                     .where.not(inventory_status_id: formula.inventory_status_id)
+
+      items.find_in_batches(batch_size: 100) do |group|
+        ExecuteFormulaForItems.perform_async(user.id, formula.id, group.map(&:id))
       end
     end
   end

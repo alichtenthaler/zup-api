@@ -77,13 +77,13 @@ module Inventory
 
             item_data.content = new_content
           else
+            item_data = item.data.build(field: field, content: new_content)
+
             if field.kind != 'images'
               @changes[item_data] = {
                 new: new_content
               }
             end
-
-            item.data.build(field: field, content: new_content)
           end
         end
 
@@ -124,7 +124,7 @@ module Inventory
     def populate_data
       if item.data.any?
         item.data.each do |item_data|
-          set_attribute_content(item_data.field, item_data.content)
+          set_attribute_content(item_data.field, item_data.converted_content)
         end
       end
     end

@@ -103,11 +103,11 @@ class Flow < ActiveRecord::Base
     Version.where('ResolutionState', resolution_states_versions, options)
   end
 
-  def the_version(version_id = nil)
-    return Version.reify(version_id)      if version_id.present? && version_id != 0
-    return Version.reify(current_version) if current_version.present?
-    return self                           if draft && version_id != 0
-    versions.present? ? previous_version : self
+  def the_version(draft = false, version_id = nil)
+    return Version.reify(version_id) if version_id.present?
+    return self if draft
+    return if versions.blank?
+    current_version.present? ? Version.reify(current_version) : previous_version
   end
 
   # revisar regra de versao

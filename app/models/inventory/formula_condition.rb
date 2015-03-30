@@ -25,7 +25,9 @@ class Inventory::FormulaCondition < Inventory::Base
   end
 
   def content
-    if !super.nil? && super.size == 1
+    if !super.nil? && field.use_options?
+      super.map(&:to_i)
+    elsif !super.nil? && super.size == 1
       super.first
     else
       super

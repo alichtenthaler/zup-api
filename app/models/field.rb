@@ -22,6 +22,8 @@ class Field < ActiveRecord::Base
   validates :title, presence: true
   validates :field_type, inclusion: { in: VALID_TYPES }
   validates :origin_field_id, presence: true, if: -> { %w{previous_field category_inventory_field}.include? field_type }
+  validates :category_report_id, presence: true, if: -> { field_type == 'category_report' }
+  validates :category_inventory_id, presence: true, if: -> { field_type == 'category_inventory' }
   validates :values, presence: true, if: -> { %w{checkbox radio}.include? field_type }
   validate :category_inventory_present?, if: -> { field_type == 'category_inventory_field' }
 
@@ -66,13 +68,18 @@ class Field < ActiveRecord::Base
 
   def previous_field
     return if field_type != 'previous_field'
-    origin_field_version.blank? ? Field.find_by(origin_field_id) : Version.reify(origin_field_version)
+    origin_field_version.blank? ? Field.find_by(id: origin_field_id) : Version.reify(origin_field_version)
   end
 
   def set_origin_field_version
     return if field_type != 'previous_field' || origin_field_version.present?
-    field = Field.find_by(origin_field_id)
+    field = Field.find_by(id: origin_field_id)
     self.origin_field_version = field.versions.try(:last).try(:id)
+  end
+
+  def category_inventory_field
+    return if field_type != 'category_inventory_field'
+    Inventory::Field.find(origin_field_id)
   end
 
   def add_field_on_step
@@ -109,8 +116,10 @@ class Field < ActiveRecord::Base
     expose :field_type
     expose :filter
     expose :origin_field_id
-    expose :category_inventory
-    expose :category_report
+    expose :origin_field_version
+    expose :category_inventory, using: Inventory::Category::Entity
+    expose :category_inventory_field, using: Inventory::Field::Entity
+    expose :category_report, using: Reports::Category::Entity
     expose :requirements
     expose :values
     expose :active
@@ -126,8 +135,10 @@ class Field < ActiveRecord::Base
     expose :field_type
     expose :filter
     expose :origin_field_id
-    expose :category_inventory
-    expose :category_report
+    expose :origin_field_version
+    expose :category_inventory, using: Inventory::Category::Entity
+    expose :category_inventory_field, using: Inventory::Field::Entity
+    expose :category_report, using: Reports::Category::Entity
     expose :requirements
     expose :values
     expose :active

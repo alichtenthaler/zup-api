@@ -92,10 +92,6 @@ class Reports::SearchItems
     end
 
     if position_params
-      if clusterize
-        position_params[:distance] = position_params[:distance].to_f
-      end
-
       scope = Reports::SearchItemsByGeolocation.new(
         scope, position_params, address
       ).scope_with_filters

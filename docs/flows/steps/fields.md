@@ -57,23 +57,25 @@ Content-Type: application/json
 ```
 
 ###### FieldObject
-| Nome                  | Tipo       | Descrição                                                                                          |
-|-----------------------|------------|----------------------------------------------------------------------------------------------------|
-| id                    | Interger   | ID do objeto.                                                                                      |
-| list_versions         | Array      | Array contento todas as versões do objeto.                                                         |
-| created_at            | DateTime   | Data e horário da criação do objeto.                                                               |
-| updated_at            | DateTime   | Data e horário da última atualização do objeto.                                                    |
-| title                 | String     | Título do Objeto.                                                                                  |
-| previous_field        | Object     | Exibir campo anterior.                                                                             |
-| active                | Boolean    | Se o objeto esta ativo.                                                                            |
-| field_type            | String     | Tipo do Campo (vide tipos de campos no Cadastro)                                                   |
-| origin_field_id       | Integer    | ID do Campo de origen (somente se field_type for previous_field)                                   |
-| category_inventory_id | Integer    | ID do Item de Inventário (somente se o field_type for category_inventory)                          |
-| category_report_id    | Integer    | ID do Item de Relato (somente se o field_type for category_report)                                 |
-| filter                | Array      | Filtros para inclusão, ex.: "jpg,png" (somente se o field_type for image ou attachment)            |
-| requirements          | Hash       | Requerimentos (presença, mínimo/máximo)                                                            |
-| values                | Hash       | Values (para os tipo select, checkbox e radio), ex: {key:value, key:value}                         |
-| version_id            | Interger   | ID da Versão do objeto.                                                                            |
+| Nome                     | Tipo       | Descrição                                                                                          |
+|--------------------------|------------|----------------------------------------------------------------------------------------------------|
+| id                       | Interger   | ID do objeto.                                                                                      |
+| list_versions            | Array      | Array contento todas as versões do objeto.                                                         |
+| created_at               | DateTime   | Data e horário da criação do objeto.                                                               |
+| updated_at               | DateTime   | Data e horário da última atualização do objeto.                                                    |
+| title                    | String     | Título do Objeto.                                                                                  |
+| previous_field           | Object     | Exibir campo anterior.                                                                             |
+| active                   | Boolean    | Se o objeto esta ativo.                                                                            |
+| field_type               | String     | Tipo do Campo (vide tipos de campos no Cadastro)                                                   |
+| origin_field_id          | Integer    | ID do Campo de origen (somente se field_type for previous_field)                                   |
+| origin_field_version     | Integer    | ID da Versão do Campo de origen (somente se field_type for previous_field)                                   |
+| category_inventory       | Integer    | Item de Inventário (somente se o field_type for category_inventory)                          |
+| category_inventory_field | Integer    | Campo de Item de Inventário (somente se o field_type for category_inventory_field)                          |
+| category_report          | Integer    | Item de Relato (somente se o field_type for category_report)                                 |
+| filter                   | Array      | Filtros para inclusão, ex.: "jpg,png" (somente se o field_type for image ou attachment)            |
+| requirements             | Hash       | Requerimentos (presença, mínimo/máximo)                                                            |
+| values                   | Hash       | Values (para os tipo select, checkbox e radio), ex: {key:value, key:value}                         |
+| version_id               | Interger   | ID da Versão do objeto.                                                                            |
 
 ###### Requirements
 | Nome      | Tipo    | Descrição                                                                     |
@@ -193,9 +195,9 @@ Method: post
 | minute                        | Minutos.                                                                      | Valor inteiro.                                                        |
 | second                        | Segundos.                                                                     | Valor inteiro.                                                        |
 | previous_field                | Campo anterior (deve ser informado o ID do campo em origin_field_id).         | Valor de acordo com o tipo do campo informado no origin_field_id.     |
-| category_inventory            | Categorias de Inventário (deve ser informado o IDs das Categorias).           | Array de IDs dos Itens de Inventário selecionados.                    |
+| category_inventory            | Categorias de Inventário (deve ser informado o ID da Categoria).              | Array de IDs dos Itens de Inventário selecionados.                    |
 | category_inventory_field      | Campo Inventário (deve ser informado o ID do campo em origin_field_id).       | Valor de acordo com o tipo do campo informado no origin_field_id.     |
-| category_report               | Categorias de Relato (deve ser informado o IDs das categorias).               | Array de IDs dos Relatos selecionados.                                |
+| category_report               | Categorias de Relato (deve ser informado o ID da categoria).                  | Array de IDs dos Relatos selecionados.                                |
 | checkbox                      | Checkbox (deve informar os valores em 'values' com {key:value,key:value}).    | Array de chaves selecionados.                                         |
 | select                        | Select (deve informar os valores em 'values' com {key:value, key:value}).     | Valor string com a chave selecionada.                                 |
 | radio                         | Radio (deve informar os valores em 'values' com {key:value, key:value}).      | Valor string com a chave selecionada.                                 |

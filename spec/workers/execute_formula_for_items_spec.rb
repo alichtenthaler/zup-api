@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-describe ExecuteFormulaForCategory do
+describe ExecuteFormulaForItems do
   let(:user) { create(:user) }
   let(:formula) { create(:inventory_formula, :with_conditions) }
 
@@ -11,9 +11,9 @@ describe ExecuteFormulaForCategory do
     let!(:item) { create(:inventory_item, category: formula.category, status: status) }
 
     it 'calls `check_and_update!` for the item' do
-      expect do
-        subject.perform(user.id, formula.id)
-      end.to change(ExecuteFormulaForItems.jobs, :size).by(1)
+      expect_any_instance_of(Inventory::UpdateStatusWithFormulas).to \
+        receive(:check_and_update!)
+      subject.perform(user.id, formula.id, [item.id])
     end
   end
 end

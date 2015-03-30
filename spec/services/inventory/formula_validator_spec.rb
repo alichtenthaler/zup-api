@@ -57,6 +57,7 @@ describe Inventory::FormulaValidator do
         end
 
         it 'returns true if content is equal' do
+          condition.update(content: field_option.id)
           item.data.find_by(field: field).update(selected_options: [field_option])
           item.reload.represented_data
           expect(subject.valid?).to eq(true)
@@ -231,6 +232,31 @@ describe Inventory::FormulaValidator do
         item.data.find_by(field: field).update(content: 'text')
         item.reload.represented_data
         expect(subject.valid?).to eq(false)
+      end
+
+      context 'field with selected option' do
+        let(:field_option) do
+          create(:inventory_field_option)
+        end
+        let(:other_field_option) do
+          create(:inventory_field_option)
+        end
+
+        before do
+          field.update(
+            kind: 'radio',
+            field_options: [field_option]
+          )
+        end
+
+        it 'returns true if content is equal' do
+          condition.update(content: [field_option.id])
+          item.data.find_by(field: field).update(
+            selected_options: [field_option, other_field_option]
+          )
+          item.reload.represented_data
+          expect(subject.valid?).to eq(true)
+        end
       end
     end
   end

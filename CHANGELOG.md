@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## v1.4.2-p11
+* Correções nos fluxos
+* Correções na clusterização de relatos
+* Correções na busca de itens de inventário
+* Correções ao salvar um item de inventário
+* Melhoria de performance para fórmulas
+
 ## v1.4.2-p5
 * Correção ao adicionar permissões
 

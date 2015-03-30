@@ -30,7 +30,7 @@ class Reports::Category < Reports::Base
   validates :marker, integrity: true, presence: true
   validates :color, presence: true, css_hex_color: true
   validates :confidential, inclusion: { in: [false, true] }
-  validates :resolution_time, presence: true, if: :resolution_time_enabled
+  validates :resolution_time, presence: true, if: :resolution_time_enabled?
 
   accepts_encoded_file :icon, :marker
   expose_multiple_versions :icon, :marker

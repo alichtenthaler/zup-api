@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20150324061354) do
+ActiveRecord::Schema.define(version: 20150330171718) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -419,7 +419,6 @@ ActiveRecord::Schema.define(version: 20150324061354) do
     t.integer  "user_id"
     t.datetime "created_at"
     t.datetime "updated_at"
-    t.spatial  "position",              limit: {:srid=>0, :type=>"point"}
     t.string   "title"
     t.string   "address"
     t.integer  "inventory_status_id"
@@ -427,6 +426,7 @@ ActiveRecord::Schema.define(version: 20150324061354) do
     t.datetime "locked_at"
     t.integer  "locker_id"
     t.integer  "sequence",                                                 default: 0
+    t.spatial  "position",              limit: {:srid=>0, :type=>"point"}
   end
 
   add_index "inventory_items", ["inventory_category_id"], :name => "index_inventory_items_on_inventory_category_id"
@@ -471,7 +471,7 @@ ActiveRecord::Schema.define(version: 20150324061354) do
     t.integer  "parent_id"
     t.boolean  "confidential",              default: false
     t.boolean  "private_resolution_time",   default: false
-    t.boolean  "resolution_time_enabled",   default: true
+    t.boolean  "resolution_time_enabled",   default: false
   end
 
   add_index "reports_categories", ["parent_id"], :name => "index_reports_categories_on_parent_id"
@@ -547,7 +547,6 @@ ActiveRecord::Schema.define(version: 20150324061354) do
     t.integer  "inventory_item_id"
     t.datetime "created_at"
     t.datetime "updated_at"
-    t.spatial  "position",             limit: {:srid=>0, :type=>"point"}
     t.integer  "protocol",             limit: 8
     t.string   "reference"
     t.boolean  "confidential",                                            default: false
@@ -558,6 +557,7 @@ ActiveRecord::Schema.define(version: 20150324061354) do
     t.integer  "external_category_id"
     t.boolean  "is_solicitation"
     t.boolean  "is_report"
+    t.spatial  "position",             limit: {:srid=>0, :type=>"point"}
   end
 
   add_index "reports_items", ["inventory_item_id"], :name => "index_reports_items_on_inventory_item_id"
