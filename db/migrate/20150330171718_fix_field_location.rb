@@ -8,7 +8,7 @@ class FixFieldLocation < ActiveRecord::Migration
 
     Inventory::Item.where(address: nil).find_in_batches do |items|
       items.each do |item|
-        item.valid? && save
+        item.valid? && item.save
       end
     end
   end
