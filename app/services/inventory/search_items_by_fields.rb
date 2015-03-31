@@ -74,6 +74,10 @@ module Inventory
         queries << s.dup.where(statement)
       end
 
+      intersect_queries(queries)
+    end
+
+    def intersect_queries(queries)
       if queries.size > 1
         # We need to put and index here, to not cause
         # any conflicts when dealing with multiple scopes
@@ -84,7 +88,8 @@ module Inventory
 
         # Intersect all queries
         intersection = queries.inject(queries.shift) do |inter, q|
-          Arel::Nodes::Intersect.new(inter.ast, q.ast)
+          inter = inter.ast if inter.respond_to?(:ast)
+          Arel::Nodes::Intersect.new(inter, q.ast)
         end
 
         Inventory::Item.from(Arel.sql("(#{intersection.to_sql}) as inventory_items"))

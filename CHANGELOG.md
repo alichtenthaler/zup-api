@@ -1,5 +1,8 @@
 # CHANGELOG
 
+## v1.4.2-p12
+* Correção na busca utilizando filtros de itens de inventário
+
 ## v1.4.2-p11
 * Correções nos fluxos
 * Correções na clusterização de relatos

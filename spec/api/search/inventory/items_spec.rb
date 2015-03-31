@@ -566,6 +566,7 @@ describe Search::Inventory::Items::API do
 
       context 'using multiple filters' do
         let!(:field2) { create(:inventory_field, section: category.sections.sample) }
+        let!(:field3) { create(:inventory_field, section: category.sections.sample) }
         let!(:items) do
           create_list(:inventory_item, 3, category: category)
         end
@@ -573,6 +574,7 @@ describe Search::Inventory::Items::API do
           item = items.sample
           item.data.find_by(field: field).update!(content: 50)
           item.data.find_by(field: field2).update!(content: 'Sim')
+          item.data.find_by(field: field3).update!(content: 'Não')
           item
         end
         let!(:wrong_items) do
@@ -580,6 +582,7 @@ describe Search::Inventory::Items::API do
           items.each do |item|
             item.data.find_by(field: field).update!(content: 120)
             item.data.find_by(field: field2).update!(content: 'Não')
+            item.data.find_by(field: field3).update!(content: 'Sim')
           end
         end
         let(:valid_params) do
@@ -592,6 +595,9 @@ describe Search::Inventory::Items::API do
                 },
                 "#{field2.id}": {
                   "equal_to": "Sim"
+                },
+                "#{field3.id}": {
+                  "equal_to": "Não"
                 }
               },
               "sort": "title",
