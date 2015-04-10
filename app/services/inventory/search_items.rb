@@ -165,8 +165,8 @@ class Inventory::SearchItems
 
     sort = self.sort
     if sort && !clusterize &&
-      sort.in?('title', 'inventory_category_id', 'created_at', 'updated_at', 'id', 'user_name') &&
-      order.downcase.in?('desc', 'asc')
+      %w(title inventory_category_id created_at updated_at id user_name).include?(sort) &&
+      %w(desc asc).include?(order.downcase)
 
       if sort == 'user_name'
         sort = 'users.name'

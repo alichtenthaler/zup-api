@@ -60,6 +60,27 @@ describe Reports::Categories::API do
 
       expect(body['category']['parent_id']).to eq(category.id)
     end
+
+    it 'assign solver groups for this report category' do
+      groups = create_list(:group, 3)
+      valid_params[:solver_groups_ids] = groups.map(&:id)
+
+      post '/reports/categories', valid_params, auth(user)
+      category = Reports::Category.last
+
+      expect(category.solver_groups_ids).to match_array(groups.map(&:id))
+      expect(category.solver_groups).to match_array(groups)
+    end
+
+    it 'assigns default solver group for this report category' do
+      group = create(:group)
+      valid_params[:default_solver_group_id] = group.id
+
+      post '/reports/categories', valid_params, auth(user)
+      category = Reports::Category.last
+
+      expect(category.default_solver_group).to eq(group)
+    end
   end
 
   context 'GET /reports/categories/:id' do
@@ -184,6 +205,33 @@ describe Reports::Categories::API do
         category.reload
 
         expect(category).to be_confidential
+      end
+    end
+
+    context 'updating assigned groups solver' do
+      let(:category) { create(:reports_category_with_statuses) }
+
+      it 'updates the assigned groups' do
+        groups = create_list(:group, 3)
+        valid_params[:solver_groups_ids] = groups.map(&:id)
+
+        put "/reports/categories/#{category.id}", valid_params, auth(user)
+        expect(response.status).to eq(204)
+
+        category.reload
+
+        expect(category.solver_groups).to match_array(groups)
+      end
+
+      it 'assigns default solver group for this report category' do
+        group = create(:group)
+        valid_params[:default_solver_group_id] = group.id
+
+        put "/reports/categories/#{category.id}", valid_params, auth(user)
+
+        category.reload
+
+        expect(category.default_solver_group).to eq(group)
       end
     end
   end

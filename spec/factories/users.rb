@@ -2,17 +2,17 @@ FactoryGirl.define do
   sequence(:password) { SecureRandom.hex[0..8] }
 
   factory :user do
-    email { Faker::Internet.email }
+    email { FFaker::Internet.email }
     password
     password_confirmation { password }
 
-    name { Faker::Name.name }
+    name { FFaker::Name.name }
     phone '11912231545'
     document { Faker::CPF.numeric }
-    address { Faker::Address.street_address }
-    address_additional { Faker::Address.secondary_address }
+    address { FFaker::Address.street_address }
+    address_additional { FFaker::Address.secondary_address }
     postal_code '04005000'
-    district { Faker::Address.city }
+    district { FFaker::Address.city }
     device_token { SecureRandom.hex }
     device_type 'ios'
 

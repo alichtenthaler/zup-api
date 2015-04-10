@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## v1.4.2-p15
+* Correções na integração com webhook
+* Correção no histórico de inventário
+* Adicionada nova feature flag para limitação geoespacial
+
 ## v1.4.2-p12
 * Correção na busca utilizando filtros de itens de inventário
 

@@ -7,7 +7,7 @@ describe Inventory::Items::API do
     let(:category) { create(:inventory_category_with_sections) }
     let(:status) { create(:inventory_status, category: category) }
     let(:valid_params) do
-      JSON.parse <<-JSON
+      Oj.load <<-JSON
         {
           "inventory_status_id": #{status.id},
           "data": {}
@@ -31,7 +31,7 @@ describe Inventory::Items::API do
 
       expect(category.items.last).to_not be_nil
       expect(category.items.last.data).to_not be_empty
-      expect(category.items.last.data.where(field: { kind: 'text' }).first.content).to eq('Test')
+      expect(category.items.last.data.joins(:field).where(inventory_fields: { kind: 'text' }).first.content).to eq('Test')
       expect(category.items.last.user).to eq(user)
       expect(category.items.last.status).to eq(status)
     end
@@ -205,9 +205,9 @@ describe Inventory::Items::API do
   context 'PUT /inventory/categories/:id/items/:id' do
     let(:category) { create(:inventory_category_with_sections) }
     let(:item) { create(:inventory_item, category: category) }
-    let(:item_data) { item.data.where(field: { kind: 'text' }).last }
+    let(:item_data) { item.data.joins(:field).where(inventory_fields: { kind: 'text' }).last }
     let(:valid_params) do
-      JSON.parse <<-JSON
+      Oj.load <<-JSON
         {
           "data": {}
         }
@@ -227,7 +227,7 @@ describe Inventory::Items::API do
     context 'updating status' do
       let(:status) { create(:inventory_status, category: category) }
       let(:valid_params) do
-        JSON.parse <<-JSON
+        Oj.load <<-JSON
           {
             "inventory_status_id": #{status.id}
           }
@@ -363,7 +363,7 @@ describe Inventory::Items::API do
     let!(:category) { create(:inventory_category_with_sections) }
     let!(:items) { create_list(:inventory_item, 5, category: category) }
     let(:category_params) do
-      JSON.parse <<-JSON
+      Oj.load <<-JSON
         {
           "inventory_category_id": #{category.id}
         }
@@ -386,7 +386,7 @@ describe Inventory::Items::API do
 
     context 'pagination' do
       let(:valid_params) do
-        JSON.parse <<-JSON
+        Oj.load <<-JSON
           {
             "per_page": 2
           }
@@ -448,7 +448,7 @@ describe Inventory::Items::API do
     #    item_data = @item.data.first
     #    item_data2 = @item2.data.first
 
-    #    JSON.parse <<-JSON
+    #    Oj.load <<-JSON
     #      {
     #        "filters": [{
     #          "field_id": #{item_data.inventory_field_id},
@@ -529,7 +529,7 @@ describe Inventory::Items::API do
     context 'search by position' do
       let(:empty_category) { create(:inventory_category) }
       let(:valid_params) do
-        JSON.parse <<-JSON
+        Oj.load <<-JSON
           {
             "position": {
               "latitude": "-23.5989650",
@@ -550,10 +550,10 @@ describe Inventory::Items::API do
         ]
 
         points_distant = [
-          [Faker::Geolocation.lat, Faker::Geolocation.lng],
-          [Faker::Geolocation.lat, Faker::Geolocation.lng],
-          [Faker::Geolocation.lat, Faker::Geolocation.lng],
-          [Faker::Geolocation.lat, Faker::Geolocation.lng]
+          [FFaker::Geolocation.lat, FFaker::Geolocation.lng],
+          [FFaker::Geolocation.lat, FFaker::Geolocation.lng],
+          [FFaker::Geolocation.lat, FFaker::Geolocation.lng],
+          [FFaker::Geolocation.lat, FFaker::Geolocation.lng]
         ]
 
         latitude_field, longitude_field = nil

@@ -22,8 +22,8 @@ class Reports::StatusCategory < Reports::Base
   scope :active, -> { where(active: true) }
   scope :inactive, -> { where(active: false) }
 
-  scope :public, -> { where(private: false) }
-  scope :private, -> { where(private: true) }
+  scope :all_public, -> { where(private: false) }
+  scope :all_private, -> { where(private: true) }
 
   scope :with_status, -> (status) { find_by(reports_status_id: status.id) }
 

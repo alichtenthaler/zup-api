@@ -5,7 +5,7 @@ describe Inventory::Categories::API do
 
   context 'POST /inventory/categories' do
     let!(:valid_params) do
-      p = JSON.parse <<-JSON
+      p = Oj.load <<-JSON
         {
           "title": "Awesome category",
           "description": "Check this category!",
@@ -62,7 +62,7 @@ describe Inventory::Categories::API do
   context 'GET /inventory/categories/:id' do
     let(:category) { create(:inventory_category) }
     let(:valid_params) do
-      JSON.parse <<-JSON
+      Oj.load <<-JSON
         {
           "display_type": "full"
         }
@@ -130,7 +130,7 @@ describe Inventory::Categories::API do
   context 'PUT /inventory/categories/:id' do
     let(:category) { create(:inventory_category) }
     let(:valid_params) do
-      JSON.parse <<-JSON
+      Oj.load <<-JSON
         {
           "title": "A COOLER NAME!",
           "description": "A COOLER DESCRIPTION!",
@@ -181,7 +181,7 @@ describe Inventory::Categories::API do
     let!(:category) { create(:inventory_category, title: 'Bueiros') }
     let!(:categories) { create_list(:inventory_category, 5) }
     let(:valid_params) do
-      JSON.parse <<-JSON
+      Oj.load <<-JSON
         {
           "title": "bue"
         }
@@ -209,7 +209,7 @@ describe Inventory::Categories::API do
 
     context 'pagination' do
       let(:valid_params) do
-        JSON.parse <<-JSON
+        Oj.load <<-JSON
           {
             "per_page": 3
           }
@@ -276,7 +276,7 @@ describe Inventory::Categories::API do
   context 'PUT /inventory/categories/:id/form' do
     let(:category) { create(:inventory_category) }
     let(:valid_params) do
-      JSON.parse <<-JSON
+      Oj.load <<-JSON
         {
           "sections": [{
             "title": "Dados técnicos",

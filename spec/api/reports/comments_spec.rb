@@ -80,7 +80,7 @@ describe Reports::Comments do
 
     context 'with valid params' do
       let(:valid_params) do
-        JSON.parse <<-JSON
+        Oj.load <<-JSON
           {
             "message": "Test message",
             "visibility": 0

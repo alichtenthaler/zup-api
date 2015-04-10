@@ -12,7 +12,6 @@ class Inventory::Item < Inventory::Base
   has_many :data, class_name: 'Inventory::ItemData',
                   foreign_key: 'inventory_item_id',
                   autosave: true,
-                  include: [:field],
                   dependent: :destroy
 
   has_many :fields, class_name: 'Inventory:Field',

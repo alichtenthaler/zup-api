@@ -65,7 +65,7 @@ describe Flows::API, versioning: true do
             before { get '/flows/123456789', {}, auth(user) }
 
             it { expect(response.status).to be_a_not_found }
-            it { expect(response.body).to be_an_error('Couldn\'t find Flow with id=123456789') }
+            it { expect(response.body).to be_an_error('Couldn\'t find Flow with \'id\'=123456789') }
           end
         end
 
@@ -111,7 +111,7 @@ describe Flows::API, versioning: true do
             before { delete '/flows/123456789', {}, auth(user) }
 
             it { expect(response.status).to be_a_not_found }
-            it { expect(response.body).to be_an_error('Couldn\'t find Flow with id=123456789') }
+            it { expect(response.body).to be_an_error('Couldn\'t find Flow with \'id\'=123456789') }
           end
         end
 

@@ -4,7 +4,7 @@ describe Users::API do
   context 'POST /authenticate' do
     let(:user) { create(:user, password: '123456') }
     let(:valid_params) do
-      JSON.parse <<-JSON
+      Oj.load <<-JSON
         {
           "email": "#{user.email}",
           "password": "123456"
@@ -61,7 +61,7 @@ describe Users::API do
   context 'PUT /recover_password' do
     let(:user) { create(:user) }
     let(:valid_params) do
-      JSON.parse <<-JSON
+      Oj.load <<-JSON
         {
           "email": "#{user.email}"
         }
@@ -79,7 +79,7 @@ describe Users::API do
   context 'PUT /reset_password' do
     let(:user) { user = create(:user) }
     let(:valid_params) do
-      JSON.parse <<-JSON
+      Oj.load <<-JSON
         {
           "token": "#{user.reset_password_token}",
           "new_password": "otherpassword"
@@ -102,7 +102,7 @@ describe Users::API do
   context 'POST /users' do
     let!(:guest_group) { create(:guest_group) }
     let(:valid_params) do
-      JSON.parse <<-JSON
+      Oj.load <<-JSON
         {
           "email": "johnk12@gmail.com",
           "password": "astrongpassword",
@@ -221,7 +221,7 @@ describe Users::API do
     let(:user) { create(:user, password: '123456') }
 
     let(:valid_params) do
-      JSON.parse <<-JSON
+      Oj.load <<-JSON
         {
           "email": "anotheremail@gmail.com"
         }
@@ -242,7 +242,7 @@ describe Users::API do
       end
 
       let(:valid_params) do
-        JSON.parse <<-JSON
+        Oj.load <<-JSON
           {
             "password": "12345678",
             "password_confirmation": "12345678"
@@ -328,7 +328,7 @@ describe Users::API do
     let!(:users) { create_list(:user, 5) }
     let!(:group) { create(:group) }
     let(:valid_params) do
-      JSON.parse <<-JSON
+      Oj.load <<-JSON
         {
           "name": "burns",
           "email": "burns",

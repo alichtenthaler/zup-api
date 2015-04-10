@@ -5,7 +5,7 @@ FactoryGirl.define do
         *RandomLocationPoint.location(-23.5505200, -46.6333090, 100).reverse
       )
     end
-    address { Faker::Address.street_address }
+    address { FFaker::Address.street_address }
     reference 'Perto da padaria'
     description 'Aconteceu algo de ruim por aqui'
     association :category, factory: :reports_category_with_statuses

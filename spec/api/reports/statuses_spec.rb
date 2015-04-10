@@ -19,7 +19,7 @@ describe Reports::Statuses::API do
   describe 'POST /reports/categories/:category_id/statuses'  do
     context 'with valid params do' do
       let(:valid_params) do
-        JSON.parse <<-JSON
+        Oj.load <<-JSON
           {
             "title": "Test status",
             "color": "#440033",
@@ -54,7 +54,7 @@ describe Reports::Statuses::API do
 
     context 'with valid params do' do
       let(:valid_params) do
-        JSON.parse <<-JSON
+        Oj.load <<-JSON
           {
             "title": "Test status",
             "color": "#440033",

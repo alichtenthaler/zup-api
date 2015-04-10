@@ -37,7 +37,7 @@ class ListUsers
   def build_ordering_search
     if sort &&
       sort.in?(AVAILABLE_SORT_FIELDS) &&
-      order.downcase.in?('desc', 'asc')
+      %w(desc asc).include?(order.downcase)
       @scope = scope.order("#{sort.to_sym} #{order.to_sym}")
     end
   end

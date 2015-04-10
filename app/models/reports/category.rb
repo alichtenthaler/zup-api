@@ -1,5 +1,6 @@
 class Reports::Category < Reports::Base
   include EncodedImageUploadable
+  include SolverGroup
 
   has_and_belongs_to_many :inventory_categories, class_name: 'Inventory::Category',
                           foreign_key: 'reports_category_id',
@@ -115,6 +116,10 @@ class Reports::Category < Reports::Base
     expose :parent_id
     expose :status_categories, as: :statuses, using: Reports::StatusCategory::Entity
     expose :confidential
+    expose :comment_required_when_updating_status
+    expose :comment_required_when_forwarding
+    expose :solver_groups, using: Group::Entity
+    expose :default_solver_group, using: Group::Entity
 
     with_options(if: { display_type: :full }) do
       expose :active

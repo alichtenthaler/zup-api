@@ -14,8 +14,6 @@ end
 
 after_fork do |_server, _worker|
   if defined?(ActiveRecord::Base)
-    config = Rails.application.config.database_configuration[Rails.env]
-    config['adapter'] = 'postgis'
-    ActiveRecord::Base.establish_connection(config)
+    ActiveRecord::Base.establish_connection
   end
 end

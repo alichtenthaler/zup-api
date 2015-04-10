@@ -5,8 +5,8 @@ describe Reports::Items::API do
   let(:category) { create(:reports_category_with_statuses) }
   let(:valid_params) do
     {
-        latitude: Faker::Geolocation.lat,
-        longitude: Faker::Geolocation.lng,
+        latitude: FFaker::Geolocation.lat,
+        longitude: FFaker::Geolocation.lng,
         address: 'Fake Street, 1234',
         reference: 'Close to the store',
         description: 'The situation is really crappy around here.',
@@ -157,6 +157,25 @@ describe Reports::Items::API do
         expect(response.status).to eq(201)
       end
     end
+
+    context 'forwarding to default group solver' do
+      context 'category has a default group solver' do
+        let(:group) { create(:group) }
+
+        before do
+          category.solver_groups = [group]
+          category.default_solver_group = group
+          category.save!
+        end
+
+        it 'gets forwarded to the group' do
+          post "/reports/#{category.id}/items", valid_params, auth(user)
+          expect(response.status).to eq(201)
+
+          expect(category.reports.last.assigned_group).to eq(group)
+        end
+      end
+    end
   end
 
   context 'PUT /reports/:category_id/items/:id' do
@@ -227,7 +246,7 @@ describe Reports::Items::API do
 
         it "doesn't notify the user" do
           valid_params['status_id'] = \
-            category.status_categories.private.first.status.id
+            category.status_categories.all_private.first.status.id
 
           expect(existent_item.reports_status_id).to_not eq(status.id)
           put "/reports/#{category.id}/items/#{existent_item.id}", valid_params, auth(user)
@@ -268,7 +287,7 @@ describe Reports::Items::API do
 
     context 'valid category and status' do
       let(:valid_params) do
-        JSON.parse <<-JSON
+        Oj.load <<-JSON
           {
             "new_category_id": #{other_category.id},
             "new_status_id": #{other_status.id}
@@ -282,6 +301,177 @@ describe Reports::Items::API do
 
         expect(item.category).to eq(other_category)
         expect(item.status).to eq(other_status)
+      end
+    end
+  end
+
+  context 'PUT /reports/:category_id/items/:id/forward' do
+    let(:item) { create(:reports_item_with_images, category: category) }
+    let(:group) { create(:group) }
+
+    before do
+      category.solver_groups = [group]
+      category.save!
+    end
+
+    context 'valid group for forwarding' do
+      let(:valid_params) do
+        Oj.load <<-JSON
+          {
+            "group_id": #{group.id}
+          }
+        JSON
+      end
+
+      context 'user does have permission to forward' do
+        let(:user_group) { create(:group) }
+
+        before do
+          user_group.permission.update(reports_items_forward: [item.category.id])
+          user.groups = [user_group]
+          user.save!
+        end
+
+        it 'forwards item to group correctly' do
+          put "/reports/#{item.category.id}/items/#{item.id}/forward", valid_params, auth(user)
+          item.reload
+
+          expect(item.assigned_group).to eq(group)
+          expect(item.assigned_user).to be_nil
+        end
+      end
+
+      context 'user doest\'t have permission to forward' do
+        let(:user_group) { create(:group) }
+
+        before do
+          user.groups = [user_group]
+          user.save!
+        end
+
+        it 'throw a permission error' do
+          put "/reports/#{item.category.id}/items/#{item.id}/forward", valid_params, auth(user)
+          expect(response.status).to eq(403)
+        end
+      end
+    end
+  end
+
+  context 'PUT /reports/:category_id/items/:id/assign' do
+    let(:item) { create(:reports_item_with_images, category: category) }
+    let(:group) { create(:group) }
+    let(:user) { create(:user) }
+
+    before do
+      category.solver_groups = [group]
+      category.save!
+
+      item.update!(assigned_group: group)
+
+      user.groups << group
+      user.save!
+    end
+
+    context 'valid category and status' do
+      let(:valid_params) do
+        Oj.load <<-JSON
+          {
+            "user_id": #{user.id}
+          }
+        JSON
+      end
+
+      it 'updates the category and status of the item correctly' do
+        put "/reports/#{item.category.id}/items/#{item.id}/assign", valid_params, auth(user)
+        item.reload
+
+        expect(item.assigned_user).to eq(user)
+      end
+    end
+  end
+
+  context 'PUT /reports/:category_id/items/:id/update_status' do
+    let(:item) { create(:reports_item_with_images, category: category) }
+    let(:status) { create(:status) }
+
+    before do
+      category.status_categories.create(status: status)
+    end
+
+    context 'valid status for updating' do
+      let(:valid_params) do
+        Oj.load <<-JSON
+          {
+            "status_id": #{status.id}
+          }
+        JSON
+      end
+
+      context 'user does have permission to alter the status' do
+        let(:user_group) { create(:group) }
+
+        before do
+          user_group.permission.update(reports_items_alter_status: [item.category.id])
+          user.groups = [user_group]
+          user.save!
+        end
+
+        it 'updates the item status correctly' do
+          put "/reports/#{item.category.id}/items/#{item.id}/update_status", valid_params, auth(user)
+          item.reload
+
+          expect(item.status).to eq(status)
+        end
+
+        context 'category requires comment when updating the status' do
+          before do
+            category.update!(comment_required_when_updating_status: true)
+          end
+
+          context 'user does provide a comment' do
+            let(:message) { 'This is a test' }
+            let(:visibility) { Reports::Comment::PRIVATE }
+
+            before do
+              valid_params[:comment] = message
+              valid_params[:comment_visibility] = visibility
+            end
+
+            it 'updates the status and creates the comment' do
+              put "/reports/#{item.category.id}/items/#{item.id}/update_status", valid_params, auth(user)
+              expect(response.status).to eq(200)
+              item.reload
+
+              expect(item.status).to eq(status)
+
+              comment = item.comments.last
+              expect(comment.message).to eq(message)
+              expect(comment.author).to eq(user)
+              expect(comment.visibility).to eq(visibility)
+            end
+          end
+
+          context "user doesn't provide a comment" do
+            it 'updates the status and creates the comment' do
+              put "/reports/#{item.category.id}/items/#{item.id}/update_status", valid_params, auth(user)
+              expect(response.status).to eq(400)
+            end
+          end
+        end
+      end
+
+      context 'user doest\'t have permission to forward' do
+        let(:user_group) { create(:group) }
+
+        before do
+          user.groups = [user_group]
+          user.save!
+        end
+
+        it 'throw a permission error' do
+          put "/reports/#{item.category.id}/items/#{item.id}/update_status", valid_params, auth(user)
+          expect(response.status).to eq(403)
+        end
       end
     end
   end
@@ -330,7 +520,7 @@ describe Reports::Items::API do
         )
       end
       let(:valid_params) do
-        JSON.parse <<-JSON
+        Oj.load <<-JSON
           {
             "user_id": #{user.id}
           }
@@ -363,7 +553,7 @@ describe Reports::Items::API do
         )
       end
       let(:valid_params) do
-        JSON.parse <<-JSON
+        Oj.load <<-JSON
           {
             "category_id": #{category.id}
           }
@@ -399,7 +589,7 @@ describe Reports::Items::API do
         )
       end
       let(:valid_params) do
-        JSON.parse <<-JSON
+        Oj.load <<-JSON
           {
             "begin_date": "#{Date.new(2014, 1, 9).iso8601}",
             "end_date": "#{Date.new(2014, 1, 13).iso8601}"
@@ -432,7 +622,7 @@ describe Reports::Items::API do
 
       context 'return the right report even in a different timezone' do
         let(:valid_params) do
-          JSON.parse <<-JSON
+          Oj.load <<-JSON
             {
               "begin_date": "2015-01-25T00:00:00-08:00",
               "end_date": "2015-01-25T23:59:59-08:00"
@@ -478,7 +668,7 @@ describe Reports::Items::API do
         )
       end
       let(:valid_params) do
-        JSON.parse <<-JSON
+        Oj.load <<-JSON
           {
             "statuses": [#{status.id}]
           }
@@ -521,7 +711,7 @@ describe Reports::Items::API do
         )
       end
       let(:valid_params) do
-        JSON.parse <<-JSON
+        Oj.load <<-JSON
           {
             "category_id": #{category.id},
             "user_id": #{user.id}
@@ -682,7 +872,7 @@ describe Reports::Items::API do
     context 'search by position' do
       let(:empty_category) { create(:reports_category_with_statuses) }
       let(:valid_params) do
-        JSON.parse <<-JSON
+        Oj.load <<-JSON
           {
             "category_id": #{empty_category.id},
             "position": {

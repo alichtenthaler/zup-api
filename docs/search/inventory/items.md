@@ -106,16 +106,10 @@ __Apenas para campos que tenham um array como conteúdo (ex.: checkboxes)__
 
 Exemplo:
 
-    {
-      "fields": {
-        "id_do_campo": {
-          "includes": ["foo", "bar"]
-        }
-      }
-    }
+   ?fields[id_do_campo][includes][0]=1234&fields[id_do_campo][includes][1]=2356
 
 No exemplo acima, irá retornar itens de inventário que o valor do campo
-contenham os itens `foo` e `bar` no seu array.
+contenham os itens que selecionaram a opção de campo com id *1234* e *2356*.
 
 ### Filtro "não inclui"
 
@@ -123,13 +117,7 @@ __Apenas para campos que tenham um array como conteúdo (ex.: checkboxes)__
 
 Exemplo:
 
-    {
-      "fields": {
-        "id_do_campo": {
-          "excludes": ["foo", "bar"]
-        }
-      }
-    }
+   ?fields[id_do_campo][excludes][0]=1234&fields[id_do_campo][excludes][1]=2356
 
 No exemplo acima, irá retornar itens de inventário que o valor do campo
-__NÃO__ contenham os itens `foo` e `bar` no seu array.
+__NÃO__ contenham os itens que selecionaram a opção de campo com id *1234* e *2356*.

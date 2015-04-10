@@ -105,7 +105,7 @@ describe Flows::Steps::Triggers::API do
             before { put "/flows/#{flow.id}/steps/#{step.id}/triggers/12345678", valid_params, auth(user) }
 
             it { expect(response.status).to be_a_not_found }
-            it { expect(parsed_body).to be_an_error('Couldn\'t find Trigger with id=12345678 [WHERE "triggers"."step_id" = $1]') }
+            it { expect(parsed_body).to be_an_error('Couldn\'t find Trigger with \'id\'=12345678 [WHERE "triggers"."step_id" = $1]') }
           end
         end
 
@@ -154,7 +154,7 @@ describe Flows::Steps::Triggers::API do
             before { delete "/flows/#{flow.id}/steps/#{step.id}/triggers/12345678", {}, auth(user) }
 
             it { expect(response.status).to be_a_not_found }
-            it { expect(parsed_body).to be_an_error('Couldn\'t find Trigger with id=12345678 [WHERE "triggers"."step_id" = $1]') }
+            it { expect(parsed_body).to be_an_error('Couldn\'t find Trigger with \'id\'=12345678 [WHERE "triggers"."step_id" = $1]') }
           end
         end
 

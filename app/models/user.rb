@@ -99,7 +99,6 @@ class User < ActiveRecord::Base
 
   def reload_permissions
     @permissions = nil
-    @p
   end
 
   def groups_names

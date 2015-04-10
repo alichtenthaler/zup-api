@@ -111,7 +111,7 @@ describe Flows::Steps::API do
             before { put "/flows/#{flow.id}/steps/12345678", valid_params, auth(user) }
 
             it { expect(response.status).to be_a_not_found }
-            it { expect(response.body).to be_an_error('Couldn\'t find Step with id=12345678 [WHERE "steps"."flow_id" = $1]') }
+            it { expect(response.body).to be_an_error('Couldn\'t find Step with \'id\'=12345678 [WHERE "steps"."flow_id" = $1]') }
           end
         end
 
@@ -149,7 +149,7 @@ describe Flows::Steps::API do
             before { delete "/flows/#{flow.id}/steps/123456789", {}, auth(user) }
 
             it { expect(response.status).to be_a_not_found }
-            it { expect(response.body).to be_an_error('Couldn\'t find Step with id=123456789 [WHERE "steps"."flow_id" = $1]') }
+            it { expect(response.body).to be_an_error('Couldn\'t find Step with \'id\'=123456789 [WHERE "steps"."flow_id" = $1]') }
           end
         end
 
@@ -223,7 +223,7 @@ describe Flows::Steps::API do
             before { get "/flows/#{flow.id}/steps/12345678", {}, auth(user) }
 
             it { expect(response.status).to be_a_not_found }
-            it { expect(response.body).to be_an_error('Couldn\'t find Step with id=12345678 [WHERE "steps"."flow_id" = $1]') }
+            it { expect(response.body).to be_an_error('Couldn\'t find Step with \'id\'=12345678 [WHERE "steps"."flow_id" = $1]') }
           end
         end
 
@@ -263,7 +263,7 @@ describe Flows::Steps::API do
             before { put "/flows/#{flow.id}/steps", { ids:[123456789] }, auth(user) }
 
             it { expect(response.status).to be_a_not_found }
-            it { expect(response.body).to be_an_error('Couldn\'t find Step with id=123456789 [WHERE "steps"."flow_id" = $1]') }
+            it { expect(response.body).to be_an_error('Couldn\'t find Step with \'id\'=123456789 [WHERE "steps"."flow_id" = $1]') }
           end
         end
 

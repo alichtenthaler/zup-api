@@ -18,7 +18,7 @@ describe FeatureFlags::API do
   describe 'PUT /feature_flags/:id' do
     let(:feature_flag) { create(:feature_flag, :disabled) }
     let(:valid_params) do
-      JSON.parse <<-JSON
+      Oj.load <<-JSON
         {
           "status": 1
         }

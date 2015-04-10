@@ -17,6 +17,8 @@ class Inventory::CreateItemFromCategoryForm
     if representer.valid?
       representer.inject_to_data!
       representer.item.save!
+
+      representer.create_history_entry
     else
       fail ActiveRecord::RecordInvalid.new(representer)
     end

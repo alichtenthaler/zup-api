@@ -91,7 +91,7 @@ describe Flows::ResolutionStates::API do
             before { put "/flows/#{flow.id}/resolution_states/12345678", valid_params, auth(user) }
 
             it { expect(response.status).to be_a_not_found }
-            it { expect(response.body).to be_an_error('Couldn\'t find ResolutionState with id=12345678 [WHERE "resolution_states"."flow_id" = $1]') }
+            it { expect(response.body).to be_an_error('Couldn\'t find ResolutionState with \'id\'=12345678 [WHERE "resolution_states"."flow_id" = $1]') }
           end
         end
 
@@ -131,7 +131,7 @@ describe Flows::ResolutionStates::API do
             before { delete "/flows/#{flow.id}/resolution_states/12345678", {}, auth(user) }
 
             it { expect(response.status).to be_a_not_found }
-            it { expect(response.body).to be_an_error('Couldn\'t find ResolutionState with id=12345678 [WHERE "resolution_states"."flow_id" = $1]') }
+            it { expect(response.body).to be_an_error('Couldn\'t find ResolutionState with \'id\'=12345678 [WHERE "resolution_states"."flow_id" = $1]') }
           end
         end
 

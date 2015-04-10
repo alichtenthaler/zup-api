@@ -46,6 +46,18 @@ module Reports::Categories
 
         optional :confidential, type: Boolean,
                  desc: 'If the reports created on this category are confidential or not'
+
+        optional :solver_groups_ids, type: Array,
+                 desc: 'Array of groups ids that are solver for this report category'
+
+        optional :default_solver_group_id, type: Integer,
+                 desc: 'Group id for the default solver group'
+
+        optional :comment_required_when_forwarding, type: Boolean,
+                 desc: 'Requires internal comment when forwarding to other group'
+
+        optional :comment_required_when_updating_status, type: Boolean,
+                 desc: 'Requires comment when updating item status'
       end
 
       post do
@@ -58,7 +70,10 @@ module Reports::Categories
           :title, :allows_arbitrary_position,
           :resolution_time, :user_response_time, :color,
           :icon, :marker, :parent_id, :private, :confidential,
-          :private_resolution_time, :resolution_time_enabled
+          :private_resolution_time, :resolution_time_enabled,
+          :default_solver_group_id, :comment_required_when_forwarding,
+          :comment_required_when_updating_status,
+          solver_groups_ids: []
         )
 
         if safe_params[:inventory_categories]
@@ -141,7 +156,9 @@ module Reports::Categories
           :resolution_time, :user_response_time, :color,
           :parent_id, :confidential, :icon, :marker,
           :private_resolution_time, :resolution_time_enabled,
-          :statuses
+          :statuses, :default_solver_group_id, :comment_required_when_forwarding,
+          :comment_required_when_updating_status,
+          solver_groups_ids: []
         )
 
         if safe_params[:inventory_categories]

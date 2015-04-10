@@ -13,7 +13,7 @@ describe Inventory::Formulas::API do
       )
     end
     let(:valid_params) do
-      JSON.parse <<-JSON
+      Oj.load <<-JSON
         {
           "inventory_status_id": #{status.id},
           "groups_to_alert": [#{user.group_ids.first}],
@@ -77,7 +77,7 @@ describe Inventory::Formulas::API do
 
     context 'updating common data' do
       let(:valid_params) do
-        JSON.parse <<-JSON
+        Oj.load <<-JSON
           {
             "inventory_status_id": #{status.id}
           }

@@ -3,5 +3,5 @@
 
 require File.expand_path('../config/application', __FILE__)
 
-ZupApi::Application.load_tasks
+Rails.application.load_tasks
 Knapsack.load_tasks if defined?(Knapsack)

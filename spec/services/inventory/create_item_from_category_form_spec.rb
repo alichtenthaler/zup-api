@@ -25,7 +25,7 @@ describe Inventory::CreateItemFromCategoryForm do
         ).create!
 
         item = category.reload.items.first
-        expect(item.data.where(field: { kind: 'text' }).first.content).to eq('Rua do Banco')
+        expect(item.data.joins(:field).where(inventory_fields: { kind: 'text' }).first.content).to eq('Rua do Banco')
         expect(item.data.size).to eq(category.fields.size)
       end
 

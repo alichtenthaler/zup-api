@@ -2,8 +2,7 @@ ruby '2.2.1'
 
 source 'https://rubygems.org'
 
-gem 'dotenv-rails'
-gem 'rails', '4.0.13'
+gem 'rails', '4.1.9'
 gem 'pg'
 gem 'rgeo', '0.3.20'
 gem 'rgeo-shapefile'
@@ -21,28 +20,31 @@ gem 'omniauth-facebook'
 gem 'omniauth-google-oauth2'
 gem 'armor'
 gem 'carrierwave', '~> 0.9.0', git: 'https://github.com/carrierwaveuploader/carrierwave.git', ref: '17399e692d3b29ec7c2e609308c6e2ec7c622694'
-gem 'fog', '~> 1.3.1'
+gem 'fog', '~> 1.28.0'
 gem 'rack-cors', require: 'rack/cors'
 gem 'squeel'
 gem 'will_paginate'
-gem 'api-pagination', '2.1.1'
+gem 'api-pagination'
 gem 'mini_magick'
 gem 'newrelic_rpm'
 gem 'settingslogic'
 gem 'sidekiq'
 gem 'sidekiq-cron'
 gem 'sinatra', '>= 1.3.0', require: nil
-gem 'rails-patch-json-encode'
 gem 'oj'
+gem 'oj_mimic_json'
 gem 'garner'
 gem 'brcpfcnpj'
-gem 'paper_trail'
+gem 'paper_trail', '~> 4.0.0.beta2'
 gem 'pushmeup', github: 'alarionov/pushmeup', ref: 'fd43ba21ef3bbe8053f8878f9f800f7185b98156'
 gem 'atomic_arrays'
 gem 'pr_geohash'
 gem 'parallel', require: false
+gem 'ruby-progressbar', require: false
 gem 'sentry-raven', require: false
 gem 'foreman'
+gem 'minitest'
+gem 'spring'
 
 group :production do
   gem 'rails_12factor'
@@ -62,20 +64,24 @@ end
 
 group :development, :test do
   gem 'rspec-rails', '~> 3.2.1'
-  gem 'database_cleaner'
   gem 'awesome_print'
-  gem 'shoulda-matchers'
-  gem 'pry', '0.9.12.2'
-  gem 'pry-nav'
-  gem 'knapsack'
+  gem 'pry-byebug', '1.3.3'
+  gem 'pry-remote'
+  gem 'dotenv-rails'
 end
 
 group :profile do
   gem 'ruby-prof'
 end
 
+group :development do
+  gem 'foreman'
+end
+
 group :test do
+  gem 'database_rewinder', github: 'ntxcode/database_rewinder', branch: 'filtering_interface'
+  gem 'shoulda-matchers'
+  gem 'knapsack'
   gem 'rubocop'
-  gem 'codeclimate-test-reporter', require: nil
   gem 'rspec-nc', github: 'estevaoam/rspec-nc'
 end

@@ -27,12 +27,17 @@ module Search::Reports::Items
                desc: 'Should clusterize the results or not'
       optional :zoom, type: Integer,
                desc: 'Zooming level of the map'
+      optional :assigned_to_my_group, type: Boolean,
+               desc: 'Show only reports assigned to my group'
+      optional :assigned_to_me, type: Boolean,
+               desc: 'Show only reports assigned to the signed user'
     end
     get 'reports/items' do
       authenticate!
 
       search_params = safe_params.permit(
-        :begin_date, :end_date, :address, :query, :overdue, :clusterize, :zoom
+        :begin_date, :end_date, :address, :query, :overdue, :clusterize, :zoom,
+        :assigned_to_my_group, :assigned_to_me
       )
 
       search_params[:paginator] = method(:paginate)

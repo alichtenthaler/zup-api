@@ -125,7 +125,7 @@ describe Flows::Steps::Fields::API do
             before { put "/flows/#{flow.id}/steps/#{step.id}/fields/123456789", valid_params, auth(user) }
 
             it { expect(response.status).to be_a_not_found }
-            it { expect(response.body).to be_an_error('Couldn\'t find Field with id=123456789 [WHERE "fields"."step_id" = $1]') }
+            it { expect(response.body).to be_an_error('Couldn\'t find Field with \'id\'=123456789 [WHERE "fields"."step_id" = $1]') }
           end
 
           context 'because validations fields' do
@@ -185,7 +185,7 @@ describe Flows::Steps::Fields::API do
             before { delete "/flows/#{flow.id}/steps/#{step.id}/fields/123456789", {}, auth(user) }
 
             it { expect(response.status).to be_a_not_found }
-            it { expect(response.body).to be_an_error('Couldn\'t find Field with id=123456789 [WHERE "fields"."step_id" = $1]') }
+            it { expect(response.body).to be_an_error('Couldn\'t find Field with \'id\'=123456789 [WHERE "fields"."step_id" = $1]') }
           end
         end
 
@@ -259,7 +259,7 @@ describe Flows::Steps::Fields::API do
             before { put "/flows/#{flow.id}/steps/#{step.id}/fields", { ids:[123456789] }, auth(user) }
 
             it { expect(response.status).to be_a_not_found }
-            it { expect(response.body).to be_an_error('Couldn\'t find Field with id=123456789 [WHERE "fields"."step_id" = $1]') }
+            it { expect(response.body).to be_an_error('Couldn\'t find Field with \'id\'=123456789 [WHERE "fields"."step_id" = $1]') }
           end
         end
 

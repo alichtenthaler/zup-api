@@ -74,6 +74,13 @@ module Reports::Items
                                                report)
         end
 
+        # Forward to default group
+        if category.default_solver_group
+          Reports::ForwardToGroup.new(report, current_user).forward!(
+            category.default_solver_group
+          )
+        end
+
         if report.user
           Reports::NotifyUser.new(report).notify_report_creation!
         end
@@ -156,7 +163,7 @@ module Reports::Items
       end
     end
 
-    desc 'Change migration'
+    desc 'Migrate report from category (and status)'
     params do
       optional :new_category_id, type: Integer,
                desc: 'The id of the new reports category of the report'
@@ -177,6 +184,93 @@ module Reports::Items
       # Move to new category and status
       service = Reports::ChangeItemCategory.new(item, new_category, new_status, current_user)
       service.process!
+
+      {
+        report: Reports::Item::Entity.represent(
+          item, display_type: 'full', user: current_user
+        )
+      }
+    end
+
+    desc 'Forward report to another solver group'
+    params do
+      requires :group_id, type: Integer,
+               desc: 'The id of the new group'
+      optional :comment, type: String,
+               desc: 'The comment to be created'
+    end
+    put ':reports_category_id/items/:id/forward' do
+      authenticate!
+
+      category = Reports::Category.find(params[:reports_category_id])
+      group = Group.find(params[:group_id])
+      item = Reports::Item.find_by!(id: params[:id], reports_category_id: category.id)
+      comment = params[:comment]
+
+      validate_permission!(:forward, item)
+
+      # Forward to another group
+      service = Reports::ForwardToGroup.new(item, current_user)
+      service.forward!(group, comment)
+
+      {
+        report: Reports::Item::Entity.represent(
+          item, display_type: 'full', user: current_user
+        )
+      }
+    end
+
+    desc 'Assign report to an user'
+    params do
+      optional :user_id, type: Integer,
+               desc: 'The id of the user assignee'
+    end
+    put ':reports_category_id/items/:id/assign' do
+      authenticate!
+
+      category = Reports::Category.find(params[:reports_category_id])
+      user = User.find(params[:user_id])
+      item = Reports::Item.find_by!(id: params[:id], reports_category_id: category.id)
+
+      validate_permission!(:edit, item)
+
+      # Forward to another group
+      service = Reports::AssignToUser.new(item, current_user).assign!(user)
+
+      {
+        report: Reports::Item::Entity.represent(
+          item, display_type: 'full', user: current_user
+        )
+      }
+    end
+
+    desc 'Updates report status'
+    params do
+      requires :status_id, type: Integer,
+               desc: 'The id of the status to change'
+      optional :comment, type: String,
+               desc: 'The comment to be created'
+      optional :comment_visibility, type: Integer,
+               desc: '0 = Public, 1 = Private'
+    end
+    put ':reports_category_id/items/:id/update_status' do
+      authenticate!
+
+      category = Reports::Category.find(params[:reports_category_id])
+      status = category.statuses.find(params[:status_id])
+      item = Reports::Item.find_by!(id: params[:id], reports_category_id: category.id)
+      comment = params[:comment]
+      comment_visibility = params[:comment_visibility]
+
+      validate_permission!(:alter_status, item)
+
+      # Forward to another group
+      service = Reports::UpdateItemStatus.new(item, current_user)
+      service.update_status!(status)
+
+      if category.comment_required_when_updating_status || comment.present?
+        service.create_comment!(comment, comment_visibility)
+      end
 
       {
         report: Reports::Item::Entity.represent(

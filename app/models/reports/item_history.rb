@@ -1,10 +1,12 @@
 class Reports::ItemHistory < Reports::Base
   include ArrayRelate
 
+  KINDS = %w(status category forward user_assign)
+
   belongs_to :item, class_name: 'Reports::Item', foreign_key: 'reports_item_id'
   belongs_to :user
 
-  validates :kind, presence: true
+  validates :kind, presence: true, inclusion: { in: KINDS }
   validates :action, presence: true
   validates :item, presence: true
 

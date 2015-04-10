@@ -7,7 +7,7 @@ describe ClusterizeItems::Inventory do
       create_list(:inventory_item, 10, category: category)
     end
 
-    subject { described_class.new(Inventory::Item.scoped, 3) }
+    subject { described_class.new(Inventory::Item, 3) }
 
     it 'returns only one cluster' do
       expect(subject.results[:clusters].size).to eq(1)

@@ -55,7 +55,7 @@ describe Search::Inventory::Items::API do
         create_list(:inventory_item, 10, category: category)
       end
       let(:valid_params) do
-        JSON.parse <<-JSON
+        Oj.load <<-JSON
           {
             "address": "abilio"
           }
@@ -91,7 +91,7 @@ describe Search::Inventory::Items::API do
         [item, item2, item3]
       end
       let(:valid_params) do
-        JSON.parse <<-JSON
+        Oj.load <<-JSON
           {
             "query": "123456"
           }
@@ -124,7 +124,7 @@ describe Search::Inventory::Items::API do
         [item, item2]
       end
       let(:valid_params) do
-        JSON.parse <<-JSON
+        Oj.load <<-JSON
           {
             "users_ids": "#{user.id},#{user2.id}"
           }
@@ -147,7 +147,7 @@ describe Search::Inventory::Items::API do
         create_list(:inventory_item, 10, category: category)
       end
       let(:valid_params) do
-        JSON.parse <<-JSON
+        Oj.load <<-JSON
           {
             "title": "torta"
           }
@@ -173,7 +173,7 @@ describe Search::Inventory::Items::API do
       let(:longitude2) { -20.6333090 }
 
       let(:valid_params) do
-        JSON.parse <<-JSON
+        Oj.load <<-JSON
           {
             "address": "abilio",
             "position": {
@@ -223,7 +223,7 @@ describe Search::Inventory::Items::API do
       let(:latitude) { -23.5505200 }
       let(:longitude) { -46.6333090 }
       let(:valid_params) do
-        JSON.parse <<-JSON
+        Oj.load <<-JSON
           {
             "address": "abilio",
             "position": {
@@ -264,7 +264,7 @@ describe Search::Inventory::Items::API do
       let(:latitude) { -23.5505200 }
       let(:longitude) { -46.6333090 }
       let(:valid_params) do
-        JSON.parse <<-JSON
+        Oj.load <<-JSON
           {
             "position": {
               "latitude": #{latitude},
@@ -310,7 +310,7 @@ describe Search::Inventory::Items::API do
         create_list(:inventory_item, 3, category: category, status: wrong_status)
       end
       let(:valid_params) do
-        JSON.parse <<-JSON
+        Oj.load <<-JSON
           {
             "inventory_statuses_ids": "#{status.id}"
           }
@@ -338,7 +338,7 @@ describe Search::Inventory::Items::API do
         items.delete(correct_item)
       end
       let(:valid_params) do
-        JSON.parse <<-JSON
+        Oj.load <<-JSON
           {
             "created_at": {
               "begin": "#{Date.new(2014, 1, 9).iso8601}",
@@ -378,7 +378,7 @@ describe Search::Inventory::Items::API do
           end
         end
         let(:valid_params) do
-          JSON.parse <<-JSON
+          Oj.load <<-JSON
           {
             "fields": {
               "#{field.id}": {
@@ -417,7 +417,7 @@ describe Search::Inventory::Items::API do
           end
         end
         let(:valid_params) do
-          JSON.parse <<-JSON
+          Oj.load <<-JSON
           {
             "fields": {
               "#{field.id}": {
@@ -457,7 +457,7 @@ describe Search::Inventory::Items::API do
             end
           end
           let(:valid_params) do
-            JSON.parse <<-JSON
+            Oj.load <<-JSON
             {
               "fields": {
                 "#{field.id}": {
@@ -502,7 +502,7 @@ describe Search::Inventory::Items::API do
             end
           end
           let(:valid_params) do
-            JSON.parse <<-JSON
+            Oj.load <<-JSON
               {
                 "fields": {
                   "#{field.id}": {
@@ -540,7 +540,7 @@ describe Search::Inventory::Items::API do
             item
           end
           let(:valid_params) do
-            JSON.parse <<-JSON
+            Oj.load <<-JSON
             {
               "fields": {
                 "#{field.id}": {
@@ -586,7 +586,7 @@ describe Search::Inventory::Items::API do
           end
         end
         let(:valid_params) do
-          JSON.parse <<-JSON
+          Oj.load <<-JSON
             {
               "fields": {
                 "#{field.id}": {
@@ -634,7 +634,7 @@ describe Search::Inventory::Items::API do
           end
         end
         let(:valid_params) do
-          JSON.parse <<-JSON
+          Oj.load <<-JSON
           {
             "fields": {
               "#{field.id}": {
@@ -673,7 +673,7 @@ describe Search::Inventory::Items::API do
           end
         end
         let(:valid_params) do
-          JSON.parse <<-JSON
+          Oj.load <<-JSON
           {
             "fields": {
               "#{field.id}": {
@@ -730,7 +730,7 @@ describe Search::Inventory::Items::API do
             end
           end
           let(:valid_params) do
-            JSON.parse <<-JSON
+            Oj.load <<-JSON
               {
                 "fields": {
                   "#{field.id}": {
@@ -756,7 +756,7 @@ describe Search::Inventory::Items::API do
         end
       end
 
-      context 'using excludes', broken: true do
+      context 'using excludes' do
         context 'using input with option selected' do
           let!(:field) { create(:inventory_field, section: category.sections.sample, kind: 'checkbox') }
           let!(:items) do
@@ -783,7 +783,7 @@ describe Search::Inventory::Items::API do
           end
           let(:wrong_options) do
             [
-              create(:inventory_field_option, field: field, value: 'crazy'),
+              field.field_options.reload.find_by(value: 'crazy'),
               create(:inventory_field_option, field: field, value: 'is'),
               create(:inventory_field_option, field: field, value: 'a test')
             ]
@@ -794,7 +794,7 @@ describe Search::Inventory::Items::API do
             end
           end
           let(:valid_params) do
-            JSON.parse <<-JSON
+            Oj.load <<-JSON
             {
               "fields": {
                 "#{field.id}": {
@@ -828,7 +828,7 @@ describe Search::Inventory::Items::API do
           items.sort_by { |item| item.title }
         end
         let(:valid_params) do
-          JSON.parse <<-JSON
+          Oj.load <<-JSON
           {
             "sort": "title",
             "order": "asc"
@@ -865,7 +865,7 @@ describe Search::Inventory::Items::API do
           [item2, item]
         end
         let(:valid_params) do
-          JSON.parse <<-JSON
+          Oj.load <<-JSON
           {
             "sort": "user_name",
             "order": "asc"

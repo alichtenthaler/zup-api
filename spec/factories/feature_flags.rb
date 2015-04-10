@@ -5,10 +5,10 @@ FactoryGirl.define do
 
   factory :feature_flag do
     name { generate(:flag_name) }
-    status 1
+    status :enabled
 
     trait :disabled do
-      status 0
+      status :disabled
     end
   end
 end

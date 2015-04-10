@@ -11,7 +11,7 @@ Os parâmetros/filtros aceitos são:
 | Nome       | Tipo    | Obrigatório | Descrição                                                                              |
 |------------|---------|-------------|----------------------------------------------------------------------------------------|
 | user_id    | Integer | Não         | O id do usuário que deseja filtrar                                                     |
-| kind       | String  | Não         | O tipo da ação, pode ser: 'status', 'category'. |
+| kind       | String  | Não         | O tipo da ação, pode ser: 'status', 'category', 'forward' e 'user_assign'. |
 | created_at | Object  | Não         | Objeto com 'begin' e/ou 'end' com datas em formato ISO-8601 para filtrar.              |
 | object_id | Integer  | Não         | ID do objeto relacionado ao histórico              |
 

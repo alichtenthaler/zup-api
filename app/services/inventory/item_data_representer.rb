@@ -68,7 +68,7 @@ module Inventory
           item_data = current_data.select { |i| i.field.id == field.id }.first
 
           if item_data
-            if field.kind != 'images' && new_content != item_data.content
+            unless %w(attachments images).include?(field.kind) || same_value?(field, new_content, item_data.content)
               @changes[item_data] = {
                 old: item_data.content,
                 new: new_content
@@ -79,7 +79,7 @@ module Inventory
           else
             item_data = item.data.build(field: field, content: new_content)
 
-            if field.kind != 'images'
+            unless %w(attachments images).include?(field.kind)
               @changes[item_data] = {
                 new: new_content
               }
@@ -120,6 +120,17 @@ module Inventory
     end
 
     private
+
+    def same_value?(field, new_content, actual_content)
+      if new_content.is_a?(Array) && actual_content.is_a?(Array)
+        (new_content - actual_content).empty?
+      elsif field.use_options? && !new_content.is_a?(Array)
+        actual_content = [] unless actual_content
+        ([new_content] - actual_content).empty?
+      else
+        new_content.to_s == actual_content.to_s
+      end
+    end
 
     def populate_data
       if item.data.any?

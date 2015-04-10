@@ -9,7 +9,7 @@ describe Reports::CreateHistoryEntry do
   describe '#create' do
     context 'with the status changed' do
       let(:status) { create(:status) }
-      let(:kind) { 'changed' }
+      let(:kind) { 'status' }
       let(:action) { 'Mudou o status do relato' }
 
       it 'creates the history entry' do
@@ -29,7 +29,7 @@ describe Reports::CreateHistoryEntry do
 
     context 'with the category changed' do
       let(:category) { create(:reports_category) }
-      let(:kind) { 'changed' }
+      let(:kind) { 'status' }
       let(:action) { 'Mudou a categoria do relato' }
 
       it 'creates the history entry' do

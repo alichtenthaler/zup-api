@@ -19,7 +19,7 @@ describe Inventory::Statuses do
   describe 'POST /inventory/categories/:category_id/statuses' do
     let!(:category) { create(:inventory_category) }
     let(:valid_params) do
-      JSON.parse <<-JSON
+      Oj.load <<-JSON
         {
           "title": "Test title",
           "color": "#ff2345"
@@ -57,7 +57,7 @@ describe Inventory::Statuses do
     let!(:category) { create(:inventory_category) }
     let!(:status) { create(:inventory_status, category: category) }
     let(:valid_params) do
-      JSON.parse <<-JSON
+      Oj.load <<-JSON
         {
           "title": "Test title",
           "color": "#ff2345"

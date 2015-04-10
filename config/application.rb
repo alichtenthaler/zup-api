@@ -1,7 +1,8 @@
 require File.expand_path('../boot', __FILE__)
 
 require 'rails/all'
-require 'sprockets/railtie'
+require 'action_mailer/railtie'
+require 'active_record/railtie'
 require 'oj'
 
 # Require the gems listed in Gemfile, including any gems
@@ -57,6 +58,8 @@ module ZupApi
         resource '*', headers: :any, methods: [:get, :post, :put, :delete, :patch], expose: ['Link', 'Total']
       end
     end
+
+    config.autoload_paths << Rails.root.join('lib')
 
     ActionMailer::Base.smtp_settings = {
       address: ENV['SMTP_ADDRESS'],

@@ -19,8 +19,8 @@ module Reports
 
     def adds_report_data
       @params = params.merge(
-        latitude: report.position.latitude,
-        longitude: report.position.longitude,
+        latitude: report.position.y,
+        longitude: report.position.x,
         description: report.description,
         address: report.address,
         reference: report.reference,

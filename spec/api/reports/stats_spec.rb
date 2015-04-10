@@ -11,7 +11,7 @@ describe Reports::Stats::API do
     create_list(:reports_item, 10, status: status)
   end
   let(:valid_params) do
-    JSON.parse <<-JSON
+    Oj.load <<-JSON
       {
         "category_id": #{report_category.id}
       }

@@ -20,6 +20,8 @@ module Groups
 
         search_query = {}
 
+        groups = Group.eager_load(:users, :permission)
+
         if group_name
           search_query = search_query.merge(name: group_name)
         end
@@ -34,13 +36,7 @@ module Groups
           current_user.permissions.reports_categories_edit.any? ||
           current_user.permissions.inventories_full_access ||
           current_user.permissions.reports_full_access
-          search_query = search_query.merge(id: user_permissions.groups_visible)
-        end
-
-        groups = Group.includes(:users, :permission)
-
-        if (visible_ids = search_query.delete(:id))
-          groups = groups.where(id: visible_ids)
+          groups = groups.where(groups: { id: user_permissions.groups_visible })
         end
 
         unless search_query.blank?

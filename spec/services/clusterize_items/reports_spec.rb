@@ -7,7 +7,7 @@ describe ClusterizeItems::Reports do
       create_list(:reports_item, 10, category: category)
     end
 
-    subject { described_class.new(Reports::Item.scoped, 1) }
+    subject { described_class.new(Reports::Item, 1) }
 
     it 'returns cluster' do
       expect(subject.results[:clusters].size).to eq(1)
@@ -24,7 +24,7 @@ describe ClusterizeItems::Reports do
       create_list(:reports_item, 10, category: category)
     end
 
-    subject { described_class.new(Reports::Item.scoped, 18) }
+    subject { described_class.new(Reports::Item, 18) }
 
     it 'returns cluster' do
       expect(subject.results[:reports].size).to be > 0

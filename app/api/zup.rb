@@ -13,6 +13,8 @@ module ZUP
     format :json
     default_format :json
 
+    formatter :json, -> (object, _env) { Oj.dump(object) }
+
     rescue_from :all do |e|
       Raven.capture_exception(e)
 

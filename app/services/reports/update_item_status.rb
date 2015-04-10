@@ -25,6 +25,14 @@ module Reports
       Reports::NotifyUser.new(item).notify_status_update!(new_status)
     end
 
+    def create_comment!(message, visibility)
+      item.comments.create!(
+        author: user,
+        message: message,
+        visibility: visibility
+      )
+    end
+
     private
 
     def set_status_history_update(new_status)

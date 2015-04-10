@@ -3,7 +3,7 @@ require 'spec_helper'
 describe Inventory::UpdateItemData do
   let!(:category) { create(:inventory_category) }
   let(:item) { create(:inventory_item, category: category) }
-  let(:item_data) { item.data.where(field: { kind: 'text' }).first }
+  let(:item_data) { item.data.joins(:field).where(inventory_fields: { kind: 'text' }).first }
   let(:user) { create(:user) }
   let(:item_params) do
     {

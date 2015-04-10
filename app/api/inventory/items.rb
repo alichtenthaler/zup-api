@@ -138,12 +138,15 @@ module Inventory::Items
 
               if safe_params[:inventory_status_id]
                 status = category.statuses.find(safe_params[:inventory_status_id])
-                item.reload.update!(status: status)
 
-                Inventory::CreateHistoryEntry.new(item, current_user)
-                                             .create('status',
-                                                     'Alterou o status do inventário.',
-                                                     status)
+                if item.status != status
+                  item.reload.update!(status: status)
+
+                  Inventory::CreateHistoryEntry.new(item, current_user)
+                                              .create('status',
+                                                      'Alterou o status do inventário.',
+                                                      status)
+                end
               end
 
               { message: 'Inventory item updated successfully!' }

@@ -1,6 +1,3 @@
-require 'codeclimate-test-reporter'
-CodeClimate::TestReporter.start
-
 require 'knapsack'
 Knapsack::Adapters::RspecAdapter.bind
 
@@ -27,10 +24,6 @@ CarrierWave::Uploader::Base.enable_processing = false
 # option on the command line or in ~/.rspec, .rspec or `.rspec-local`.
 Dir[Rails.root.join('spec/support/**/*.rb')].each { |f| require f }
 
-# Checks for pending migrations before tests are run.
-# If you are not using ActiveRecord, you can remove this line.
-ActiveRecord::Migration.check_pending! if defined?(ActiveRecord::Migration)
-
 RSpec.configure do |config|
   config.include AliasesHelper
   config.include AuthenticationHelper
@@ -38,29 +31,19 @@ RSpec.configure do |config|
   config.include IntegrationHelper
 
   config.before(:suite) do
-    DatabaseCleaner.strategy = :transaction
-    DatabaseCleaner.clean_with(:truncation, except: %w[spatial_ref_sys])
+    DatabaseRewinder.filter_options = { except: %w(spatial_ref_sys) }
+    DatabaseRewinder.clean_all
   end
 
   config.filter_run_excluding broken: true
 
   config.before(:each) do
-    DatabaseCleaner.start
-
     # Always create the guest group
     FactoryGirl.create(:guest_group)
   end
 
   config.after(:each) do
-    DatabaseCleaner.clean
-  end
-
-  config.before(:all) do
-    DeferredGarbageCollection.start
-  end
-
-  config.after(:all) do
-    DeferredGarbageCollection.reconsider
+    DatabaseRewinder.clean
   end
 
   config.after(:all) do
@@ -84,7 +67,7 @@ RSpec.configure do |config|
   # If you're not using ActiveRecord, or you'd prefer not to run each of your
   # examples within a transaction, remove the following line or assign false
   # instead of true.
-  config.use_transactional_fixtures = true
+  config.use_transactional_fixtures = false
 
   # If true, the base class of anonymous controllers will be inferred
   # automatically. This will be the default behavior in future versions of

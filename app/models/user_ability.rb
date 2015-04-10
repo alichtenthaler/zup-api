@@ -104,7 +104,7 @@ class UserAbility
     end
 
     # Reports items permissions
-    can [:view, :edit], Reports::Item do |report|
+    can [:view, :edit, :forward, :alter_status], Reports::Item do |report|
       permissions.reports_items_edit.include?(report.reports_category_id) ||
       permissions.reports_categories_edit.include?(report.reports_category_id)
     end
@@ -126,6 +126,14 @@ class UserAbility
 
     can :view_private, Reports::Item do |report|
       permissions.reports_items_read_private.include?(report.reports_category_id)
+    end
+
+    can :forward, Reports::Item do |report|
+      permissions.reports_items_forward.include?(report.reports_category_id)
+    end
+
+    can :alter_status, Reports::Item do |report|
+      permissions.reports_items_alter_status.include?(report.reports_category_id)
     end
 
     # Inventory items permissions

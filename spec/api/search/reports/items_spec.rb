@@ -9,7 +9,7 @@ describe Search::Reports::Items::API do
       create_list(:reports_item, 5, category: category) end
 
     let(:valid_params) do
-      JSON.parse <<-JSON
+      Oj.load <<-JSON
         {
           "address": "Abilio"
         }
@@ -67,7 +67,7 @@ describe Search::Reports::Items::API do
           end
         end
         let!(:valid_params) do
-          JSON.parse <<-JSON
+          Oj.load <<-JSON
             {
               "sort": "user_name",
               "order": "asc"
@@ -98,7 +98,7 @@ describe Search::Reports::Items::API do
         create_list(:reports_item, 3, category: other_category)
       end
       let(:valid_params) do
-        JSON.parse <<-JSON
+        Oj.load <<-JSON
           {
             "reports_categories_ids": #{category.id}
           }
@@ -127,7 +127,7 @@ describe Search::Reports::Items::API do
           create_list(:reports_item, 3, category: category)
         end
         let(:valid_params) do
-          JSON.parse <<-JSON
+          Oj.load <<-JSON
           {
             "users_ids": #{user.id}
           }
@@ -158,7 +158,7 @@ describe Search::Reports::Items::API do
           create_list(:reports_item, 3, category: category)
         end
         let(:valid_params) do
-          JSON.parse <<-JSON
+          Oj.load <<-JSON
           {
             "users_ids": "#{user.id},#{user2.id}"
           }
@@ -194,7 +194,7 @@ describe Search::Reports::Items::API do
         items
       end
       let(:valid_params) do
-        JSON.parse <<-JSON
+        Oj.load <<-JSON
           {
             "statuses_ids": "#{items.first.reports_status_id}"
           }
@@ -218,7 +218,7 @@ describe Search::Reports::Items::API do
         create_list(:reports_item, 3, category: category)
       end
       let(:valid_params) do
-        JSON.parse <<-JSON
+        Oj.load <<-JSON
           {
             "address": "abilio"
           }
@@ -239,7 +239,7 @@ describe Search::Reports::Items::API do
         create_list(:reports_item, 3, category: category)
       end
       let(:valid_params) do
-        JSON.parse <<-JSON
+        Oj.load <<-JSON
           {
             "overdue": true
           }
@@ -272,7 +272,7 @@ describe Search::Reports::Items::API do
         [item, item2]
       end
       let(:valid_params) do
-        JSON.parse <<-JSON
+        Oj.load <<-JSON
           {
             "query": "crazybar"
           }
@@ -294,7 +294,7 @@ describe Search::Reports::Items::API do
       let(:latitude) { -23.5505200 }
       let(:longitude) { -46.6333090 }
       let(:valid_params) do
-        JSON.parse <<-JSON
+        Oj.load <<-JSON
           {
             "address": "abilio",
             "position": {
@@ -335,7 +335,7 @@ describe Search::Reports::Items::API do
       let(:latitude) { -23.5505200 }
       let(:longitude) { -46.6333090 }
       let(:valid_params) do
-        JSON.parse <<-JSON
+        Oj.load <<-JSON
           {
             "position": {
               "latitude": #{latitude},
@@ -368,6 +368,56 @@ describe Search::Reports::Items::API do
         expect(cluster['position']).to_not be_empty
         expect(cluster['count']).to eq(3)
         expect(cluster['category_id']).to be_present
+      end
+    end
+
+    context 'assigned to groups that user belongs' do
+      let(:items) do
+        create_list(:reports_item, 3, category: category)
+      end
+      let(:group) { create(:group) }
+      let(:valid_params) do
+        Oj.load <<-JSON
+          {
+            "assigned_to_my_group": true
+          }
+        JSON
+      end
+
+      before do
+        user.groups << group
+        user.save!
+      end
+
+      it 'returns the correct items assigned to the group' do
+        correct_item = items.sample
+        correct_item.update(assigned_group: group)
+
+        get '/search/reports/items', valid_params, auth(user)
+        expect(response.status).to eq(200)
+        expect(parsed_body['reports'].map { |r| r['id'] }).to eq([correct_item.id])
+      end
+    end
+
+    context 'assigned to the requesting user' do
+      let(:items) do
+        create_list(:reports_item, 3, category: category)
+      end
+      let(:valid_params) do
+        Oj.load <<-JSON
+          {
+            "assigned_to_me": true
+          }
+        JSON
+      end
+
+      it 'returns the correct items assigned to the group' do
+        correct_item = items.sample
+        correct_item.update(assigned_user: user)
+
+        get '/search/reports/items', valid_params, auth(user)
+        expect(response.status).to eq(200)
+        expect(parsed_body['reports'].map { |r| r['id'] }).to eq([correct_item.id])
       end
     end
   end

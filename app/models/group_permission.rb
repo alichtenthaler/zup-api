@@ -57,6 +57,10 @@ class GroupPermission < ActiveRecord::Base
       'reports_items_create' => Array,
       'reports_items_edit' => Array,
       'reports_items_delete' => Array,
+      'reports_items_forward' => Array,
+      'reports_items_create_internal_comment' => Array,
+      'reports_items_create_comment' => Array,
+      'reports_items_alter_status' => Array,
       'reports_categories_edit' => Array,
       'reports_full_access' => Boolean
     }
@@ -80,6 +84,10 @@ class GroupPermission < ActiveRecord::Base
       reports_items_create
       reports_items_edit
       reports_items_delete
+      reports_items_forward
+      reports_items_create_internal_comment
+      reports_items_create_comment
+      reports_items_alter_status
       reports_categories_edit
       inventories_items_read_only
       inventories_items_create

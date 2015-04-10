@@ -8,7 +8,7 @@ class Group < ActiveRecord::Base
   before_validation :set_default_attributes
 
   scope :guest, -> { where(guest: true) }
-  default_scope -> { order('id ASC') }
+  default_scope -> { order('groups.id ASC') }
 
   def self.with_permission(permission_name)
     joins(:permission)

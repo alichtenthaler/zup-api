@@ -9,9 +9,11 @@ class Reports::Item < Reports::Base
 
   belongs_to :status, foreign_key: 'reports_status_id', class_name: 'Reports::Status'
   belongs_to :category, foreign_key: 'reports_category_id', class_name: 'Reports::Category'
-  belongs_to :user, include: [:groups]
+  belongs_to :user
   belongs_to :inventory_item, class_name: 'Inventory::Item'
   belongs_to :reporter, class_name: 'User'
+  belongs_to :assigned_group, class_name: 'Group'
+  belongs_to :assigned_user, class_name: 'User'
 
   has_many :inventory_categories, through: :category
   has_many :images, foreign_key: 'reports_item_id',
@@ -49,7 +51,7 @@ class Reports::Item < Reports::Base
   # Returns the last public status if the status is the private one
   def status_for_user
     if status.private_for_category?(category)
-      status_history.public.last.try(:new_status)
+      status_history.all_public.last.try(:new_status)
     else
       status
     end
@@ -91,13 +93,15 @@ class Reports::Item < Reports::Base
   end
 
   def status_history_for_user
-    status_history.public
+    status_history.all_public
   end
 
   class Entity < Grape::Entity
     expose :id
     expose :protocol
     expose :overdue
+    expose :assigned_user, using: User::Entity
+    expose :assigned_group, using: Group::Entity
 
     expose :address do |obj, _|
       if obj.address

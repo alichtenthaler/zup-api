@@ -5,7 +5,7 @@ describe Groups::API do
 
   context 'POST /groups' do
     let(:valid_params) do
-      JSON.parse <<-JSON
+      Oj.load <<-JSON
         {
           "name": "Cool group",
           "permissions": {
@@ -116,7 +116,7 @@ describe Groups::API do
     let(:other_user) { create(:user) }
     let(:group) { create(:group, users: [user]) }
     let(:valid_params) do
-      JSON.parse <<-JSON
+      Oj.load <<-JSON
         {
           "name": "An awesome name!",
           "users": [#{other_user.id}],
@@ -145,7 +145,7 @@ describe Groups::API do
     let!(:user) { create(:user) }
     let(:group) { create(:group) }
     let(:valid_params) do
-      JSON.parse <<-JSON
+      Oj.load <<-JSON
         {
           "user_id": #{user.id}
         }
@@ -163,7 +163,7 @@ describe Groups::API do
     let!(:user) { create(:user) }
     let(:group) { create(:group) }
     let(:valid_params) do
-      JSON.parse <<-JSON
+      Oj.load <<-JSON
         {
           "user_id": #{user.id}
         }
@@ -183,7 +183,7 @@ describe Groups::API do
     let!(:group) { create(:group, name: 'Great group') }
     let!(:groups) { create_list(:group, 20) }
     let(:valid_params) do
-      JSON.parse <<-JSON
+      Oj.load <<-JSON
         {
           "name": "great"
         }
@@ -313,8 +313,8 @@ describe Groups::API do
       expect(body).to include('group')
       expect(body).to include('users')
       expect(body['users'].size).to eq(5)
-      expect(body['users']).to eq(
-        JSON.parse(User::Entity.represent(users, display_type: 'full').to_json)
+      expect(body['users']).to match_array(
+        Oj.load(User::Entity.represent(users, display_type: 'full').to_json)
       )
     end
   end
@@ -324,7 +324,7 @@ describe Groups::API do
 
     context 'boolean permission' do
       let(:valid_params) do
-        JSON.parse <<-JSON
+        Oj.load <<-JSON
         {
           "users_full_access": true,
           "groups_full_access": true
@@ -347,7 +347,7 @@ describe Groups::API do
 
     context 'array permission' do
       let(:valid_params) do
-        JSON.parse <<-JSON
+        Oj.load <<-JSON
         {
           "inventory_categories_can_view": [1,2,3,4],
           "inventory_categories_can_edit": [1,3,5,6]

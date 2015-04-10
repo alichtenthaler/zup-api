@@ -8,7 +8,10 @@ module ArrayRelate
 
       # Set the polymorphic column accordly
       polymorphic = options.delete(:polymorphic)
-      polymorphic_column = set_polymorphic_column(attr_name, polymorphic)
+
+      if polymorphic
+        polymorphic_column = set_polymorphic_column(attr_name, polymorphic)
+      end
 
       creates_reader(attr_name, ids_column, polymorphic_column)
       creates_writer(attr_name, ids_column, polymorphic_column)

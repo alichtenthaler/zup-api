@@ -1,6 +1,6 @@
 require 'sidekiq/web'
 
-ZupApi::Application.routes.draw do
+Rails.application.routes.draw do
   mount ZUP::API => '/'
   mount GrapeSwaggerRails::Engine => '/swagger'
 

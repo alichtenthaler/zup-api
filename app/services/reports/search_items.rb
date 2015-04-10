@@ -6,7 +6,8 @@ class Reports::SearchItems
               :group_by_inventory_item, :sort,
               :order, :paginator, :page,
               :per_page, :address, :query,
-              :signed_user, :overdue, :clusterize, :zoom
+              :signed_user, :overdue, :clusterize, :zoom,
+              :assigned_to_my_group, :assigned_to_me
 
   def initialize(user, opts = {})
     @position_params = opts[:position]
@@ -29,6 +30,8 @@ class Reports::SearchItems
     @signed_user     = user
     @clusterize      = opts[:clusterize] || false
     @zoom            = opts[:zoom]
+    @assigned_to_my_group = opts[:assigned_to_my_group]
+    @assigned_to_me  = opts[:assigned_to_me]
   end
 
   def search
@@ -121,11 +124,27 @@ class Reports::SearchItems
       scope = scope.where('reports_status_id IN (?)', statuses.map(&:id))
     end
 
+    if assigned_to_my_group
+      scope = scope.where(
+        reports_items: {
+          assigned_group_id: signed_user.groups.pluck(:id)
+        }
+      )
+    end
+
+    if assigned_to_me
+      scope = scope.where(
+        reports_items: {
+          assigned_user_id: signed_user.id
+        }
+      )
+    end
+
     # WTF
     sort = self.sort
     if sort && !clusterize &&
         %w(created_at updated_at id reports_status_id user_name).include?(sort) &&
-        order.downcase.in?('desc', 'asc')
+        %w(desc asc).include?(order.downcase)
 
       if sort == 'user_name'
         sort = 'users.name'
