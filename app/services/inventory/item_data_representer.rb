@@ -75,7 +75,7 @@ module Inventory
               }
             end
 
-            item_data.content = new_content
+            item_data.content = new_content unless content_is_entity?(new_content)
           else
             item_data = item.data.build(field: field, content: new_content)
 
@@ -120,6 +120,10 @@ module Inventory
     end
 
     private
+
+    def content_is_entity?(content)
+      content.is_a?(Array) && content.first.is_a?(Grape::Entity)
+    end
 
     def same_value?(field, new_content, actual_content)
       if new_content.is_a?(Array) && actual_content.is_a?(Array)
