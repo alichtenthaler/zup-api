@@ -120,8 +120,8 @@ describe Inventory::CreateHistoryEntry do
         history = entry.item_data_histories.find_by(
           inventory_item_data_id: item_data.id
         )
-        expect(history.previous_content).to eq(data[history.item_data][:old])
-        expect(history.new_content).to eq(data[history.item_data][:new])
+        expect(history.previous_content).to eq(field_option.value)
+        expect(history.new_content).to eq(new_field_option.value)
       end
     end
   end

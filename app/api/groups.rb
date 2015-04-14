@@ -34,6 +34,7 @@ module Groups
         unless user_permissions.can?(:manage, Group) ||
           current_user.permissions.inventories_categories_edit.any? ||
           current_user.permissions.reports_categories_edit.any? ||
+          current_user.permissions.reports_items_forward.any? ||
           current_user.permissions.inventories_full_access ||
           current_user.permissions.reports_full_access
           groups = groups.where(groups: { id: user_permissions.groups_visible })

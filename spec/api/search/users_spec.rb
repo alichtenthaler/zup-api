@@ -62,10 +62,12 @@ describe Search::Users::API do
 
   context 'GET /search/groups/:group_id/users' do
     let!(:group) { create(:group) }
+    let!(:other_group) { create(:group) }
     let!(:users) do
       users = create_list(:user, 5)
       users.each do |user|
         user.groups << group
+        user.groups << other_group
         user.save!
       end
     end
@@ -79,13 +81,11 @@ describe Search::Users::API do
       expect(response.status).to eq(200)
       body = parsed_body
 
-      expect(body['users']).to_not be_empty
-      users_ids = body['users'].map { |u| u['id'] }
+      expect(body['users'].size).to eq(1)
+      user_id = body['users'].first['id']
 
-      expect(users_ids).to include(any_user.id)
-      expect(users_ids).to_not include(wrong_users.map(&:id))
-      users.delete(any_user)
-      expect(users_ids).to_not include(users.map(&:id))
+      expect(user_id).to eq(any_user.id)
+      expect(wrong_users.map(&:id)).to_not include(user_id)
     end
 
     context 'by email' do

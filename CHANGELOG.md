@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## v1.4.2-p20
+
+* Correção na busca de usuários
+* Correção na criação de relato
+* Correção nas permissões dos grupos
+* Correção nos valores do histórico de inventário
+* Adicionada entrada no histórico quando um relato entra em atraso
+
 ## v1.4.2-p15
 * Correções na integração com webhook
 * Correção no histórico de inventário

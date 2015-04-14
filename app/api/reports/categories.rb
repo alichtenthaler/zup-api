@@ -157,7 +157,7 @@ module Reports::Categories
           :parent_id, :confidential, :icon, :marker,
           :private_resolution_time, :resolution_time_enabled,
           :statuses, :default_solver_group_id, :comment_required_when_forwarding,
-          :comment_required_when_updating_status,
+          :comment_required_when_updating_status, :private,
           solver_groups_ids: []
         )
 

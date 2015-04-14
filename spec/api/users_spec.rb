@@ -332,7 +332,7 @@ describe Users::API do
         {
           "name": "burns",
           "email": "burns",
-          "groups": [#{group.id}]
+          "groups": "#{group.id}"
         }
       JSON
     end

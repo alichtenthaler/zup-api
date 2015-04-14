@@ -9,17 +9,17 @@ module Reports
     end
 
     def forward!(group, message = nil)
-      return if report.assigned_group == group
-      validate_group_belonging!(group)
-
-      report.update(
-        assigned_group: group,
-        assigned_user: nil
-      )
+      forward(group)
 
       if category.comment_required_when_forwarding || message.present?
         create_comment!(message)
       end
+
+      create_history_entry(group)
+    end
+
+    def forward_without_comment!(group)
+      forward(group)
 
       create_history_entry(group)
     end
@@ -46,6 +46,16 @@ module Reports
       Reports::CreateHistoryEntry.new(report, user)
         .create('forward', "Relato foi encaminhado para o grupo #{group.name}",
                 group)
+    end
+
+    def forward(group)
+      return if report.assigned_group == group
+      validate_group_belonging!(group)
+
+      report.update(
+        assigned_group: group,
+        assigned_user: nil
+      )
     end
   end
 end

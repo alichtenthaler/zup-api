@@ -87,13 +87,17 @@ class Reports::Category < Reports::Base
       status, params = info[0], info[1]
       status.save!
 
+      status_category = status_categories.find_or_create_by(status: status)
+
       # Create the many-to-many mapping
-      status_categories.create_with(
+      status_category.update(
         initial: params['initial'],
         final: params['final'],
         active: params['active'],
         private: params['private']
-      ).find_or_create_by(status: status)
+      )
+
+      status_category
     end
   end
 
@@ -119,7 +123,9 @@ class Reports::Category < Reports::Base
     expose :comment_required_when_updating_status
     expose :comment_required_when_forwarding
     expose :solver_groups, using: Group::Entity
+    expose :solver_groups_ids
     expose :default_solver_group, using: Group::Entity
+    expose :default_solver_group_id
 
     with_options(if: { display_type: :full }) do
       expose :active

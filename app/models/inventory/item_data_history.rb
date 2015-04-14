@@ -26,7 +26,7 @@ class Inventory::ItemDataHistory < Inventory::Base
 
   def previous_content
     if item_data.use_options?
-      previous_selected_options_ids
+      show_values_for_options(previous_selected_options_ids)
     else
       super
     end
@@ -34,7 +34,7 @@ class Inventory::ItemDataHistory < Inventory::Base
 
   def new_content
     if item_data.use_options?
-      new_selected_options_ids
+      show_values_for_options(new_selected_options_ids)
     else
       super
     end
@@ -49,6 +49,18 @@ class Inventory::ItemDataHistory < Inventory::Base
 
     def item_data
       object.item_data
+    end
+  end
+
+  private
+
+  def show_values_for_options(options_ids)
+    values = Inventory::FieldOption.where(id: options_ids).map(&:value)
+
+    if values.size == 1
+      values.first
+    else
+      values
     end
   end
 end

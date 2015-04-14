@@ -76,7 +76,7 @@ module Reports::Items
 
         # Forward to default group
         if category.default_solver_group
-          Reports::ForwardToGroup.new(report, current_user).forward!(
+          Reports::ForwardToGroup.new(report, current_user).forward_without_comment!(
             category.default_solver_group
           )
         end

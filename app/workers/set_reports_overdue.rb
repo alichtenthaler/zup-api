@@ -10,7 +10,13 @@ class SetReportsOverdue
 
       group.each do |item|
         overdue = Reports::StatusControl.new(item).overdue?
-        item.update(overdue: overdue) if item.overdue != overdue
+
+        if item.overdue != overdue
+          item.update(overdue: overdue)
+
+          Reports::CreateHistoryEntry.new(item)
+            .create('overdue', 'Relato entrou em atraso, quando estava no status:', item.status)
+        end
       end
     end
   end

@@ -99,7 +99,7 @@ module Users
       params do
         optional :name, type: String
         optional :email, type: String
-        optional :groups, type: Array
+        optional :groups, type: String
       end
       get do
         authenticate!
@@ -108,7 +108,10 @@ module Users
 
         name = search_params.delete(:name)
         email = search_params.delete(:email)
-        groups_ids = search_params.delete(:groups)
+
+        if search_params[:groups]
+          groups_ids = search_params.delete(:groups).split(',').map(&:to_i)
+        end
 
         search_query = {}
         users = User.enabled
