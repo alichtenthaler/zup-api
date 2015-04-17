@@ -21,12 +21,15 @@ module Reports
       @params = params.merge(
         latitude: report.position.y,
         longitude: report.position.x,
+        is_report: report?,
+        is_solicitation: solicitation?,
         description: report.description,
         address: report.address,
         reference: report.reference,
         images: report.images,
         user: build_user_data(report.user),
-        uuid: report.uuid
+        uuid: report.uuid,
+        external_category_id: external_category_id
       )
     end
 
@@ -60,6 +63,18 @@ module Reports
         postal_code: user.postal_code,
         district: user.district
       }
+    end
+
+    def external_category_id
+      Webhook.external_category_id(report.category)
+    end
+
+    def report?
+      Webhook.report?(report.category)
+    end
+
+    def solicitation?
+      Webhook.solicitation?(report.category)
     end
   end
 end

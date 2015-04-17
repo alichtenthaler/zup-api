@@ -94,7 +94,8 @@ class Reports::Category < Reports::Base
         initial: params['initial'],
         final: params['final'],
         active: params['active'],
-        private: params['private']
+        private: params['private'],
+        color: params['color']
       )
 
       status_category

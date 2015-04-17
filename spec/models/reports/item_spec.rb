@@ -97,7 +97,7 @@ describe Reports::Item do
     let(:report) { create(:reports_item) }
 
     it "returns true if the report is final and the time isn't expired" do
-      Reports::UpdateItemStatus.new(report).update_status!(report.category.statuses.final.first)
+      Reports::UpdateItemStatus.new(report).update_status!(report.category.status_categories.final.first.status)
       expect(report.can_receive_feedback?).to eq(true)
     end
 
@@ -107,7 +107,7 @@ describe Reports::Item do
     end
 
     it 'returns false if the report is final but the time expired' do
-      Reports::UpdateItemStatus.new(report).update_status!(report.category.statuses.final.first)
+      Reports::UpdateItemStatus.new(report).update_status!(report.category.status_categories.final.first.status)
       report.status_history
             .last
             .update!(

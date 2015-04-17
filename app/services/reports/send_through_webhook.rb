@@ -18,7 +18,7 @@ module Reports
       https = Net::HTTP.new(uri.host, 80)
 
       request = Net::HTTP::Post.new(uri.path)
-      https.request(request, { string_json: serialized_report }.to_json)
+      https.request(request, serialized_report.to_json)
     end
 
     private

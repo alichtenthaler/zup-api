@@ -7,7 +7,7 @@ module Reports
       @user = user
     end
 
-    def create(kind, action, objects)
+    def create(kind, action, objects = [])
       entry = build_object(kind, action, objects)
       entry.save!
     rescue ActiveRecord::RecordInvalid => e

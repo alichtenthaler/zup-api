@@ -26,7 +26,6 @@ gem 'squeel'
 gem 'will_paginate'
 gem 'api-pagination'
 gem 'mini_magick'
-gem 'newrelic_rpm'
 gem 'settingslogic'
 gem 'sidekiq'
 gem 'sidekiq-cron'
@@ -38,22 +37,22 @@ gem 'brcpfcnpj'
 gem 'paper_trail', '~> 4.0.0.beta2'
 gem 'pushmeup', github: 'alarionov/pushmeup', ref: 'fd43ba21ef3bbe8053f8878f9f800f7185b98156'
 gem 'atomic_arrays'
-gem 'pr_geohash'
 gem 'parallel', require: false
 gem 'ruby-progressbar', require: false
 gem 'sentry-raven', require: false
-gem 'foreman'
+gem 'foreman', require: false
 gem 'minitest'
 gem 'spring'
+gem 'dotenv-rails'
+gem 'newrelic_rpm'
 
 group :production do
   gem 'rails_12factor'
-  gem 'unicorn', '~> 4.8.3'
+  gem 'passenger'
   gem 'sass-rails', '~> 4.0.0'
   gem 'uglifier', '>= 1.3.0'
   gem 'coffee-rails', '~> 4.0.0'
   gem 'jquery-rails'
-  gem 'turbolinks'
 end
 
 group :development, :test, :production do
@@ -67,7 +66,6 @@ group :development, :test do
   gem 'awesome_print'
   gem 'pry-byebug', '1.3.3'
   gem 'pry-remote'
-  gem 'dotenv-rails'
 end
 
 group :profile do

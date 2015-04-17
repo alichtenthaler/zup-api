@@ -11,13 +11,13 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20150409234826) do
+ActiveRecord::Schema.define(version: 20150417034700) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
+  enable_extension "postgis"
   enable_extension "hstore"
   enable_extension "pg_trgm"
-  enable_extension "postgis"
   enable_extension "postgis_topology"
 
   create_table "access_keys", force: true do |t|
@@ -599,6 +599,7 @@ ActiveRecord::Schema.define(version: 20150409234826) do
     t.boolean "final",               default: false
     t.boolean "private",             default: false
     t.boolean "active",              default: true
+    t.string  "color"
   end
 
   add_index "reports_statuses_reports_categories", ["reports_category_id"], :name => "index_reports_statuses_item_id"

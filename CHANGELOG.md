@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## v1.4.2-p25
+* Correção na integração usando Webhooks
+* Correção na manipulação de status de relatos
+* Melhorias nas buscas dos usuários
+
+## v1.4.2-p22
+* Correção no layout de email
+* Correção no histórico de relatos
+
 ## v1.4.2-p20
 
 * Correção na busca de usuários

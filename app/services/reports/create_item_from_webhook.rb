@@ -106,7 +106,7 @@ module Reports
     end
 
     def find_category(external_category_id)
-      Reports::Category.find(external_category_id)
+      Webhook.zup_category(external_category_id)
     end
   end
 end

@@ -6,6 +6,7 @@ VOLUME /usr/src/app/public/uploads
 VOLUME /usr/src/app/tmp
 VOLUME /usr/src/app/config/permissions
 VOLUME /usr/src/app/public/shared_images
+VOLUME /usr/src/app/db/shapes
 
 RUN apt-get purge -y --auto-remove git-core && \
     rm -rf /var/lib/apt/lists/* && \

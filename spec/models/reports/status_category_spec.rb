@@ -21,7 +21,7 @@ describe Reports::StatusCategory do
                           private: subject.private,
                           initial: subject.initial,
                           final: subject.final,
-                          color: status.color,
+                          color: subject.color,
                           title: status.title,
                           active: subject.active
                         )

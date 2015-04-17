@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 describe Reports::CreateItemFromWebhook do
-  let!(:category) { create(:reports_category_with_statuses) }
+  let!(:category) { create(:reports_category_with_statuses, title: 'Solicitação/colocação de contêineres') }
 
   subject { described_class.new(valid_params) }
 
@@ -11,7 +11,7 @@ describe Reports::CreateItemFromWebhook do
     end
     let(:valid_params) do
       {
-        external_category_id: 3,
+        external_category_id: 100,
         is_report: true,
         is_solicitation: false,
         latitude: -13.12427698396538,
@@ -40,15 +40,14 @@ describe Reports::CreateItemFromWebhook do
     end
 
     it 'creates the report item' do
-      expect(subject).to receive(:find_category).and_return(category)
-
       report = subject.create!
 
-      expect(report.external_category_id).to eq(3)
+      expect(report.external_category_id).to eq(100)
       expect(report.is_solicitation).to be_falsy
       expect(report.is_report).to be_truthy
       expect(report.position.y).to eq(-13.12427698396538)
       expect(report.position.x).to eq(-21.385812899349485)
+      expect(report.category).to eq(category)
 
       comment = report.comments.last
       expect(comment.message).to eq('Este é um comentário')

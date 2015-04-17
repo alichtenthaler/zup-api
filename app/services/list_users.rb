@@ -14,7 +14,12 @@ class ListUsers
     @sort = opts[:sort]
 
     @search_params = {}
-    @scope = User.distinct.enabled
+
+    @scope = User.distinct
+
+    unless opts[:disabled]
+      @scope = @scope.enabled
+    end
   end
 
   def fetch

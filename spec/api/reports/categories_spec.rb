@@ -234,6 +234,40 @@ describe Reports::Categories::API do
         expect(category.default_solver_group).to eq(group)
       end
     end
+
+    context 'changing the statuses' do
+      let(:category) { create(:reports_category_with_statuses) }
+      let(:another_category) { create(:reports_category_with_statuses) }
+
+      before do
+        another_category.status_categories = category.status_categories.map do |sc|
+          Reports::StatusCategory.create(
+            initial: sc.initial,
+            final: sc.final,
+            active: sc.active,
+            private: sc.private,
+            color: sc.color,
+            status: sc.status
+          )
+        end
+      end
+
+      it 'updates the statuses' do
+        valid_params = {
+          statuses: {
+            0 =>  { title: 'This is a test', color: '#ff0000', initial: true, final: false, active: true, private: false },
+            1 =>  { title: 'This is another test', color: '#f4f4f4', final: true, initial: false, active: false, private: false }
+          }
+        }
+
+        put "/reports/categories/#{category.id}", valid_params, auth(user)
+
+        category.reload
+
+        expect(category.statuses.map(&:title)).to match_array(['This is a test', 'This is another test'])
+        expect(another_category.statuses).to_not be_empty
+      end
+    end
   end
 
   context 'DELETE /reports/categories/:id' do

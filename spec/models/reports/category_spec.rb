@@ -27,8 +27,11 @@ describe Reports::Category do
       expect(Reports::Status.count).to eq(1)
       last_created_status = Reports::Status.last
       expect(last_created_status.title).to eq('Inicio')
-      expect(last_created_status.color).to eq('#ff0033')
-      expect(last_created_status.initial).to eq(true)
+
+      last_sc = Reports::StatusCategory.last
+      expect(last_sc.color).to eq('#ff0033')
+      expect(last_sc.initial).to be_truthy
+      expect(last_sc.final).to be_truthy
     end
 
     context 'when already exists the same title' do

@@ -14,10 +14,10 @@ module Reports::Statuses
         validate_permission!(:view, Reports::Category)
 
         category = load_category
-        statuses = category.statuses
+        statuses = category.status_categories
 
         {
-          statuses: Reports::Status::Entity.represent(statuses)
+          statuses: Reports::StatusCategory::Entity.represent(statuses)
         }
       end
 
@@ -28,16 +28,29 @@ module Reports::Statuses
         requires :initial, type: String, desc: 'If the status is initial'
         requires :final, type: String, desc: 'If the status is final'
         optional :active, type: String, desc: 'If the status is active to use'
+        optional :private, type: String, desc: 'If the status is private or not'
       end
       post do
         validate_permission!(:edit, Reports::Category)
 
-        status_params = safe_params.permit(:title, :color, :initial, :final, :active)
+        status_params = {
+          title: params[:title]
+        }
+
+        status_category_params = {
+          initial: params[:initial],
+          final: params[:final],
+          active: params[:active],
+          private: params[:private],
+          color: params[:color]
+        }
 
         category = load_category
         status = Reports::Status.find_or_create_by!(status_params)
 
-        category.status_categories.create!(status: status)
+        category.status_categories.create!(
+          status_category_params.merge(status: status)
+        )
 
         {
           status: Reports::Status::Entity.represent(status)
@@ -51,15 +64,46 @@ module Reports::Statuses
         optional :initial, type: String, desc: 'If the status is initial'
         optional :final, type: String, desc: 'If the status is final'
         optional :active, type: String, desc: 'If the status is active to use'
+        optional :private, type: String, desc: 'If the status is private or not'
       end
       put ':id' do
         validate_permission!(:edit, Reports::Category)
 
-        status_params = safe_params.permit(:title, :color, :initial, :final, :active)
+        status_params = {
+          title: params[:title]
+        }
+
+        status_category_params = {
+          initial: params[:initial],
+          final: params[:final],
+          active: params[:active],
+          private: params[:private],
+          color: params[:color]
+        }
+
+        status_params.each do |k, v|
+          status_params.delete(k) if v.nil?
+        end
+
+        status_category_params.each do |k, v|
+          status_category_params.delete(k) if v.nil?
+        end
 
         category = load_category
-        status = category.statuses.find(safe_params[:id])
+
+        sc = category.status_categories.find_by(reports_status_id: safe_params[:id])
+
+        if params[:title] && sc.status.title != params[:title]
+          sc.destroy
+
+          status = Reports::Status.find_or_create_by!(status_params)
+          sc = category.status_categories.find_or_create_by(reports_status_id: status.id)
+        else
+          status = sc.status
+        end
+
         status.update!(status_params)
+        sc.update!(status_category_params)
 
         {
           status: Reports::Status::Entity.represent(category.reload.statuses)
@@ -71,8 +115,8 @@ module Reports::Statuses
         validate_permission!(:delete, Reports::Category)
 
         category = load_category
-        status = category.statuses.find(safe_params[:id])
-        status.destroy!
+        status_category = category.status_categories.find_by(reports_status_id: safe_params[:id])
+        status_category.destroy!
       end
     end
   end

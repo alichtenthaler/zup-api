@@ -372,6 +372,18 @@ describe Users::API do
       expect(body['users'].first['id']).to eq(user.id)
       expect(body['users'].size).to eq(1)
     end
+
+    context 'disabled: true' do
+      let!(:disabled_user) { create(:user, :disabled) }
+      it 'returns disabled users' do
+        get '/users?disabled=true', nil, auth(user)
+        body = parsed_body
+
+        expect(body['users'].map do |u|
+          u['id']
+        end).to include(disabled_user.id)
+      end
+    end
   end
 
   describe 'GET /users/unsubscribe/:token' do

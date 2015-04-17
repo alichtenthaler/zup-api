@@ -15,7 +15,6 @@ class Reports::Status < Reports::Base
     through: :status_categories,
     source: :category
 
-  validates :color, css_hex_color: true
   validates :title, presence: true, uniqueness: true
   validates :initial, inclusion: { in: [false, true] }
   validates :final, inclusion: { in: [false, true] }
@@ -42,6 +41,10 @@ class Reports::Status < Reports::Base
     )
 
     relation.present?
+  end
+
+  def for_category(category)
+    category.status_categories.find_by(reports_status_id: id)
   end
 
   class Entity < Grape::Entity

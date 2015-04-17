@@ -2,7 +2,7 @@ require 'spec_helper'
 
 describe Reports::GetStats do
   let!(:report_category) { create(:reports_category_with_statuses) }
-  let!(:status) { report_category.statuses.where(initial: false).first }
+  let!(:status) { report_category.status_categories.final.first.status }
 
   context 'returning the correct stats' do
     let!(:reports) do
@@ -87,10 +87,13 @@ describe Reports::GetStats do
     let(:end_date) { Date.new(2014, 1, 13).iso8601 }
 
     it 'the desired reports on the right date range' do
-      returned_stats = described_class.new(report_category.id,         begin_date: begin_date,
-        end_date: end_date).fetch
+      returned_stats = described_class.new(report_category.id,
+                                           begin_date: begin_date,
+                                           end_date: end_date).fetch
 
-      expect(returned_stats.first[:statuses].first[:count]).to eq(reports.size)
+      expect(returned_stats.first[:statuses].select do |h|
+        h[:status_id] == status.id
+      end.first[:count]).to eq(reports.size)
     end
   end
 end

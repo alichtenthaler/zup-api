@@ -3,6 +3,9 @@ require 'rails_helper'
 describe Reports::UpdateItemFromWebhook do
   let!(:report) { create(:reports_item) }
   let!(:category) { report.category }
+  let!(:other_category) do
+    create(:reports_category_with_statuses, title: 'Solicitação/colocação de contêineres')
+  end
 
   subject { described_class.new(report, valid_params) }
 
@@ -11,10 +14,9 @@ describe Reports::UpdateItemFromWebhook do
       let(:encoded_image) do
         Base64.encode64(fixture_file_upload('images/valid_report_item_photo.jpg').read).force_encoding(Encoding::UTF_8)
       end
-      let(:other_category) { create(:reports_category) }
       let(:valid_params) do
         {
-          external_category_id: other_category.id,
+          external_category_id: 100,
           status: {
             name: 'Finalizado'
           },

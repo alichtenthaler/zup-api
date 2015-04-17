@@ -1,7 +1,7 @@
 class Reports::ItemHistory < Reports::Base
   include ArrayRelate
 
-  KINDS = %w(status category forward user_assign overdue)
+  KINDS = %w(address description status category forward user_assign overdue)
 
   belongs_to :item, class_name: 'Reports::Item', foreign_key: 'reports_item_id'
   belongs_to :user

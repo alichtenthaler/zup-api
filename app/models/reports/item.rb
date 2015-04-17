@@ -51,17 +51,19 @@ class Reports::Item < Reports::Base
   # Returns the last public status if the status is the private one
   def status_for_user
     if status.private_for_category?(category)
-      status_history.all_public.last.try(:new_status)
+      st = status_history.all_public.last.try(:new_status)
     else
-      status
+      st = status
     end
+
+    category.status_categories.find_by(reports_status_id: st.id)
   end
 
   # TODO: Maybe we should save this calculation
   # as a 'feedback_expirates_at' on the
   # reports_items table.
   def can_receive_feedback?
-    if category.user_response_time.present? && status.final?
+    if category.user_response_time.present? && status.for_category(category).final?
       final_status_datetime = status_history.last.created_at
       expiration_datetime = final_status_datetime + \
         category.user_response_time.seconds
@@ -139,7 +141,7 @@ class Reports::Item < Reports::Base
     # With display_type equal to full
     with_options(if: { display_type: 'full' }) do
       expose :inventory_categories, using: Inventory::Category::Entity
-      expose :status_for_user, as: :status, using: Reports::Status::Entity
+      expose :status_for_user, as: :status, using: Reports::StatusCategory::Entity
       expose :category, using: Reports::Category::Entity
       expose :inventory_item, using: Inventory::Item::Entity
       expose :feedback, using: Reports::Feedback::Entity

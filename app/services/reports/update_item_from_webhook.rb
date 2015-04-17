@@ -13,8 +13,17 @@ module Reports
 
         report.reload
 
+        if params[:external_category_id]
+          category = find_category(params[:external_category_id])
+        end
+
         if params[:status]
-          status = find_or_create_status!(params[:status], report.category)
+          status = find_or_create_status!(params[:status], category || report.category)
+        end
+
+        if status && category
+          Reports::ChangeItemCategory.new(report, category, status).process!
+        elsif status
           Reports::UpdateItemStatus.new(report).update_status!(status)
         end
 
@@ -27,24 +36,18 @@ module Reports
     def build_reports_params
       reports_params = {}
 
-      if params[:external_category_id]
-        category = find_category(params[:external_category_id])
-
-        # Report params
-        reports_params = reports_params.merge(
-          category: category
-        )
-      end
-
       # Comments params
       comments = params[:comments]
-      comments.each do |comment|
-        reports_params = reports_params.deep_merge(
-          comments_attributes: [{
-            author: create_user(comment[:user]),
-            message: comment[:message]
-          }]
-        )
+
+      if comments
+        comments.each do |comment|
+          reports_params = reports_params.deep_merge(
+            comments_attributes: [{
+              author: create_user(comment[:user]),
+              message: comment[:message]
+            }]
+          )
+        end
       end
 
       reports_params

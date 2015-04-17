@@ -221,7 +221,7 @@ describe Reports::Items::API do
 
     context 'updating the status' do
       it 'is able to update the status passing status_id' do
-        status = category.statuses.final.first
+        status = category.status_categories.final.first.status
         valid_params['status_id'] = status.id
 
         expect(existent_item.id).to_not eq(status.id)

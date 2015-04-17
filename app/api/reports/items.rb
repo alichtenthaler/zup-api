@@ -155,6 +155,18 @@ module Reports::Items
           Reports::UpdateItemStatus.new(report, current_user).update_status!(new_status)
         end
 
+        create_history = Reports::CreateHistoryEntry.new(report, current_user)
+
+        # Save history data
+        if report.previous_changes[:address]
+          create_history.create('address',
+            "Endereço foi alterado de '#{report.previous_changes[:address][0]}' para '#{report.previous_changes[:address][1]}'")
+        end
+
+        if report.previous_changes[:description]
+          create_history.create('description', 'Descrição foi alterada')
+        end
+
         {
           report: Reports::Item::Entity.represent(
             report, display_type: 'full', user: current_user

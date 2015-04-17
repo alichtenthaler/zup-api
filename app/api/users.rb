@@ -100,6 +100,7 @@ module Users
         optional :name, type: String
         optional :email, type: String
         optional :groups, type: String
+        optional :disabled, type: Boolean
       end
       get do
         authenticate!
@@ -114,7 +115,12 @@ module Users
         end
 
         search_query = {}
-        users = User.enabled
+
+        users = User
+
+        unless params[:disabled]
+          users = users.enabled
+        end
 
         if name
           search_query = search_query.merge(name: name)

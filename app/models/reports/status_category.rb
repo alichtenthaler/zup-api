@@ -16,6 +16,7 @@ class Reports::StatusCategory < Reports::Base
   validates :active, inclusion: { in: [false, true] }
   validates :private, inclusion: { in: [false, true] }
   validates :status, uniqueness: { scope: [:reports_category_id] }
+  validates :color, css_hex_color: true
 
   scope :final, -> { where(final: true) }
   scope :initial, -> { where(initial: true) }
@@ -34,15 +35,15 @@ class Reports::StatusCategory < Reports::Base
   }
 
   class Entity < Grape::Entity
-    delegate :id, :title, :color, to: :status, allow_nil: true
+    delegate :id, :title, to: :status, allow_nil: true
 
     expose :id
-    expose :private
     expose :title
     expose :color
     expose :initial
     expose :final
     expose :active
+    expose :private
 
     def status
       object.status
@@ -56,6 +57,7 @@ class Reports::StatusCategory < Reports::Base
     self.final = status.final if final.nil?
     self.active = status.active if active.nil?
     self.private = status.private if private.nil?
+    self.color = status.color if color.nil?
 
     true
   end

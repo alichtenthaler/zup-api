@@ -9,15 +9,24 @@ module Search::Users
         desc: 'The field to sort the users. Values: `name`, `username`, `phone`, `email`, `created_at`, `updated_at`'
       optional :order, type: String,
         desc: 'The order, can be `desc` or `asc`'
+      optional :disabled, type: Boolean
     end
     get :users do
       authenticate!
+
+      if safe_params[:groups]
+        groups = safe_params[:groups].split(',').map do |group_id|
+          Group.find(group_id)
+        end
+      end
 
       search_params = {
         name: safe_params[:name],
         email: safe_params[:email],
         sort: safe_params[:sort],
         order: safe_params[:order],
+        groups: groups,
+        disabled: safe_params[:disabled],
         like: true
       }
 
@@ -50,6 +59,7 @@ module Search::Users
         like: true,
         sort: safe_params[:sort],
         order: safe_params[:order],
+        disabled: safe_params[:disabled],
         groups: [group]
       }
 

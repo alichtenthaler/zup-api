@@ -34,6 +34,27 @@ describe Search::Users::API do
       end
     end
 
+    context 'by email and group' do
+      let(:another_user) { create(:user) }
+      let(:group) { create(:group) }
+
+      before do
+        user.groups = [group]
+        user.email = 'test1@gmail.com'
+        user.save!
+        another_user.update!(email: 'test2@gmail.com')
+      end
+
+      it 'returns only users with certain group' do
+        get "/search/users?email=test&groups=#{group.id}", nil, auth(user)
+        expect(response.status).to eq(200)
+
+        body = parsed_body
+        expect(body['users'].size).to eq(1)
+        expect(body['users'].first['id']).to eq(user.id)
+      end
+    end
+
     context 'sorting' do
       let(:correct_order_users) do
         (users << user).sort_by do |user|
