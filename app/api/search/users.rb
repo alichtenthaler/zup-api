@@ -10,6 +10,8 @@ module Search::Users
       optional :order, type: String,
         desc: 'The order, can be `desc` or `asc`'
       optional :disabled, type: Boolean
+      optional :user_document, type: String,
+               desc: 'User document, only numbers'
     end
     get :users do
       authenticate!
@@ -23,6 +25,7 @@ module Search::Users
       search_params = {
         name: safe_params[:name],
         email: safe_params[:email],
+        document: safe_params[:document],
         sort: safe_params[:sort],
         order: safe_params[:order],
         groups: groups,
@@ -31,10 +34,10 @@ module Search::Users
       }
 
       users = ListUsers.new(search_params).fetch
-      users = paginate(users)
+      users = paginate(users.paginate(page: params[:page]))
 
       {
-        users: User::Entity.represent(users, only: return_fields, display_type: 'full')
+        users: User::Entity.represent(users, only: return_fields, display_type: 'full', show_groups: true)
       }
     end
 
@@ -48,6 +51,8 @@ module Search::Users
         desc: 'The field to sort the users. Values: `name`, `username`, `phone`, `email`, `created_at`, `updated_at`'
       optional :order, type: String,
         desc: 'The order, can be `desc` or `asc`'
+      optional :user_document, type: String,
+               desc: 'User document, only numbers'
     end
     get 'groups/:group_id/users' do
       authenticate!
@@ -56,6 +61,7 @@ module Search::Users
       search_params = {
         name: safe_params[:name],
         email: safe_params[:email],
+        document: safe_params[:document],
         like: true,
         sort: safe_params[:sort],
         order: safe_params[:order],
@@ -64,10 +70,10 @@ module Search::Users
       }
 
       users = ListUsers.new(search_params).fetch
-      users = paginate(users)
+      users = paginate(users.paginate(page: params[:page]))
 
       {
-        users: User::Entity.represent(users, only: return_fields, display_type: 'full')
+        users: User::Entity.represent(users, only: return_fields, display_type: 'full', show_groups: true)
       }
     end
   end

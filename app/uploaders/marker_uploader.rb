@@ -24,8 +24,8 @@ class MarkerUploader < CarrierWave::Uploader::Base
   end
 
   def store_dir
-    if Rails.env.test?
-      "uploads/#{Rails.env}/#{model.class.name.downcase.gsub("::", "/")}/#{model.id}/markers/"
+    if Application.config.env.test?
+      "uploads/test/#{model.class.name.downcase.gsub("::", "/")}/#{model.id}/markers/"
     else
       "uploads/#{model.class.name.downcase.gsub("::", "/")}/#{model.id}/markers/"
     end
@@ -43,7 +43,7 @@ class MarkerUploader < CarrierWave::Uploader::Base
     base_file = 'public/base/marker_categoria_relato_base@2x.png'
 
     manipulate! do |img|
-      base_image = MiniMagick::Image.open(Rails.root.join(base_file))
+      base_image = MiniMagick::Image.open(File.join(Application.config.root, base_file))
 
       img.format 'png'
       base_image.format 'png'

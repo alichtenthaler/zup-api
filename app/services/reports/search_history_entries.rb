@@ -12,7 +12,7 @@ module Reports
     end
 
     def search
-      scope = Reports::ItemHistory
+      scope = Reports::ItemHistory.includes(:user)
 
       if item_id
         scope = scope.where(reports_item_id: item_id)

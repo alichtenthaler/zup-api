@@ -6,7 +6,7 @@ module BoundaryValidation
       attr = self.class.instance_variable_get('@attr_check_against_boundary')
       position = send(attr)
 
-      unless CityShape.contains?(position.latitude, position.longitude)
+      unless CityShape.contains?(position.y, position.x)
         errors.add(:position, 'está fora do limite configurado da cidade')
       end
     end

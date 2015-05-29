@@ -179,7 +179,7 @@ module Inventory
     def self.inject_validations(field, instance_class, user)
       attribute = field.title
       validations = {}
-      permissions = UserAbility.new(user)
+      permissions = UserAbility.for_user(user)
 
       # If the user doesn't have permission edit this field, let's not
       # validate it.

@@ -75,4 +75,47 @@ describe Reports::Category do
       end
     end
   end
+
+  context 'entity' do
+    context 'subcategories' do
+      let!(:category) { create(:reports_category) }
+      let!(:subcategories) { create_list(:reports_category, 3, parent_category: category) }
+      let!(:user) { create(:user) }
+      let!(:group) { create(:group) }
+
+      context "user doesn't have permission to see subcategories" do
+        before do
+          group.permission.update!(reports_items_create: [category.id])
+          user.groups = [group]
+          user.save
+        end
+
+        it do
+          represented = Reports::Category::Entity.represent(category,
+                                                            only: [subcategories: [:id]],
+                                                            display_type: :full,
+                                                            user: user).as_json
+
+          expect(represented[:subcategories]).to be_empty
+        end
+      end
+
+      context 'user does have permission to see subcategories' do
+        before do
+          group.permission.update!(reports_items_create: [category.id] + subcategories.map(&:id))
+          user.groups = [group]
+          user.save
+        end
+
+        it do
+          represented = Reports::Category::Entity.represent(category,
+                                                            only: [subcategories: [:id]],
+                                                            display_type: :full,
+                                                            user: user).as_json
+
+          expect(represented[:subcategories]).to_not be_empty
+        end
+      end
+    end
+  end
 end

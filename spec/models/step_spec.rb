@@ -1,4 +1,4 @@
-require 'rails_helper'
+require 'app_helper'
 
 describe Step do
   describe 'validations' do

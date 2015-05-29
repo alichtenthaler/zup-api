@@ -10,27 +10,29 @@ module Inventory::Categories
       get do
         validate_permission!(:view, Inventory::Category)
 
-        title = safe_params[:title]
-        permissions = UserAbility.new(current_user)
+        garner.bind(CustomCacheControl.new(Inventory::Category, current_user, params)).options(expires_in: 1.day) do
+          title = safe_params[:title]
+          permissions = UserAbility.for_user(current_user)
 
-        categories = Inventory::Category.includes(:statuses, :sections, sections: [{ fields: :field_options }])
+          categories = Inventory::Category.includes(:statuses, :sections, sections: [{ fields: :field_options }])
 
-        unless permissions.can?(:manage, Inventory::Category)
-          categories = categories.where(id: permissions.inventory_categories_visible)
+          unless permissions.can?(:manage, Inventory::Category)
+            categories = categories.where(id: permissions.inventory_categories_visible)
+          end
+
+          if title
+            categories = categories.fuzzy_search(title: "%#{title}%")
+          end
+
+          {
+            categories: Inventory::Category::Entity.represent(
+              paginate(categories),
+              user: current_user,
+              display_type: 'full',
+              only: return_fields
+            )
+          }.as_json
         end
-
-        if title
-          categories = categories.fuzzy_search(title: "%#{title}%")
-        end
-
-        {
-          categories: Inventory::Category::Entity.represent(
-            paginate(categories),
-            user: current_user,
-            display_type: 'full',
-            only: return_fields
-          )
-        }
       end
 
       desc 'Create an category'

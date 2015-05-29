@@ -1,5 +1,3 @@
-require 'grape/validators/category_status'
-
 module Reports::Statuses
   class API < Grape::API
     helpers do
@@ -10,14 +8,21 @@ module Reports::Statuses
 
     namespace 'categories/:category_id/statuses' do
       desc "Return all category's statuses"
+      params do
+        optional :deactivated, type: Boolean
+      end
       get do
         validate_permission!(:view, Reports::Category)
 
         category = load_category
         statuses = category.status_categories
 
+        unless params[:deactivated]
+          statuses = statuses.active
+        end
+
         {
-          statuses: Reports::StatusCategory::Entity.represent(statuses)
+          statuses: Reports::StatusCategory::Entity.represent(statuses, only: return_fields)
         }
       end
 
@@ -53,7 +58,7 @@ module Reports::Statuses
         )
 
         {
-          status: Reports::Status::Entity.represent(status)
+          status: Reports::Status::Entity.represent(status, only: return_fields)
         }
       end
 
@@ -106,17 +111,23 @@ module Reports::Statuses
         sc.update!(status_category_params)
 
         {
-          status: Reports::Status::Entity.represent(category.reload.statuses)
+          status: Reports::Status::Entity.represent(category.reload.statuses, only: return_fields)
         }
       end
 
-      desc 'Delete status of category'
-      delete ':id' do
-        validate_permission!(:delete, Reports::Category)
+      desc 'Re-enable a status'
+      put ':id/enable' do
+        validate_permission!(:edit, Reports::Category)
 
         category = load_category
-        status_category = category.status_categories.find_by(reports_status_id: safe_params[:id])
-        status_category.destroy!
+        status = Reports::Status.find(params[:id])
+
+        sc = category.status_categories.find_by(reports_status_id: status.id)
+        sc.update!(active: true)
+
+        {
+          status: Reports::Status::Entity.represent(status, only: return_fields)
+        }
       end
     end
   end

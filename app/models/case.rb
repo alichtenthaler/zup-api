@@ -80,7 +80,7 @@ class Case < ActiveRecord::Base
       case_step_ids = []
       case_steps    = instance.case_steps.reject{ |cs| cs.id == instance.case_steps.last.id }
       if options[:just_user_can_view]
-        @permissions ||= UserAbility.new(options[:current_user])
+        @permissions ||= UserAbility.for_user(options[:current_user])
         case_steps = case_steps.map do |case_step|
           case_step unless @permissions.can?(:show, case_step.step)
         end.compact if instance.case_steps.count > 1
@@ -107,7 +107,7 @@ class Case < ActiveRecord::Base
     def case_step_ids(instance, options)
       case_step_ids = instance.case_steps.map(&:id)
       if options[:just_user_can_view]
-        @permissions ||= UserAbility.new(options[:current_user])
+        @permissions ||= UserAbility.for_user(options[:current_user])
         case_steps = instance.case_steps.map do |case_step|
           case_step_ids -= [case_step.id] unless @permissions.can?(:show, case_step.step)
         end.compact if instance.case_steps.any?
@@ -118,7 +118,7 @@ class Case < ActiveRecord::Base
     def case_steps(instance, options)
       case_step_ids = []
       if options[:just_user_can_view]
-        @permissions ||= UserAbility.new(options[:current_user])
+        @permissions ||= UserAbility.for_user(options[:current_user])
         case_steps = instance.case_steps.map do |case_step|
           case_step unless @permissions.can?(:show, case_step.step)
         end.compact if instance.case_steps.any?
@@ -130,7 +130,7 @@ class Case < ActiveRecord::Base
     def current_step(instance, options = {})
       case_step = instance.case_steps.last
       if options[:just_user_can_view] && case_step.present?
-        @permissions ||= UserAbility.new(options[:current_user])
+        @permissions ||= UserAbility.for_user(options[:current_user])
         case_step_ids = case_step.id unless @permissions.can?(:show, case_step.step)
       end
       CaseStep::Entity.represent case_step, options.merge(simplify_to: case_step_ids)

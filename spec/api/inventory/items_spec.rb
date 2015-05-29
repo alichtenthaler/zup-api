@@ -52,10 +52,10 @@ describe Inventory::Items::API do
         else
           valid_params['data'][field.id] = [
             {
-              content: Base64.encode64(fixture_file_upload('images/valid_report_item_photo.jpg').read)
+              content: Base64.encode64(fixture_file_upload("#{Application.config.root}/spec/fixtures/images/valid_report_item_photo.jpg").read)
             },
             {
-              content: Base64.encode64(fixture_file_upload('images/valid_report_item_photo.jpg').read)
+              content: Base64.encode64(fixture_file_upload("#{Application.config.root}/spec/fixtures/images/valid_report_item_photo.jpg").read)
             }
           ]
         end
@@ -91,11 +91,11 @@ describe Inventory::Items::API do
           valid_params['data'][field.id] = [
             {
               file_name: 'test.docx',
-              content: Base64.encode64(fixture_file_upload('images/valid_report_item_photo.jpg').read)
+              content: Base64.encode64(fixture_file_upload("#{Application.config.root}/spec/fixtures/images/valid_report_item_photo.jpg").read)
             },
             {
               file_name: 'test2.docx',
-              content: Base64.encode64(fixture_file_upload('images/valid_report_item_photo.jpg').read)
+              content: Base64.encode64(fixture_file_upload("#{Application.config.root}/spec/fixtures/images/valid_report_item_photo.jpg").read)
             }
           ]
         end
@@ -250,7 +250,7 @@ describe Inventory::Items::API do
         ).id
 
         data = item.data.where(inventory_field_id: images_field_id).first
-        image = data.images.create(image: fixture_file_upload('images/valid_report_item_photo.jpg'))
+        image = data.images.create(image: fixture_file_upload("#{Application.config.root}/spec/fixtures/images/valid_report_item_photo.jpg"))
 
         expect(data.reload.images).to_not be_empty
 
@@ -275,7 +275,7 @@ describe Inventory::Items::API do
         ).id
 
         data = item.data.where(inventory_field_id: attachments_field_id).first
-        attachment = data.attachments.create(attachment: fixture_file_upload('images/valid_report_item_photo.jpg'))
+        attachment = data.attachments.create(attachment: fixture_file_upload("#{Application.config.root}/spec/fixtures/images/valid_report_item_photo.jpg"))
 
         expect(data.reload.attachments).to_not be_empty
 
@@ -300,13 +300,13 @@ describe Inventory::Items::API do
         ).id
 
         data = item.data.where(inventory_field_id: images_field_id).first
-        image = data.images.create(image: fixture_file_upload('images/valid_report_item_photo.jpg'))
+        image = data.images.create(image: fixture_file_upload("#{Application.config.root}/spec/fixtures/images/valid_report_item_photo.jpg"))
 
         expect(data.reload.images).to_not be_empty
 
         valid_params['data'][images_field_id] = [
           {
-            content: Base64.encode64(fixture_file_upload('images/valid_report_item_photo.jpg').read)
+            content: Base64.encode64(fixture_file_upload("#{Application.config.root}/spec/fixtures/images/valid_report_item_photo.jpg").read)
           }
         ]
 

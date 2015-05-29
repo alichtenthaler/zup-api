@@ -1,4 +1,4 @@
-require 'rails_helper'
+require 'app_helper'
 
 describe Reports::SerializeToWebhook do
   let!(:report) do
@@ -6,6 +6,9 @@ describe Reports::SerializeToWebhook do
   end
   let!(:comments) do
     create_list(:reports_comment, 3, item: report)
+  end
+  let!(:image) do
+    create(:report_image, item: report)
   end
 
   subject { described_class.new(report) }
@@ -28,14 +31,25 @@ describe Reports::SerializeToWebhook do
         is_solicitation: false,
         description: report.description,
         address: report.address,
+        number: report.number,
+        district: report.district,
+        postal_code: report.postal_code,
+        city: report.city,
+        state: report.state,
         reference: report.reference,
         images: report.images,
+        country: report.country,
         uuid: report.uuid,
         comments: an_instance_of(Array),
         status: {
           name: report.status.title
         },
-        user: an_instance_of(Hash)
+        images: [{
+                   data: Base64.encode64(image.image.read),
+                   :'mime-type' => 'image/png'
+                 }],
+        user: an_instance_of(Hash),
+        protocol: report.protocol
       )
     end
   end

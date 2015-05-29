@@ -1,5 +1,3 @@
-require 'string'
-
 class Inventory::Field < Inventory::Base
   AVAILABLE_KINDS = {
    'text' => String,
@@ -102,7 +100,7 @@ class Inventory::Field < Inventory::Base
     expose :size
     expose :inventory_section_id
     expose :available_values
-    expose :field_options
+    expose :field_options, using: Inventory::FieldOption::Entity
     expose :permissions
     expose :position
     expose :label

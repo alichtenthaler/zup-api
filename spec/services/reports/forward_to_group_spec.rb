@@ -1,4 +1,4 @@
-require 'rails_helper'
+require 'app_helper'
 
 describe Reports::ForwardToGroup do
   let(:category) { create(:reports_category_with_statuses) }

@@ -1,4 +1,4 @@
-require 'rails_helper'
+require 'app_helper'
 
 describe CasesLogEntry do
   describe 'validations' do

@@ -1,4 +1,5 @@
 pt-BR:
+  edit: editar
   create: criar
   view: visualizar
   show: visualizar
@@ -13,6 +14,12 @@ pt-BR:
   triggers: Gatilhos
   cases: Casos
   case_steps: Etapa do Caso
+  users: Usuário
+  groups: Grupo
+  reports_items: Relato
+  reports_categories: Categoria de Relato
+  inventory_items: Item de inventário
+  inventory_categories: Categoria de Inventário
   permission_type_not_included: Tipo de permissão inválido
   permissions_updated: Permissões atualizadas com sucesso
   step_is_disabled: A Etapa está desabilitada
@@ -65,6 +72,40 @@ pt-BR:
       group: Grupo
       access_key: Chave de Acesso
       user: Usuário
+      inventory:
+        category: Categoria de Relato
+        item: Item de inventário
+        field: Campo
+      reports:
+        item: Relato
+        category: Categoria de Inventário
+    attributes:
+      user:
+        name: Nome
+        email: E-mail
+        phone: Telefone
+        document: CPF
+        address: Endereço
+        address_additional: Complemento
+        postal_code: CEP
+        district: Bairro
+        city: Cidade
+      reports:
+        item:
+          address: Endereço
+          reference: Referência
+          state: Estado
+          city: Cidade
+          country: País
+          number: Número
+          postal_code: CEP
+          overdue: Atrasado
+          protocol: Protocolo
+          description: Descrição
+        comment:
+          author: Autor
+          message: Mensagem
+          visibility: Visibilidade
   date:
     abbr_day_names:
     - Dom
@@ -190,6 +231,7 @@ pt-BR:
       too_long: ! 'é muito longo (máximo: %{count} caracteres)'
       too_short: ! 'é muito curto (mínimo: %{count} caracteres)'
       wrong_length: não possui o tamanho esperado (%{count} caracteres)
+      unique: Já existe essa relação no sistema. Tente novamente com outros usuários.
     template:
       body: ! 'Por favor, verifique o(s) seguinte(s) campo(s):'
       header:

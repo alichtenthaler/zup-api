@@ -24,8 +24,8 @@ class PinUploader < CarrierWave::Uploader::Base
   end
 
   def store_dir
-    if Rails.env.test?
-      "uploads/#{Rails.env}/#{model.class.name.downcase.gsub("::", "/")}/#{model.id}/pins/"
+    if Application.config.env.test?
+      "uploads/test/#{model.class.name.downcase.gsub("::", "/")}/#{model.id}/pins/"
     else
       "uploads/#{model.class.name.downcase.gsub("::", "/")}/#{model.id}/pins/"
     end
@@ -43,7 +43,7 @@ class PinUploader < CarrierWave::Uploader::Base
     base_file = 'public/base/marker_categoria_invenrio_base@2x.png'
 
     manipulate! do |_img|
-      base_image = MiniMagick::Image.open(Rails.root.join(base_file))
+      base_image = MiniMagick::Image.open(File.join(Application.config.root, base_file))
 
       # Tint the color
       base_image.combine_options do |cmd|

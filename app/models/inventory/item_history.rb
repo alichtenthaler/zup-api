@@ -47,7 +47,15 @@ class Inventory::ItemHistory < Inventory::Base
 
     def objects
       if object.objects.any?
-        object.object_entity_class.represent(object.objects)
+        if options[:only]
+          options[:only] = options[:only].select do |i|
+            i.is_a?(Hash) && i.keys.include?(:objects)
+          end
+
+          options[:only] = options[:only].first[:objects] if options[:only].any?
+        end
+
+        object.object_entity_class.represent(object.objects, options)
       else
         []
       end

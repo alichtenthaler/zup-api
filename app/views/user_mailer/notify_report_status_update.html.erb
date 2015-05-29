@@ -1,28 +1,14 @@
 <tr>
-  <td bgcolor="#ffffff">
-    <h1 style="color: #2db0dc; font-weight: 300; font-family: 'Open Sans', Arial; text-align: center; margin: 40px 0 10px 0;">Prezado usuário,</h1>
-    <h2 style="color: #000; font-size: 19px; font-weight: 300; font-family: 'Open Sans', Arial; text-align: center; margin: 0 0 40px 0;">
-      Confira a atualização e o resumo da sua solicitação.
-    </h2>
+  <td bgcolor="#ffffff" align="center" valign="top" style="padding:0 45px;">
+    <h1 style="color:#2DB0dC; font-weight:300; font-family:'Open Sans', Arial; text-align:center; margin:40px 0 0 0;"><%= greetings_for_email %></h1>
+    <h2 style="color:#000000; font-size:19px; font-weight:300; font-family:'Open Sans', Arial; text-align:center; margin:0 0 40px 0;">Confira a atualização e o resumo da sua solicitação.</h2>
   </td>
 
-  <% if @report.status.final? %>
-    <tr>
-      <td bgcolor="#ffffff" style="padding: 0px 65px 10px 65px; text-align: center;">
-        <a href="http://panchodev.github.io/zup-web-angular/#/feedback/<%= @report.id %>" style="font-family: 'Open Sans', Arial; font-size: 16px; color: #fff; background: #2AB4DB; display: block;      padding: 15px 0; text-decoration: none; font-weight: bold; border-radius: 5px;">
-          Avalie seu atendimento
-        </a>
-      </td>
-    </tr>
+  <% if @report.can_receive_feedback? %>
+    <%= render partial: 'report_feedback_button', locals: { report: @report } %>
   <% end %>
-</tr>
-<%= render partial: 'report', locals: { report: @report } %>
-<% if @report.status.final? %>
-  <tr>
-    <td bgcolor="#FAFAFA" style="padding: 0px 65px 30px 65px; text-align: center;">
-      <a href="http://panchodev.github.io/zup-web-angular/#/feedback/<%= @report.id %>" style="font-family: 'Open Sans', Arial; font-size: 16px; color: #fff; background: #2AB4DB; display: block;      padding: 15px 0; text-decoration: none; font-weight: bold; border-radius: 5px;">
-        Avalie seu atendimento
-      </a>
-    </td>
-  </tr>
+</tr><%= render partial: 'report', locals: { report: @report } %>
+
+<% if @report.can_receive_feedback? %>
+  <%= render partial: 'report_feedback_button', locals: { report: @report } %>
 <% end %>

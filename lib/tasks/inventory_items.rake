@@ -1,8 +1,10 @@
 namespace :inventory_items do
+  desc 'Unlock inventory items'
   task unlock: :environment do
     UnlockInventoryItems.new.perform
   end
 
+  desc 'Import inventory items from csv'
   task import_from_csv: :environment do
     require 'parallel'
     require 'ruby-progressbar'

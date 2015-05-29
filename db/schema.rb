@@ -11,14 +11,13 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20150417034700) do
+ActiveRecord::Schema.define(version: 20150529012138) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "postgis"
   enable_extension "hstore"
   enable_extension "pg_trgm"
-  enable_extension "postgis_topology"
 
   create_table "access_keys", force: true do |t|
     t.integer  "user_id"
@@ -234,6 +233,7 @@ ActiveRecord::Schema.define(version: 20150417034700) do
     t.integer  "reports_items_create_internal_comment", default: [],    array: true
     t.integer  "reports_items_create_comment",          default: [],    array: true
     t.integer  "reports_items_alter_status",            default: [],    array: true
+    t.integer  "users_edit",                            default: [],    array: true
   end
 
   add_index "group_permissions", ["can_execute_step"], :name => "index_group_permissions_on_can_execute_step"
@@ -384,7 +384,7 @@ ActiveRecord::Schema.define(version: 20150417034700) do
     t.integer  "inventory_item_history_id",                  null: false
     t.integer  "inventory_item_data_id",                     null: false
     t.string   "previous_content"
-    t.string   "new_content"
+    t.text     "new_content"
     t.integer  "previous_selected_options_ids", default: [], null: false, array: true
     t.integer  "new_selected_options_ids",      default: [], null: false, array: true
     t.datetime "created_at"
@@ -430,7 +430,7 @@ ActiveRecord::Schema.define(version: 20150417034700) do
     t.boolean  "locked",                                                   default: false
     t.datetime "locked_at"
     t.integer  "locker_id"
-    t.integer  "sequence",                                                 default: 0
+    t.integer  "sequence",                                                 default: "nextval('inventory_item_sequence_seq'::regclass)"
   end
 
   add_index "inventory_items", ["inventory_category_id"], :name => "index_inventory_items_on_inventory_category_id"
@@ -532,6 +532,7 @@ ActiveRecord::Schema.define(version: 20150417034700) do
     t.integer  "objects_ids",     array: true
     t.datetime "created_at"
     t.datetime "updated_at"
+    t.json     "saved_changes"
   end
 
   add_index "reports_item_histories", ["kind"], :name => "index_reports_item_histories_on_kind"
@@ -556,7 +557,7 @@ ActiveRecord::Schema.define(version: 20150417034700) do
     t.datetime "created_at"
     t.datetime "updated_at"
     t.spatial  "position",             limit: {:srid=>0, :type=>"point"}
-    t.integer  "protocol",             limit: 8
+    t.integer  "protocol",             limit: 8,                          default: "nextval('protocol_seq'::regclass)"
     t.string   "reference"
     t.boolean  "confidential",                                            default: false
     t.integer  "reporter_id"
@@ -568,6 +569,12 @@ ActiveRecord::Schema.define(version: 20150417034700) do
     t.boolean  "is_report"
     t.integer  "assigned_group_id"
     t.integer  "assigned_user_id"
+    t.string   "number"
+    t.string   "district"
+    t.string   "postal_code"
+    t.string   "city"
+    t.string   "state"
+    t.string   "country"
   end
 
   add_index "reports_items", ["inventory_item_id"], :name => "index_reports_items_on_inventory_item_id"
@@ -701,6 +708,7 @@ ActiveRecord::Schema.define(version: 20150417034700) do
     t.boolean  "email_notifications",     default: true
     t.string   "unsubscribe_email_token"
     t.boolean  "disabled",                default: false
+    t.string   "city"
   end
 
   create_table "versions", force: true do |t|

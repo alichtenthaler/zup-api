@@ -31,13 +31,17 @@ module Search::Reports::Items
                desc: 'Show only reports assigned to my group'
       optional :assigned_to_me, type: Boolean,
                desc: 'Show only reports assigned to the signed user'
+      optional :reporters_ids, type: String,
+               desc: 'Reporter ids, format: "3,5,7"'
+      optional :user_document, type: String,
+               desc: 'User document, only numbers'
     end
     get 'reports/items' do
       authenticate!
 
       search_params = safe_params.permit(
         :begin_date, :end_date, :address, :query, :overdue, :clusterize, :zoom,
-        :assigned_to_my_group, :assigned_to_me
+        :assigned_to_my_group, :assigned_to_me, :user_document
       )
 
       search_params[:paginator] = method(:paginate)
@@ -46,24 +50,22 @@ module Search::Reports::Items
       search_params[:position] = safe_params[:position]
 
       unless safe_params[:reports_categories_ids].blank?
-        search_params[:category] = safe_params[:reports_categories_ids].split(',').map do |category_id|
-          Reports::Category.find(category_id)
-        end
+        search_params[:category] = Reports::Category.find(safe_params[:reports_categories_ids].split(','))
       end
 
       unless safe_params[:users_ids].blank?
-        search_params[:user] = safe_params[:users_ids].split(',').map do |user_id|
-          User.find(user_id)
-        end
+        search_params[:user] = User.find(safe_params[:users_ids].split(','))
+      end
+
+      unless safe_params[:reporters_ids].blank?
+        search_params[:reporter] = User.find(safe_params[:reporters_ids].split(','))
       end
 
       search_params[:begin_date] = safe_params[:begin_date]
       search_params[:end_date] = safe_params[:end_date]
 
       if safe_params[:statuses_ids].present?
-        search_params[:statuses] = safe_params[:statuses_ids].split(',').map do |status_id|
-          Reports::Status.find(status_id)
-        end
+        search_params[:statuses] = Reports::Status.find(safe_params[:statuses_ids].split(','))
       end
 
       search_params[:sort] = safe_params[:sort]

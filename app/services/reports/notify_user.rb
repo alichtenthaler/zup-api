@@ -24,13 +24,15 @@ module Reports
       end
     end
 
-    def notify_new_comment!
+    def notify_new_comment!(comment = nil)
       if user.push_notification_available?
         NotificationPusher.perform_async(user.id,
           'Existe um novo comentário da prefeitura para um relato que você realizou',
           item.id, 'report'
         )
       end
+
+      UserMailer.delay.notify_report_comment(item, comment)
     end
 
     def should_user_receive_status_notification?(status)
@@ -41,7 +43,7 @@ module Reports
     private
 
     def user_permissions
-      @user_permissions ||= UserAbility.new(user)
+      @user_permissions ||= UserAbility.for_user(user)
     end
   end
 end

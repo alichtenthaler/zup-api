@@ -47,10 +47,10 @@ describe Inventory::CreateItemFromCategoryForm do
             else
               item_params[field.id] = [
                 {
-                  'content' => Base64.encode64(fixture_file_upload('images/valid_report_item_photo.jpg').read)
+                  'content' => Base64.encode64(fixture_file_upload("#{Application.config.root}/spec/fixtures/images/valid_report_item_photo.jpg").read)
                 },
                 {
-                  'content' => Base64.encode64(fixture_file_upload('images/valid_report_item_photo.jpg').read)
+                  'content' => Base64.encode64(fixture_file_upload("#{Application.config.root}/spec/fixtures/images/valid_report_item_photo.jpg").read)
                 }
               ]
             end

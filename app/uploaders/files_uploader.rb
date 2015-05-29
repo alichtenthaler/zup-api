@@ -1,7 +1,7 @@
 class FilesUploader < CarrierWave::Uploader::Base
   def store_dir
-    if Rails.env.test?
-      "uploads/#{Rails.env}/"
+    if Application.config.env.test?
+      'uploads/test/'
     else
       'uploads/'
     end

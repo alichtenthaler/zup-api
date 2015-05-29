@@ -15,6 +15,11 @@ __URI__ `POST /reports/:category_id/items`
 | description       | String  | Não         | Descrição do relato                                                             |
 | address           | String  | Não         | Endereço completo do relato                                                     |
 | reference         | String  | Não         | Referência do endereço                                                          |
+| number            | String  | Não         | Número do endereço                                                              |
+| district          | String  | Não         | Bairro do relato                                                                |
+| city              | String  | Não         | Cidade do relato                                                                |
+| state             | String  | Não         | Estado do relato                                                                |
+| country           | String  | Não         | País do relato                                                                  |
 | images            | Array   | Não         | Um array de imagens, encodadas em base64, para esse relato.                     |
 | status_id         | Integer | Não         | O status do relato, irá utilizar o status inicial padrão da categoria de relato |
 | user_id           | Integer | Não         | Para associar um usuário com o relato                                           |
@@ -168,6 +173,11 @@ __URI__ `PUT /reports/:category_id/items/:id`
 | description       | String  | Não         | Descrição do relato                                                             |
 | address           | String  | Não         | Endereço completo do relato                                                     |
 | reference         | String  | Não         | Referência do endereço                                                          |
+| number            | String  | Não         | Número do endereço                                                              |
+| district          | String  | Não         | Bairro do relato                                                                |
+| city              | String  | Não         | Cidade do relato                                                                |
+| state             | String  | Não         | Estado do relato                                                                |
+| country           | String  | Não         | País do relato                                                                  |
 | images            | Array   | Não         | Um array de imagens, encodadas em base64, para esse relato.                     |
 | status_id         | Integer | Não         | O status do relato, irá utilizar o status inicial padrão da categoria de relato |
 | user_id           | Integer | Não         | Para associar um usuário com o relato                                           |

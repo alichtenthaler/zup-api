@@ -40,19 +40,6 @@ describe Inventory::Statuses do
     end
   end
 
-  describe 'DELETE /inventory/categories/:category_id/statuses/:id' do
-    let!(:category) { create(:inventory_category) }
-    let!(:status) { create(:inventory_status, category: category) }
-
-    before do
-      delete "/inventory/categories/#{category.id}/statuses/#{status.id}", nil, auth(user)
-    end
-
-    it 'deletes the status' do
-      expect(Inventory::Status.find_by(id: status.id)).to be_nil
-    end
-  end
-
   describe 'PUT /inventory/categories/:category_id/statuses/:id' do
     let!(:category) { create(:inventory_category) }
     let!(:status) { create(:inventory_status, category: category) }

@@ -1,4 +1,4 @@
-require 'rails_helper'
+require 'app_helper'
 
 describe Group do
   it 'validates name' do

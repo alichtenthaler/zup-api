@@ -1,13 +1,14 @@
 class ListUsers
   AVAILABLE_SORT_FIELDS = ['name', 'username', 'email', 'phone', 'created_at', 'updated_at']
 
-  attr_reader :order, :sort, :name, :email,
+  attr_reader :order, :sort, :name, :email, :document,
               :groups, :scope, :search_params,
               :like
 
   def initialize(opts = {})
     @name = opts[:name]
     @email = opts[:email]
+    @document = opts[:document]
     @groups = opts[:groups] || []
     @like = opts[:like] || false
     @order = opts[:order]
@@ -26,6 +27,7 @@ class ListUsers
     build_ordering_search
     build_name_search
     build_email_search
+    build_document_search
     build_group_search
 
     if like
@@ -44,6 +46,8 @@ class ListUsers
       sort.in?(AVAILABLE_SORT_FIELDS) &&
       %w(desc asc).include?(order.downcase)
       @scope = scope.order("#{sort.to_sym} #{order.to_sym}")
+    else
+      @scope = scope.order('users.id ASC')
     end
   end
 
@@ -59,6 +63,14 @@ class ListUsers
     if email
       @search_params = search_params.merge(
         email: @email
+      )
+    end
+  end
+
+  def build_document_search
+    if document
+      @search_params = search_params.merge(
+          document: @document
       )
     end
   end

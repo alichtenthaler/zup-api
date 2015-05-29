@@ -1,3 +1,5 @@
+require 'action_dispatch/testing/test_process'
+
 include ActionDispatch::TestProcess
 
 FactoryGirl.define do
@@ -11,8 +13,8 @@ FactoryGirl.define do
     active true
     allows_arbitrary_position false
     color '#f3f3f3'
-    icon { Rails.root.join('spec/fixtures/images/valid_report_category_icon.png').open }
-    marker { Rails.root.join('spec/fixtures/images/valid_report_category_marker.png').open }
+    icon { File.read("#{Application.config.root}/spec/fixtures/images/valid_report_category_icon.png") }
+    marker { File.read("#{Application.config.root}/spec/fixtures/images/valid_report_category_marker.png") }
     confidential false
 
     factory :reports_category_with_statuses do

@@ -1,4 +1,4 @@
-require 'rails_helper'
+require 'app_helper'
 
 describe Reports::Categories::API do
   let(:user) { create(:user) }
@@ -6,8 +6,8 @@ describe Reports::Categories::API do
   let(:valid_params) do
     {
         title: 'A very cool report category',
-        icon: Base64.encode64(fixture_file_upload('images/valid_report_category_icon.png').read),
-        marker: Base64.encode64(fixture_file_upload('images/valid_report_category_marker.png').read),
+        icon: Base64.encode64(fixture_file_upload("#{Application.config.root}/spec/fixtures/images/valid_report_category_icon.png").read),
+        marker: Base64.encode64(fixture_file_upload("#{Application.config.root}/spec/fixtures/images/valid_report_category_marker.png").read),
         resolution_time: 2 * 60 * 60 * 24,
         user_response_time: 1 * 60 * 60 * 24,
         color: '#f3f3f3',

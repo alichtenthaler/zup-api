@@ -3,6 +3,27 @@ class UserAbility
 
   attr_reader :user, :permissions
 
+  def self.for_user(user)
+    key = (user.try(:id) || '0').to_s + '-' + Group.cache_version.to_s
+    @abilities ||= {}
+
+    unless @abilities[key]
+      clear_invalid_cache
+      @abilities[key] = new(user)
+    end
+
+    @abilities[key]
+  end
+
+  def self.clear_invalid_cache
+    current_version_key = '-' + Group.cache_version.to_s
+    @abilities.keys.each do |k|
+      if k[-current_version_key.size..-1] != current_version_key
+        @abilities.delete(k)
+      end
+    end
+  end
+
   # TODO: Make this work with the Guest group.
   def initialize(given_user = nil)
     @user = (given_user || User::Guest.new)
@@ -62,6 +83,10 @@ class UserAbility
     # User can edit it's own info
     can :edit, User do |u|
       u.id == user.id
+    end
+
+    can :manage, User do |u|
+      (u.group_ids & (permissions.users_edit || [])).any?
     end
 
     # Specific groups permissions
@@ -252,11 +277,19 @@ class UserAbility
      permissions.reports_items_delete).uniq
   end
 
+  def reports_categories_visible_for_items
+    (permissions.reports_items_read_public + \
+     permissions.reports_items_read_private + \
+     permissions.reports_items_edit + \
+     permissions.reports_categories_edit + \
+     permissions.reports_items_delete).uniq
+  end
+
   def inventory_fields_visible
     (permissions.inventory_fields_can_view + permissions.inventory_fields_can_edit).uniq
   end
 
   def groups_visible
-    (permissions.group_read_only + permissions.group_edit).uniq
+    (permissions.group_read_only + permissions.group_edit + permissions.users_edit).uniq
   end
 end

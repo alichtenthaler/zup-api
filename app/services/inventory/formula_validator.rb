@@ -4,9 +4,15 @@ class Inventory::FormulaValidator
       content == condition_content
     end,
     'greater_than' => lambda do |content, condition_content|
+      condition_content = condition_content[0] if condition_content.is_a?(Array)
+      content = content[0] if content.is_a?(Array)
+
       content > condition_content.to_i
     end,
     'lesser_than' => lambda do |content, condition_content|
+      condition_content = condition_content[0] if condition_content.is_a?(Array)
+      content = content[0] if content.is_a?(Array)
+
       content < condition_content.to_i
     end,
     'different' => lambda do |content, condition_content|

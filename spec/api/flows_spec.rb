@@ -1,4 +1,4 @@
-require 'rails_helper'
+require 'app_helper'
 
 describe Flows::API, versioning: true do
   let(:user)       { create(:user) }

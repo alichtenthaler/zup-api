@@ -1,4 +1,4 @@
-require 'rails_helper'
+require 'app_helper'
 
 describe Search::Inventory::Categories::API do
   let(:user) { create(:user) }

@@ -1,4 +1,4 @@
-require 'rails_helper'
+require 'app_helper'
 
 describe Reports::Items::API do
   let(:user) { create(:user) }
@@ -11,8 +11,8 @@ describe Reports::Items::API do
         reference: 'Close to the store',
         description: 'The situation is really crappy around here.',
         images: [
-            Base64.encode64(fixture_file_upload('images/valid_report_item_photo.jpg').read),
-            Base64.encode64(fixture_file_upload('images/valid_report_item_photo.jpg').read)
+            Base64.encode64(fixture_file_upload("#{Application.config.root}/spec/fixtures/images/valid_report_item_photo.jpg").read),
+            Base64.encode64(fixture_file_upload("#{Application.config.root}/spec/fixtures/images/valid_report_item_photo.jpg").read)
         ]
     }
   end
@@ -25,6 +25,7 @@ describe Reports::Items::API do
 
       expect(body['id']).to_not be_nil
       expect(body['address']).to eq(valid_params[:address])
+      expect(body['protocol']).to_not be_blank
       expect(body['reference']).to eq(valid_params[:reference])
       expect(body['description']).to eq(valid_params[:description])
       expect(body['position']['latitude']).to eq(valid_params[:latitude])
@@ -67,8 +68,8 @@ describe Reports::Items::API do
 
     it 'create a new report with uploaded images instead of encoded ones' do
       valid_params[:images] = [
-        fixture_file_upload('images/valid_report_item_photo.jpg'),
-        fixture_file_upload('images/valid_report_item_photo.jpg')
+        fixture_file_upload("#{Application.config.root}/spec/fixtures/images/valid_report_item_photo.jpg"),
+        fixture_file_upload("#{Application.config.root}/spec/fixtures/images/valid_report_item_photo.jpg")
       ]
 
       post '/reports/' + category.id.to_s + '/items', valid_params, auth(user)
@@ -204,7 +205,7 @@ describe Reports::Items::API do
       valid_params = {
         images: [{
           id: existent_item.images.first.id,
-          file: Base64.encode64(fixture_file_upload('images/valid_report_category_marker.png').read)
+          file: Base64.encode64(fixture_file_upload("#{Application.config.root}/spec/fixtures/images/valid_report_category_marker.png").read)
         }]
       }
 
@@ -633,7 +634,7 @@ describe Reports::Items::API do
         before do
           reports.each do |report|
             report.update(
-              created_at: DateTime.new(2015, 1, 26).beginning_of_day.change(offset: '-0300')
+              created_at: DateTime.new(2015, 1, 26).beginning_of_day.in_time_zone('Brasilia')
             )
           end
         end

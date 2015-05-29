@@ -2,13 +2,27 @@ require 'grape-swagger'
 require 'garner/mixins/rack'
 require 'oj'
 require 'will_paginate/array'
-require 'return_fields_params'
+require 'rack/test'
+require 'action_controller/metal/strong_parameters'
 
 module ZUP
   class API < Grape::API
-    helpers Garner::Mixins::Rack
+    use Appsignal::Rack::Listener
+    use Appsignal::Grape::Middleware
     use Rack::ConditionalGet
     use Rack::ETag
+
+    if Application.config.env.development?
+      logger.formatter = GrapeLogging::Formatters::Default.new
+      logger Logger.new(
+               GrapeLogging::MultiIO.new(
+                 STDOUT, File.open("log/#{Application.config.env}.log", 'a')
+               )
+             )
+      use GrapeLogging::Middleware::RequestLogger, logger: logger
+    end
+
+    helpers Garner::Mixins::Rack
 
     format :json
     default_format :json
@@ -18,19 +32,16 @@ module ZUP
     rescue_from :all do |e|
       Raven.capture_exception(e)
 
-      if ENV['RAISE_ERRORS']
-        fail e
-      end
+      fail(e) if ENV['RAISE_ERRORS']
+      API.logger.error e
 
-      rack_response("{ \"error\": \"#{e.message}\" }", 400)
+      rack_response("{ \"error\": \"#{e.message}\", \"type\": \"unknown\" }", 400)
     end
 
     rescue_from Grape::Exceptions::ValidationErrors do |e|
-      res = { error: {} }
+      res = { error: {}, type: 'params' }
 
-      if ENV['RAISE_ERRORS']
-        fail e
-      end
+      fail(e) if ENV['RAISE_ERRORS']
 
       e.errors.each do |field_name, error|
         res[:error].merge!(field_name[0] => error.map(&:to_s))
@@ -42,26 +53,30 @@ module ZUP
     rescue_from ActiveRecord::RecordNotFound do |e|
       Raven.capture_exception(e)
 
-      if ENV['RAISE_ERRORS']
-        fail e
-      end
+      fail(e) if ENV['RAISE_ERRORS']
 
-      rack_response({ error: e.message }.to_json, 404)
+      rack_response({ error: e.message, type: 'not_found' }.to_json, 404)
     end
 
     rescue_from ActiveRecord::RecordInvalid do |e|
       Raven.capture_exception(e)
 
-      if ENV['RAISE_ERRORS']
-        fail e
-      end
+      fail(e) if ENV['RAISE_ERRORS']
 
-      rack_response({ error: e.record.errors.messages.as_json }.to_json, 400)
+      rack_response({ error: e.record.errors.messages.as_json, type: 'model_validation' }.to_json, 400)
+    end
+
+    rescue_from ActiveRecord::RecordNotUnique do |e|
+      Raven.capture_exception(e)
+
+      fail(e) if ENV['RAISE_ERRORS']
+
+      rack_response({ error: I18n.t(:'errors.messages.unique'), type: 'model_validation' }.to_json, 400)
     end
 
     helpers do
       def current_user
-        token = headers['X-App-Token'] || params[:token]
+        token = headers['X-App-Token'] || env['X-App-Token'] || params[:token]
         @current_user ||= User.authorize(token) if token
       end
 
@@ -84,13 +99,14 @@ module ZUP
 
             action = I18n.t(action.to_sym)
             table  = I18n.t(table_name.to_sym)
-            error!(I18n.t(:permission_denied, action: action, table_name: table), 403)
+
+            error!({ error: I18n.t(:permission_denied, action: action, table_name: table), type: 'invalid_permission' }, 403)
           end
         end
       end
 
       def user_permissions
-        @user_permissions ||= UserAbility.new(current_user)
+        @user_permissions ||= UserAbility.for_user(current_user)
       end
 
       def safe_params
@@ -112,6 +128,7 @@ module ZUP
     mount Cases::API
     mount FeatureFlags::API
     mount Utils::API
+    mount Auth::API
 
     namespace :settings do
       desc 'Return the app settings'

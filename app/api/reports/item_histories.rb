@@ -31,7 +31,7 @@ module Reports::ItemHistories
           results = Reports::SearchHistoryEntries.new(search_params).search
 
           {
-            histories: Reports::ItemHistory::Entity.represent(results)
+            histories: Reports::ItemHistory::Entity.represent(results, only: return_fields)
           }
         end
       end

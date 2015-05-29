@@ -1,4 +1,4 @@
-if Rails.env.development?
+if Application.config.env.development?
   APNS.host = 'gateway.sandbox.push.apple.com'
 else
   APNS.host = 'gateway.push.apple.com'

@@ -48,7 +48,7 @@ class Inventory::Section < Inventory::Base
 
     def fields
       if options[:user]
-        user_permissions = UserAbility.new(options[:user])
+        user_permissions = UserAbility.for_user(options[:user])
 
         if user_permissions.can?(:manage, Inventory::Item) || user_permissions.can?(:edit, object.category)
           fields = object.fields
@@ -56,7 +56,15 @@ class Inventory::Section < Inventory::Base
           fields = object.fields.enabled.where(id: user_permissions.inventory_fields_visible)
         end
 
-        Inventory::Field::Entity.represent(fields)
+        if options[:only]
+          options[:only] = options[:only].select do |i|
+            i.is_a?(Hash) && i.keys.include?(:fields)
+          end
+
+          options[:only] = options[:only].first[:fields] if options[:only].any?
+        end
+
+        Inventory::Field::Entity.represent(fields, options)
       end
     end
   end

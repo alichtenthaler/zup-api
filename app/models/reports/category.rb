@@ -135,6 +135,20 @@ class Reports::Category < Reports::Base
       expose :created_at
       expose :updated_at
     end
+
+    def subcategories
+      subcategories_scope = object.subcategories
+
+      if options[:user]
+        user_permissions = UserAbility.for_user(options[:user])
+
+        unless user_permissions.can?(:manage, Reports::Category) || user_permissions.can?(:edit, object)
+          subcategories_scope = subcategories_scope.where(id: user_permissions.reports_categories_visible)
+        end
+      end
+
+      subcategories_scope
+    end
   end
 
   protected

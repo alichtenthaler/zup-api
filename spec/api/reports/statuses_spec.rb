@@ -86,16 +86,19 @@ describe Reports::Statuses::API do
     end
   end
 
-  describe 'DELETE /reports/categories/:category_id/statuses/:id'  do
+  describe 'PUT /reports/categories/:category_id/statuses/:id/enable'  do
     let!(:status) { create(:status, :with_category, category: category) }
 
     before do
-      delete "/reports/categories/#{category.id}/statuses/#{status.id}", {}, auth(user)
+      status.update!(active: false)
     end
 
-    it 'deletes the status' do
+    it 'creates the new status' do
+      put "/reports/categories/#{category.id}/statuses/#{status.id}/enable", nil, auth(user)
+      sc = category.status_categories.find_by(reports_status_id: status.id)
+
       expect(response.status).to eq(200)
-      expect(category.status_categories.find_by(reports_status_id: status.id)).to be_nil
+      expect(sc.active).to be_truthy
     end
   end
 end

@@ -59,7 +59,7 @@ class Inventory::Item < Inventory::Base
   class Entity < Grape::Entity
     expose :id
     expose :title do |obj, _|
-      "#{obj.title} ##{obj.sequence}"
+      "##{obj.sequence}"
     end
     expose :address
     expose :inventory_status_id
@@ -80,7 +80,7 @@ class Inventory::Item < Inventory::Base
     end
 
     expose :inventory_category_id
-    expose :data, unless: { display_type: 'basic' }
+    expose :data, unless: { collection: true }
     expose :created_at
     expose :updated_at
 
@@ -91,11 +91,20 @@ class Inventory::Item < Inventory::Base
       objects = object.data.preload(field: :field_options)
                       .joins(:field).merge(Inventory::Field.enabled)
 
-      permissions = UserAbility.new(user)
+      permissions = UserAbility.for_user(user)
 
       unless permissions.can?(:manage, Inventory::Item) || permissions.can?(:edit, object.category)
         ids = permissions.inventory_fields_visible
         objects = objects.where(inventory_field_id: ids)
+      end
+
+      # What is the better way to do this?
+      if options[:only]
+        options[:only] = options[:only].select do |i|
+          i.is_a?(Hash) && i.keys.include?(:data)
+        end
+
+        options[:only] = options[:only].first[:data] if options[:only].any?
       end
 
       Inventory::ItemData::Entity.represent(objects, options)
@@ -117,7 +126,6 @@ class Inventory::Item < Inventory::Base
   def generate_title
     if category && (new_record?)
       self.title = category.title
-      self.sequence = category.items.count + 1
     end
   end
 
@@ -140,7 +148,7 @@ class Inventory::Item < Inventory::Base
       end
     end
 
-    if latitude && longitude
+    if !position_changed? && latitude && longitude
       self.position = ::Reports::Item.rgeo_factory.point(longitude, latitude)
     end
 

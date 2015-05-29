@@ -61,6 +61,15 @@ describe Reports::Item do
     end
   end
 
+  context 'postal_code' do
+    it "stripes everything else that isn't a number" do
+      postal_code = '13456-234$%$'
+      report = build(:reports_item, postal_code: postal_code)
+
+      expect(report).to be_valid
+    end
+  end
+
   it 'has relationship with inventory category through category' do
     inventory_categories = create_list(:inventory_category, 3)
     category = create(
@@ -116,6 +125,24 @@ describe Reports::Item do
             )
 
       expect(report.can_receive_feedback?).to eq(false)
+    end
+  end
+
+  context 'comments_count' do
+    let(:report) { create(:reports_item) }
+
+    it "it's updated when a new comment is created" do
+      create(:reports_comment, item: report)
+      expect(report.reload.comments_count).to eq(1)
+    end
+  end
+
+  context 'protocol' do
+    let(:report) { build(:reports_item) }
+
+    it 'returns the protocol just after created' do
+      report.save!
+      expect(report.protocol).to_not be_blank
     end
   end
 end

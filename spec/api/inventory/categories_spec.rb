@@ -20,7 +20,7 @@ describe Inventory::Categories::API do
       JSON
 
       p.merge(
-        'icon' => Base64.encode64(fixture_file_upload('images/valid_report_category_icon.png').read)
+        'icon' => Base64.encode64(fixture_file_upload("#{Application.config.root}/spec/fixtures/images/valid_report_category_icon.png").read)
       )
     end
 

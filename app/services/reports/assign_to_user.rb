@@ -9,14 +9,15 @@ module Reports
     end
 
     def assign!(user_to_assign)
-      return if report.assigned_group.blank? || report.assigned_user == user
+      return if report.assigned_group.blank? || report.assigned_user == user_to_assign
       validate_user_belonging!(user_to_assign)
 
-      report.update(
+      old_assigned_user = report.assigned_user
+      report.update!(
         assigned_user: user_to_assign
       )
 
-      create_history_entry(user_to_assign)
+      create_history_entry(old_assigned_user, user_to_assign)
     end
 
     private
@@ -27,10 +28,19 @@ module Reports
       end
     end
 
-    def create_history_entry(user_to_assign)
+    def create_history_entry(old_assigned_user, user_to_assign)
+      changes = {
+        new: user_to_assign.entity(only: [:id, :name])
+      }
+
+      if old_assigned_user
+        changes = changes.merge(
+          old: old_assigned_user.entity(only: [:id, :name])
+        )
+      end
+
       Reports::CreateHistoryEntry.new(report, user)
-        .create('user_assign', "Relato foi associado ao usuário #{user.name}",
-                user_to_assign)
+        .create('user_assign', "Relato foi associado ao usuário #{user.name}", changes)
     end
   end
 end

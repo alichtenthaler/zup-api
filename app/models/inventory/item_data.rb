@@ -99,6 +99,7 @@ class Inventory::ItemData < Inventory::Base
   class Entity < Grape::Entity
     expose :id
     expose :field, using: Inventory::Field::Entity
+    expose :inventory_field_id
     expose :converted_content, as: :content
     expose :selected_options, using: Inventory::FieldOption::Entity
   end

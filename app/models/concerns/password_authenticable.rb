@@ -57,6 +57,12 @@ module PasswordAuthenticable
     )
   end
 
+  # Sets new password (and confirmation) for the user, and return it
+  def generate_random_password!
+    self.resetting_password = true
+    self.password = self.password_confirmation = SecureRandom.hex(8)
+  end
+
   # Generate a token for password resetting
   def generate_reset_password_token!
     token = SecureRandom.hex
@@ -64,11 +70,11 @@ module PasswordAuthenticable
   end
 
   def should_require_password_fields?
-    new_record? && !from_webhook
+    new_record? && !ignore_password_requirement
   end
 
   def presence_of_current_password
-    permissions = UserAbility.new(user_changing_password || self)
+    permissions = UserAbility.for_user(user_changing_password || self)
 
     # If is an existent record
     # and the password attribute is present
@@ -78,13 +84,11 @@ module PasswordAuthenticable
     if !permissions.can?(:manage, self) &&
        !new_record? &&
        password.present? &&
-       (
-        current_password.blank? ||
-        !check_password(current_password, old_encrypted_password)
-       ) &&
-       !resetting_password
-
+       !resetting_password &&
+       current_password.blank?
       errors.add(:current_password, 'needs to be informed')
+    elsif current_password.present? && !check_password(current_password, old_encrypted_password)
+      errors.add(:current_password, 'isn\'t correct')
     end
   end
 

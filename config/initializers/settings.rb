@@ -1,7 +1,7 @@
 # noinspection ALL
 class Settings < Settingslogic
-  source "#{Rails.root}/config/settings.yml"
-  namespace Rails.env
+  source 'config/settings.yml'
+  namespace Application.config.env
 
   def self.can_send_email?(kind)
     if !email_notification.all

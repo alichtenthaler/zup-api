@@ -23,6 +23,8 @@ module Reports
       statement = ''
 
       position_hash.each do |_index, p|
+        latlon = "POINT(#{p[:longitude].to_f} #{p[:latitude].to_f})"
+
         # Distance in meters
         distance = p[:distance].to_i
 
@@ -32,8 +34,8 @@ module Reports
 
         statement += <<-SQL
           ST_DWithin(
-            ST_SetSRID(ST_MakePoint(#{p[:longitude].to_f}, #{p[:latitude].to_f}), 4326)::geography,
-            ST_SetSRID(reports_items.position, 4326), #{distance}
+            ST_GeomFromText('#{latlon}', 4326)::geography,
+            reports_items.position, #{distance}
           )
         SQL
       end

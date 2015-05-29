@@ -10,10 +10,24 @@ module Reports
     end
 
     def process!
-      if item.update(category: new_category)
+      old_category = item.category
+
+      if old_category.id != new_category.id && item.update(category: new_category)
         Reports::UpdateItemStatus.new(item).update_status!(new_status)
+
+        # Forward to default group
+        if new_category.default_solver_group
+          Reports::ForwardToGroup.new(item, user).forward_without_comment!(
+            new_category.default_solver_group
+          )
+        else
+          item.update(assigned_group: nil)
+        end
+
         Reports::CreateHistoryEntry.new(item, user)
-          .create('category', "O relato foi movido para a categoria '#{new_category.title}'", new_category)
+          .create('category', "O relato foi movido da categoria '#{old_category.title}' para '#{new_category.title}'",
+                  old: old_category.entity(only: [:id, :title]),
+                  new: new_category.entity(only: [:id, :title]))
       end
     end
   end

@@ -28,8 +28,8 @@ class Inventory::SearchItems
   end
 
   def search
-    scope = Inventory::Item.includes(:category, :user, data: [{ field: :field_options }, :images, :attachments])
-    permissions = UserAbility.new(user)
+    scope = Inventory::Item.includes(:category, :user)
+    permissions = UserAbility.for_user(user)
 
     if query
       scope = scope.like_search(
@@ -176,11 +176,6 @@ class Inventory::SearchItems
 
       if scope.is_a?(Array)
       end
-
-      scope = Inventory::Item.from("(#{scope.to_sql}) inventory_items").joins(:user)
-                .preload(
-                  :category, user: :groups, data: [field: :field_options]
-                )
 
       if sort == 'title'
         scope = scope.order("title #{order}, sequence #{order}")

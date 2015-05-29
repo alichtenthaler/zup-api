@@ -8,9 +8,9 @@ FactoryGirl.define do
     color '#f2f2f2'
     require_item_status false
 
-    icon { fixture_file_upload(Rails.root.join('spec/fixtures/images/valid_report_category_icon.png')) }
-    marker { fixture_file_upload(Rails.root.join('spec/fixtures/images/valid_report_category_marker.png')) }
-    pin { fixture_file_upload(Rails.root.join('spec/fixtures/images/valid_report_category_marker.png')) }
+    icon { fixture_file_upload("#{Application.config.root}/spec/fixtures/images/valid_report_category_icon.png") }
+    marker { fixture_file_upload("#{Application.config.root}/spec/fixtures/images/valid_report_category_marker.png") }
+    pin { fixture_file_upload("#{Application.config.root}/spec/fixtures/images/valid_report_category_marker.png") }
 
     after(:create) do |category, _|
       Group.guest.each do |group|

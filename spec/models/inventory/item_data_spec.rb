@@ -1,4 +1,4 @@
-require 'rails_helper'
+require 'app_helper'
 
 describe Inventory::ItemData do
   context 'with field type of checkbox' do

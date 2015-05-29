@@ -19,13 +19,11 @@ module Groups
               objects_permissions[object_id] ||= []
               objects_permissions[object_id] << name
             end
-          else
-            if permissions.send(name)
-              data << {
-                permission_type: permission_type,
-                permission_names: name
-              }
-            end
+          elsif permissions.send(name)
+            data << {
+              permission_type: permission_type,
+              permission_names: name
+            }
           end
         end
 
@@ -39,7 +37,7 @@ module Groups
               data << {
                 permission_type: permission_type,
                 object: klass::Entity.represent(object),
-                permission_names: names
+                permission_names: names.uniq
               }
             end
           end

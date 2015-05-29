@@ -2,7 +2,7 @@ module Reports
   class GetCommentsForUser
     attr_reader :item, :user
 
-    def initialize(item, user)
+    def initialize(item, user = nil)
       @item, @user = item, user
     end
 
@@ -14,11 +14,11 @@ module Reports
     private
 
     def visibility
-      user_permissions = UserAbility.new(user)
+      user_permissions = UserAbility.for_user(user)
 
       if user_permissions.can?(:view_private, item) || user_permissions.can?(:edit, item)
         Reports::Comment::INTERNAL
-      elsif user.id == item.user_id || user_permissions.can?(:edit, item)
+      elsif user && (user.id == item.user_id || user_permissions.can?(:edit, item))
         Reports::Comment::PRIVATE
       else
         Reports::Comment::PUBLIC

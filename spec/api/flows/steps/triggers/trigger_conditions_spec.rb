@@ -1,4 +1,4 @@
-require 'rails_helper'
+require 'app_helper'
 
 describe Flows::Steps::Triggers::TriggerConditions::API do
   let(:user)       { create(:user) }

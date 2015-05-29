@@ -18,8 +18,8 @@ module Reports::Stats
 
       stats = Reports::GetStats.new(
         category_ids,
-                  begin_date: safe_params[:begin_date],
-          end_date:   safe_params[:end_date]
+        begin_date: safe_params[:begin_date],
+        end_date:   safe_params[:end_date]
       ).fetch
 
       {

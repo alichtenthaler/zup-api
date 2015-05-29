@@ -1,5 +1,3 @@
-require 'resolution_state'
-
 class Flow < ActiveRecord::Base
   attr_accessor :user
   has_paper_trail only: :just_with_build!, on: :update

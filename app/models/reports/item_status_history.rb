@@ -9,10 +9,18 @@ class Reports::ItemStatusHistory < Reports::Base
   default_scope { order('id ASC') }
   scope :all_public, -> { joins(:new_status).where(new_status: { private: false }) }
 
+  def previous_status_for_category
+    previous_status.for_category(item.category) if previous_status
+  end
+
+  def new_status_for_category
+    new_status.for_category(item.category) if new_status
+  end
+
   class Entity < Grape::Entity
     expose :id
-    expose :previous_status, using: Reports::Status::Entity
-    expose :new_status, using: Reports::Status::Entity
+    expose :previous_status_for_category, as: :previous_status, using: Reports::StatusCategory::Entity
+    expose :new_status_for_category, as: :new_status, using: Reports::StatusCategory::Entity
     expose :created_at
     expose :updated_at
   end

@@ -45,12 +45,27 @@ module Reports::Comments
         comment.save!
 
         unless comment.visibility == Reports::Comment::INTERNAL
-          Reports::NotifyUser.new(report).notify_new_comment!
+          Reports::NotifyUser.new(report).notify_new_comment!(comment)
         end
+
+        create_history = Reports::CreateHistoryEntry.new(report, current_user)
+        create_history.create('comment',
+                              "Inseriu um comentário #{translated_visibility(comment.visibility)}",
+                              new: comment.entity(only: [:id, :message, :visibility]))
 
         {
           comment: Reports::Comment::Entity.represent(comment)
         }
+      end
+    end
+
+    helpers do
+      def translated_visibility(visibility)
+        {
+          Reports::Comment::INTERNAL => 'interno',
+          Reports::Comment::PUBLIC   => 'público',
+          Reports::Comment::PRIVATE  => 'privado'
+        }[visibility]
       end
     end
   end

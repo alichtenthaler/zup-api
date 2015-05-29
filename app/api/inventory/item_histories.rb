@@ -31,7 +31,7 @@ module Inventory::ItemHistories
           results = Inventory::SearchHistoryEntries.new(search_params).search
 
           {
-            histories: Inventory::ItemHistory::Entity.represent(results)
+            histories: Inventory::ItemHistory::Entity.represent(results, only: return_fields)
           }
         end
       end

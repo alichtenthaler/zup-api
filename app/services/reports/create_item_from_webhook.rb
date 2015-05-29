@@ -72,6 +72,7 @@ module Reports
         address_additional: user[:address_additional],
         postal_code: user[:postal_code],
         district: user[:district],
+        ignore_password_requirement: true,
         from_webhook: true
       }
 

@@ -178,6 +178,67 @@ describe Search::Reports::Items::API do
       end
     end
 
+    context 'by reporters' do
+      context 'only one reporter' do
+        let(:reporter) { create(:user) }
+        let!(:items) do
+          create_list(:reports_item, 3, category: category, reporter: reporter)
+        end
+        let!(:wrong_items) do
+          create_list(:reports_item, 3, category: category)
+        end
+        let(:valid_params) do
+          Oj.load <<-JSON
+          {
+            "reporters_ids": #{reporter.id}
+          }
+          JSON
+        end
+
+        it 'returns the correct items from the correct user' do
+          get '/search/reports/items', valid_params, auth(user)
+
+          returned_ids = parsed_body['reports'].map do |r|
+            r['id']
+          end
+
+          expect(returned_ids).to match_array(items.map(&:id))
+          expect(returned_ids).to_not match_array(wrong_items.map(&:id))
+        end
+      end
+
+      context 'by multiple reporters' do
+        let(:reporter) { create(:user) }
+        let(:reporter2) { create(:user) }
+        let!(:items) do
+          other_category = create(:reports_category_with_statuses)
+          create_list(:reports_item, 3, category: category, reporter: reporter) +
+            create_list(:reports_item, 3, category: other_category, reporter: reporter2)
+        end
+        let!(:wrong_items) do
+          create_list(:reports_item, 3, category: category)
+        end
+        let(:valid_params) do
+          Oj.load <<-JSON
+          {
+            "reporters_ids": "#{reporter.id},#{reporter2.id}"
+          }
+          JSON
+        end
+
+        it 'returns the correct items from the correct user' do
+          get '/search/reports/items', valid_params, auth(user)
+
+          returned_ids = parsed_body['reports'].map do |r|
+            r['id']
+          end
+
+          expect(returned_ids).to match_array(items.map(&:id))
+          expect(returned_ids).to_not match_array(wrong_items.map(&:id))
+        end
+      end
+    end
+
     context 'by statuses' do
       let!(:items) do
         create_list(:reports_item, 3, category: category)
@@ -257,7 +318,7 @@ describe Search::Reports::Items::API do
 
     context 'by query' do
       let!(:items) do
-        create_list(:reports_item, 10, category: category)
+        create_list(:reports_item, 5, category: category)
       end
       let!(:correct_items) do
         user = create(:user, name: 'crazybar')
@@ -280,6 +341,39 @@ describe Search::Reports::Items::API do
       end
 
       it 'returns the correct items with the correct address' do
+        get '/search/reports/items', valid_params, auth(user)
+        expect(parsed_body['reports'].map do |r|
+          r['id']
+        end).to match_array(correct_items.map(&:id))
+      end
+    end
+
+    context 'by user document' do
+      let!(:items) do
+        create_list(:reports_item, 5, category: category)
+      end
+      let!(:correct_items) do
+        user = create(:user, document: '123456789')
+        item = items.sample
+        items.delete(item)
+        item.update(user_id: user.id)
+
+        item2 = items.sample
+        items.delete(item2)
+        user2 = create(:user, document: '12123456')
+        item2.update(user_id: user2.id)
+
+        [item, item2]
+      end
+      let(:valid_params) do
+        Oj.load <<-JSON
+          {
+            "user_document": "1234"
+          }
+        JSON
+      end
+
+      it 'returns the correct items with the correct document' do
         get '/search/reports/items', valid_params, auth(user)
         expect(parsed_body['reports'].map do |r|
           r['id']
@@ -343,7 +437,7 @@ describe Search::Reports::Items::API do
               "distance": 1000
             },
             "clusterize": true,
-            "zoom": 13
+            "zoom": 1
           }
         JSON
       end
@@ -367,7 +461,7 @@ describe Search::Reports::Items::API do
 
         expect(cluster['position']).to_not be_empty
         expect(cluster['count']).to eq(3)
-        expect(cluster['category_id']).to be_present
+        expect(cluster['categories_ids']).to be_present
       end
     end
 

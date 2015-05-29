@@ -1,4 +1,4 @@
-require 'rails_helper'
+require 'app_helper'
 
 describe Groups::Permissions::API do
   let(:user) { create(:user) }

@@ -31,7 +31,8 @@ class GroupPermission < ActiveRecord::Base
     group: {
       'group_edit' => Array,
       'group_read_only' => Array,
-      'groups_full_access' => Boolean
+      'groups_full_access' => Boolean,
+      'users_edit' => Array
     },
 
     other: {
@@ -73,6 +74,7 @@ class GroupPermission < ActiveRecord::Base
       panel_access
       create_reports_from_panel
       users_full_access
+      users_edit
       groups_full_access
       reports_full_access
       inventories_full_access

@@ -1,4 +1,4 @@
-require 'rails_helper'
+require 'app_helper'
 
 describe Inventory::Section do
   context 'validations' do

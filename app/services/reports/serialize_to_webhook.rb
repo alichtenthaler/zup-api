@@ -25,11 +25,18 @@ module Reports
         is_solicitation: solicitation?,
         description: report.description,
         address: report.address,
+        number: report.number,
+        district: report.district,
+        postal_code: report.postal_code,
+        city: report.city,
+        state: report.state,
+        country: report.country,
         reference: report.reference,
-        images: report.images,
+        images: serialize_images(report.images),
         user: build_user_data(report.user),
         uuid: report.uuid,
-        external_category_id: external_category_id
+        external_category_id: external_category_id,
+        protocol: report.protocol
       )
     end
 
@@ -75,6 +82,17 @@ module Reports
 
     def solicitation?
       Webhook.solicitation?(report.category)
+    end
+
+    def serialize_images(images)
+      images.map do |image|
+        if image.image && image.image.respond_to?(:read)
+          {
+            data: Base64.encode64(image.image.read),
+            :'mime-type' => 'image/png'
+          }
+        end
+      end
     end
   end
 end

@@ -296,7 +296,7 @@ describe Search::Inventory::Items::API do
 
         expect(cluster['position']).to_not be_empty
         expect(cluster['count']).to eq(3)
-        expect(cluster['category_id']).to be_present
+        expect(cluster['categories_ids']).to be_present
       end
     end
 

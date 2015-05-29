@@ -1,4 +1,4 @@
-require 'rails_helper'
+require 'app_helper'
 
 describe Reports::CreateItemFromWebhook do
   let!(:category) { create(:reports_category_with_statuses, title: 'Solicitação/colocação de contêineres') }
@@ -7,7 +7,7 @@ describe Reports::CreateItemFromWebhook do
 
   context '#create!' do
     let(:encoded_image) do
-      Base64.encode64(fixture_file_upload('images/valid_report_item_photo.jpg').read).force_encoding(Encoding::UTF_8)
+      Base64.encode64(fixture_file_upload("#{Application.config.root}/spec/fixtures/images/valid_report_item_photo.jpg").read).force_encoding(Encoding::UTF_8)
     end
     let(:valid_params) do
       {

@@ -1,7 +1,7 @@
 class Reports::ItemHistory < Reports::Base
   include ArrayRelate
 
-  KINDS = %w(address description status category forward user_assign overdue)
+  KINDS = %w(attributes address description status category forward user_assign overdue comment creation)
 
   belongs_to :item, class_name: 'Reports::Item', foreign_key: 'reports_item_id'
   belongs_to :user
@@ -18,15 +18,7 @@ class Reports::ItemHistory < Reports::Base
     expose :user, using: User::Entity
     expose :kind
     expose :action
-    expose :objects
+    expose :saved_changes, as: :changes
     expose :created_at
-
-    def objects
-      if object.objects.any?
-        object.object_entity_class.represent(object.objects)
-      else
-        []
-      end
-    end
   end
 end

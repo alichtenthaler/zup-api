@@ -113,6 +113,7 @@ describe Users::API do
           "address": "Rua Abilio Soares, 140",
           "postal_code": "04005000",
           "district": "Paraiso",
+          "city": "São Paulo",
           "facebook_user_id": 12345678,
           "device_token": "#{SecureRandom.hex}",
           "device_type": "ios"
@@ -160,6 +161,22 @@ describe Users::API do
         last_user = User.last
 
         expect(last_user.groups).to eq(groups)
+      end
+    end
+
+    context 'API generating the password' do
+      before do
+        valid_params.delete('password')
+        valid_params.delete('password_confirmation')
+        valid_params['generate_password'] = true
+      end
+
+      it "doesn't throw error for missing password fields" do
+        post '/users', valid_params
+        expect(response.status).to eq(201)
+        last_user = User.last
+
+        expect(last_user.encrypted_password).to_not be_blank
       end
     end
   end

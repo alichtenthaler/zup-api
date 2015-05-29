@@ -9,6 +9,8 @@ module Reports
     end
 
     def set_status(new_status)
+      return false if new_status.id == item.status.try(:id)
+
       validate_status_belonging!(new_status)
       set_status_history_update(new_status)
 
@@ -16,11 +18,18 @@ module Reports
     end
 
     def update_status!(new_status)
+      return false if new_status.id == item.status.try(:id)
+
+      old_status = item.status
       set_status(new_status)
 
       item.save!
+
       Reports::CreateHistoryEntry.new(item, user)
-                                 .create('status', 'Status foi alterado', new_status)
+        .create('status', "Foi alterado do status '#{old_status.title}' para '#{new_status.title}'",
+                old: old_status.entity(only: [:id, :title]),
+                new: new_status.entity(only: [:id, :title])
+        )
 
       Reports::NotifyUser.new(item).notify_status_update!(new_status)
     end

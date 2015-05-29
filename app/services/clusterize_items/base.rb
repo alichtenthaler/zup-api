@@ -28,13 +28,16 @@ module ClusterizeItems
 
       entities.each do |entity|
         if entity.number_of_items > 1
-          data[:clusters] << ClusterizeItems::Cluster.new(
-            category_id: entity.send(category_attribute),
+          cluster = ClusterizeItems::Cluster.new(
             center: entity.center,
             count: entity.number_of_items,
             items_ids: entity.items_ids
           )
 
+          cluster.category_id = entity.send(category_attribute.to_sym) if entity.respond_to?(category_attribute.to_sym)
+          cluster.categories_ids = entity.categories_ids if entity.respond_to?(:categories_ids)
+
+          data[:clusters] << cluster
           data[:total] += entity.number_of_items
         else
           items_ids << entity.items_ids[0]
@@ -51,10 +54,30 @@ module ClusterizeItems
 
     def build_sql
       <<-SQL
-        SELECT array_agg(scope.id) as items_ids, #{category_attribute}, ST_Centroid(ST_Collect(ST_SetSRID(scope.position, 4326))) AS center, COUNT(*) AS number_of_items
+        SELECT #{select_statement}
         FROM (#{changed_scope.to_sql}) as scope
-        GROUP BY #{category_attribute}, grid;
+        GROUP BY #{group_by_statement}
       SQL
+    end
+
+    def group_by_statement
+      if zoom.to_i > 12
+        "#{category_attribute}, grid"
+      else
+        'grid'
+      end
+    end
+
+    def select_statement
+      statement = 'array_agg(scope.id) as items_ids, ST_Centroid(ST_Collect(ST_SetSRID(scope.position, 4326))) AS center, COUNT(*) AS number_of_items'
+
+      if zoom.to_i > 12
+        statement = "#{statement}, #{category_attribute}"
+      else
+        statement = "#{statement}, array_agg(scope.#{category_attribute}) as categories_ids"
+      end
+
+      statement
     end
 
     def zoom_to_size
@@ -71,12 +94,12 @@ module ClusterizeItems
         '11' => 0.1,
         '10' => 0.5,
         '9'  => 0.75,
-        '8'  => 0.75,
-        '7'  => 0.75,
-        '6'  => 0.75,
-        '5'  => 0.75,
-        '4'  => 0.75,
-        '3'  => 1,
+        '8'  => 2,
+        '7'  => 2.5,
+        '6'  => 2.75,
+        '5'  => 3,
+        '4'  => 4,
+        '3'  => 5,
         '2'  => 50,
         '1'  => 100,
         '0'  => 1000

@@ -92,14 +92,22 @@ class Inventory::Category < Inventory::Base
       # If user is given, only select sections he has
       # permission to view.
       if options[:user]
-        user_permissions = UserAbility.new(options[:user])
+        user_permissions = UserAbility.for_user(options[:user])
         sections = object.sections.preload(fields: :field_options)
 
         unless user_permissions.can?(:manage, Inventory::Item) || user_permissions.can?(:edit, object)
           sections = sections.where(id: user_permissions.inventory_sections_visible)
         end
 
-        Inventory::Section::Entity.represent(sections, user: options[:user])
+        if options[:only]
+          options[:only] = options[:only].select do |i|
+            i.is_a?(Hash) && i.keys.include?(:sections)
+          end
+
+          options[:only] = options[:only].first[:sections] if options[:only].any?
+        end
+
+        Inventory::Section::Entity.represent(sections, only: options[:only], user: options[:user])
       end
     end
   end

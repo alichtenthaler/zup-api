@@ -10,15 +10,16 @@ module Users
     post :authenticate do
       user = User.authenticate(params[:email], params[:password])
 
-      if params[:device_token] || params[:device_type]
-        user_params = safe_params.permit(:device_token, :device_type)
-        user.update(user_params)
-      end
-
       if user
-        return {
+        if params[:device_token] || params[:device_type]
+          user_params = safe_params.permit(:device_token, :device_type)
+          user.update(user_params)
+        end
+
+        {
           user: User::Entity.represent(
                   user,
+                  only: return_fields,
                   display_type: 'full',
                   display_groups: true
                 ),
@@ -130,6 +131,14 @@ module Users
           search_query = search_query.merge(email: email)
         end
 
+        unless user_permissions.can?(:manage, User) || user_permissions.can?(:manage, Group)
+          if groups_ids && groups_ids.any?
+            groups_ids = (groups_ids & user_permissions.groups_visible)
+          else
+            groups_ids = groups_visible
+          end
+        end
+
         if groups_ids
           users = users.includes(:groups)
                        .references(:groups)
@@ -142,7 +151,7 @@ module Users
 
         {
           users: User::Entity.represent(
-            paginate(users), display_type: 'full'
+            paginate(users.paginate(page: params[:page])), display_type: 'full'
           )
         }
       end
@@ -150,8 +159,9 @@ module Users
       desc 'Create an user'
       params do
         requires :email, type: String, desc: "User's email address used for sign in"
-        requires :password, type: String, desc: "User's password"
-        requires :password_confirmation, type: String, desc: "User's password confirmation"
+        optional :password, type: String, desc: "User's password"
+        optional :password_confirmation, type: String, desc: "User's password confirmation"
+        optional :generate_password, type: Boolean, desc: 'Should the API generate a password for this user?'
 
         requires :name, type: String, desc: "User's name"
         requires :phone, type: String, desc: 'Phone, only numbers'
@@ -160,6 +170,7 @@ module Users
         optional :address_additional, type: String, desc: 'Address complement'
         requires :postal_code, type: String, desc: 'CEP'
         requires :district, type: String, desc: "User's neighborhood"
+        requires :city, type: String, desc: "User's city"
         optional :groups_ids, type: Array, desc: 'User groups'
 
         optional :facebook_user_id, type: Integer, desc: "User's id on facebook"
@@ -179,7 +190,8 @@ module Users
             :address_additional, :postal_code, :district,
             :facebook_user_id, :twitter_user_id,
             :google_plus_user_id, :groups_ids,
-            :device_token, :device_type, :email_notifications
+            :device_token, :device_type, :email_notifications,
+            :city
           )
         )
 
@@ -194,18 +206,23 @@ module Users
           user.groups << guest_group if guest_group
         end
 
+        if params[:generate_password]
+          password = user.generate_random_password!
+          UserMailer.delay.send_user_random_password(user, password)
+        end
+
         user.save!
 
         {
           message: 'Usuário criado com sucesso',
-          user: User::Entity.represent(user, display_type: 'full')
+          user: User::Entity.represent(user, only: return_fields, display_type: 'full')
         }
       end
 
       desc 'Shows user info'
       get ':id' do
         user = User.find(safe_params[:id])
-        { user: User::Entity.represent(user, display_type: 'full', display_groups: true) }
+        { user: User::Entity.represent(user, only: return_fields, display_type: 'full', display_groups: true) }
       end
 
       desc "Update user's info"
@@ -213,6 +230,7 @@ module Users
         optional :current_password, type: String, desc: "Current user's password"
         optional :password, type: String, desc: "User's password"
         optional :password_confirmation, type: String, desc: "User's password confirmation"
+        optional :generate_password, type: Boolean, desc: 'Should the API generate a password for this user?'
 
         optional :name, type: String, desc: "User's name"
         optional :email, type: String, desc: "User's email address"
@@ -222,6 +240,7 @@ module Users
         optional :address_additional, type: String, desc: 'Address complement'
         optional :postal_code, type: String, desc: 'CEP'
         optional :district, type: String, desc: "User's neighborhood"
+        optional :city, type: String, desc: "User's city"
 
         optional :device_token, type: String, desc: 'The device token if registration is from mobile'
         optional :device_type, type: String, desc: 'Could be ios or android'
@@ -237,8 +256,13 @@ module Users
           :email, :current_password, :password,
           :password_confirmation, :name, :phone, :document, :address,
           :address_additional, :postal_code, :district,
-          :device_token, :device_type, :email_notifications
+          :device_token, :device_type, :email_notifications, :city
         )
+
+        if params[:generate_password]
+          password = user.generate_random_password!
+          UserMailer.delay.send_user_random_password(user, password)
+        end
 
         user.update!(user_params.merge(user_changing_password: current_user))
 

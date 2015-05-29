@@ -35,23 +35,31 @@ class Webhook
     'Poda de galhos em áreas públicas' => ['S', 130],
     'Limpeza e capinação' => ['S', 131],
     'Colocação de placas "Proibido jogar lixo e entulho"' => ['S', 132],
-    'Organização e limpeza do local' => ['S', 133]
+    'Organização e limpeza do local' => ['S', 133],
+    'Coleta de lixo Domiciliar' => ['O', 134],
+    'Limpeza Urbana' => ['O', 135],
+    'Coleta Seletiva/PEV' => ['O', 136],
+    'Ecoponto' => ['O', 137]
   }
+
+  def self.find_category_by_title(title)
+    Hash[CATEGORIES_RELATION.map { |k, v| [k.downcase, v] }][title.downcase]
+  end
 
   def self.enabled?
     !url.nil?
   end
 
   def self.external_category_id(category)
-    CATEGORIES_RELATION[category.title][1]
+    find_category_by_title(category.title)[1]
   end
 
   def self.report?(category)
-    CATEGORIES_RELATION[category.title][0] == 'O'
+    find_category_by_title(category.title)[0] == 'O'
   end
 
   def self.solicitation?(category)
-    CATEGORIES_RELATION[category.title][0] == 'S'
+    find_category_by_title(category.title)[0] == 'S'
   end
 
   def self.zup_category(external_category_id)

@@ -1,4 +1,4 @@
-require 'rails_helper'
+require 'app_helper'
 
 def add_permision_to_user(user, ids, permission = 'can_execute_step')
   group   = user.groups.first
@@ -48,14 +48,14 @@ describe Cases::API, versioning: true do
            { id: fields[2].id, value: 'chapolim@chaves.com' },
            { id: fields[3].id, value: [
              { file_name: 'valid_report_item_photo.jpg',
-              content: Base64.encode64(fixture_file_upload('images/valid_report_item_photo.jpg').read) },
+              content: Base64.encode64(fixture_file_upload("#{Application.config.root}/spec/fixtures/images/valid_report_item_photo.jpg").read) },
              { file_name: 'valid_report_item_photo2.jpg',
-              content: Base64.encode64(fixture_file_upload('images/valid_report_item_photo.jpg').read) }
+              content: Base64.encode64(fixture_file_upload("#{Application.config.root}/spec/fixtures/images/valid_report_item_photo.jpg").read) }
            ] },
            { id: fields[4].id, value: [
              {
                file_name: 'valid_report_item_attachement.jpg',
-               content: Base64.encode64(fixture_file_upload('images/valid_report_item_photo.jpg').read)
+               content: Base64.encode64(fixture_file_upload("#{Application.config.root}/spec/fixtures/images/valid_report_item_photo.jpg").read)
              }
            ] },
            { id: fields[5].id, value: [inventory_item.id] },

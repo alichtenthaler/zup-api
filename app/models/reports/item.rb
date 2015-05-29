@@ -31,15 +31,15 @@ class Reports::Item < Reports::Base
                      dependent: :destroy
   has_many :comments, class_name: 'Reports::Comment',
                      foreign_key: :reports_item_id,
-                     counter_cache: :comments_count,
                      dependent: :destroy
 
   before_save :set_initial_status
-  before_validation :get_position_from_inventory_item, :set_uuid
-
-  after_create :generate_protocol
+  before_validation :get_position_from_inventory_item, :set_uuid, :clear_postal_code
 
   validates :description, length: { maximum: 800 }
+  validates :reference, length: { maximum: 255 }, allow_nil: true
+  validates :postal_code, format: { with: /\A[0-9]+\z/ }, allow_nil: true
+
   validate_in_boundary :position
 
   accepts_nested_attributes_for :comments
@@ -112,8 +112,14 @@ class Reports::Item < Reports::Base
         obj.inventory_item.location[:address]
       end
     end
-
+    expose :number
     expose :reference
+    expose :district
+    expose :postal_code
+    expose :city
+    expose :state
+    expose :country
+
     expose :confidential
     expose :comments_count
 
@@ -136,7 +142,9 @@ class Reports::Item < Reports::Base
         obj.category.icon
       end
     end
+
     expose :user, using: User::Entity
+    expose :reporter, using: User::Entity
 
     # With display_type equal to full
     with_options(if: { display_type: 'full' }) do
@@ -166,10 +174,10 @@ class Reports::Item < Reports::Base
 
     def protocol
       user = options[:user]
-      permissions = UserAbility.new(user)
+      permissions = UserAbility.for_user(user)
 
       if permissions.can?(:view_private, object) ||
-          permissions.can?(:edit, object) || user == object.user
+          permissions.can?(:edit, object) || user.try(:id) == object.user_id
         object.protocol
       end
     end
@@ -180,24 +188,6 @@ class Reports::Item < Reports::Base
   end
 
   private
-
-  def generate_protocol
-    if protocol.blank?
-      generated_protocol = id.to_s
-
-      if reports_category_id.present?
-        generated_protocol << reports_category_id.to_s.rjust(5, '0')
-      else
-        generated_protocol << '00000'
-      end
-
-      (16 - generated_protocol.size).times do
-        generated_protocol << rand(10).to_s
-      end
-
-      update(protocol: generated_protocol.to_i)
-    end
-  end
 
   def get_position_from_inventory_item
     if inventory_item.present? &&
@@ -217,5 +207,9 @@ class Reports::Item < Reports::Base
   # Set uuid
   def set_uuid
     self.uuid = SecureRandom.uuid if uuid.nil?
+  end
+
+  def clear_postal_code
+    self.postal_code = postal_code.gsub(/[^0-9]*/, '') if postal_code
   end
 end

@@ -1,5 +1,4 @@
 require 'csv'
-require 'mapquest'
 
 module Inventory
   class ImportFromCSVRow

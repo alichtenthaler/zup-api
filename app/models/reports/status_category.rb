@@ -16,7 +16,7 @@ class Reports::StatusCategory < Reports::Base
   validates :active, inclusion: { in: [false, true] }
   validates :private, inclusion: { in: [false, true] }
   validates :status, uniqueness: { scope: [:reports_category_id] }
-  validates :color, css_hex_color: true
+  validates :color, presence: true, css_hex_color: true
 
   scope :final, -> { where(final: true) }
   scope :initial, -> { where(initial: true) }

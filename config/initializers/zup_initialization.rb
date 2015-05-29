@@ -24,4 +24,4 @@ module Zup
   end
 end
 
-Zup::Initialization.assert_required_environment_variables! unless Rails.env.test? || File.basename($0) == 'rake'
+Zup::Initialization.assert_required_environment_variables! unless Application.config.env.test? || File.basename($0) == 'rake'

@@ -17,6 +17,12 @@ module Reports::Items
                desc: 'The complete address for this report.'
       optional :reference, type: String,
                desc: 'The reference for the address'
+      optional :district, type: String
+      optional :number, type: String
+      optional :postal_code, type: String
+      optional :city, type: String
+      optional :state, type: String
+      optional :country, type: String
       optional :images, type: Array,
                desc: 'An array of images(post data or encoded on base64) for this report.'
       optional :status_id, type: Integer,
@@ -32,7 +38,10 @@ module Reports::Items
       authenticate!
       category = Reports::Category.find(params[:category_id])
 
-      report_params = safe_params.permit(:description, :address, :reference, :confidential)
+      report_params = safe_params.permit(
+        :description, :address, :reference, :confidential, :district,
+        :number, :postal_code, :city, :state, :country
+      )
 
       Reports::Item.transaction do
         if params[:user_id]
@@ -76,7 +85,7 @@ module Reports::Items
 
         # Forward to default group
         if category.default_solver_group
-          Reports::ForwardToGroup.new(report, current_user).forward_without_comment!(
+          Reports::ForwardToGroup.new(report).forward_without_comment!(
             category.default_solver_group
           )
         end
@@ -89,7 +98,17 @@ module Reports::Items
           SendReportThroughWebhook.perform_async(report.id)
         end
 
-        { report: Reports::Item::Entity.represent(report, display_type: 'full', user: current_user, only: return_fields) }
+        Reports::CreateHistoryEntry.new(report, current_user)
+                                   .create('creation',
+                                           "Relato criado por #{current_user.name} no estado #{report.status.title}",
+                                           new: report.status.entity(only: [:id, :title]))
+
+        {
+          report: Reports::Item::Entity.represent(report.reload,
+                                                  display_type: 'full',
+                                                  user: current_user,
+                                                  only: return_fields)
+        }
       end
     end
 
@@ -109,6 +128,12 @@ module Reports::Items
                desc: 'The complete address for this report.'
       optional :reference, type: String,
                desc: 'The reference for the address'
+      optional :district, type: String
+      optional :number, type: String
+      optional :postal_code, type: String
+      optional :city, type: String
+      optional :state, type: String
+      optional :country, type: String
       optional :status_id, type: String,
                desc: 'The new status of the item'
       optional :images, type: Array,
@@ -125,7 +150,10 @@ module Reports::Items
       validate_permission!(:edit, report)
 
       Reports::Item.transaction do
-        report_params = safe_params.permit(:description, :address, :reference, :confidential)
+        report_params = safe_params.permit(
+          :description, :address, :reference, :confidential, :district,
+          :number, :postal_code, :city, :state, :country
+        )
 
         if safe_params[:category_id].present?
           new_category = Reports::Category.find(safe_params[:category_id])
@@ -158,18 +186,13 @@ module Reports::Items
         create_history = Reports::CreateHistoryEntry.new(report, current_user)
 
         # Save history data
-        if report.previous_changes[:address]
-          create_history.create('address',
-            "Endereço foi alterado de '#{report.previous_changes[:address][0]}' para '#{report.previous_changes[:address][1]}'")
-        end
-
-        if report.previous_changes[:description]
-          create_history.create('description', 'Descrição foi alterada')
+        if report.previous_changes[:address] || report.previous_changes[:description]
+          create_history.detect_changes_and_create!([:address, :description])
         end
 
         {
           report: Reports::Item::Entity.represent(
-            report, display_type: 'full', user: current_user
+            report, display_type: 'full', user: current_user, only: return_fields
           )
         }
       end
@@ -199,7 +222,7 @@ module Reports::Items
 
       {
         report: Reports::Item::Entity.represent(
-          item, display_type: 'full', user: current_user
+          item, display_type: 'full', user: current_user, only: return_fields
         )
       }
     end
@@ -227,7 +250,7 @@ module Reports::Items
 
       {
         report: Reports::Item::Entity.represent(
-          item, display_type: 'full', user: current_user
+          item, display_type: 'full', user: current_user, only: return_fields
         )
       }
     end
@@ -251,7 +274,7 @@ module Reports::Items
 
       {
         report: Reports::Item::Entity.represent(
-          item, display_type: 'full', user: current_user
+          item, display_type: 'full', user: current_user, only: return_fields
         )
       }
     end
@@ -284,9 +307,11 @@ module Reports::Items
         service.create_comment!(comment, comment_visibility)
       end
 
+      options = { display_type: 'full', user: current_user, only: return_fields }
+      options[:display_type] = 'full' unless params[:return_only]
       {
         report: Reports::Item::Entity.represent(
-          item, display_type: 'full', user: current_user
+          item, options
         )
       }
     end

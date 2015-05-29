@@ -1,5 +1,3 @@
-require 'grape/validators/category_status'
-
 module Reports::Categories
   class API < Grape::API
     resource :categories do
@@ -118,28 +116,37 @@ module Reports::Categories
                  desc: 'Return subcategories with categories'
       end
       get do
-        display_type = params[:display_type].to_sym if params[:display_type]
-        subcategories_flat = params[:subcategories_flat]
-
-        include_args = [:inventory_categories, :statuses, subcategories: [:inventory_categories, :statuses, :subcategories]]
-
-        categories_scope = Reports::Category.active
-        categories_scope = categories_scope.main unless subcategories_flat
-        categories_scope = categories_scope.includes(*include_args)
-
-        permissions = UserAbility.new(current_user)
+        permissions = UserAbility.for_user(current_user)
 
         unless permissions.can?(:manage, Reports::Category)
-          categories_scope = categories_scope.where(id: permissions.reports_categories_visible)
+          params[:categories_visible] = permissions.reports_categories_visible
         end
 
-        {
-          categories: Reports::Category::Entity.represent(
-            categories_scope,
-            only: return_fields,
-            display_type: display_type
-          )
-        }
+        garner.bind(
+          CustomCacheControl.new(Reports::Category, current_user, params)
+        ).options(expires_in: 1.day) do
+          display_type = params[:display_type].to_sym if params[:display_type]
+          subcategories_flat = params[:subcategories_flat]
+
+          include_args = [:inventory_categories, :statuses, subcategories: [:inventory_categories, :statuses, :subcategories]]
+
+          categories_scope = Reports::Category.active
+          categories_scope = categories_scope.main unless subcategories_flat
+          categories_scope = categories_scope.includes(*include_args)
+
+          if params[:categories_visible]
+            categories_scope = categories_scope.where(id: params[:categories_visible])
+          end
+
+          {
+            categories: Reports::Category::Entity.represent(
+              categories_scope,
+              only: return_fields,
+              display_type: display_type,
+              user: current_user
+            )
+          }.as_json
+        end
       end
 
       desc 'Updates a report category'

@@ -52,8 +52,8 @@ class IconUploader < CarrierWave::Uploader::Base
   end
 
   def store_dir
-    if Rails.env.test?
-      "uploads/#{Rails.env}/#{model.class.name.downcase.gsub("::", "/")}/#{model.id}/icons/"
+    if Application.config.env.test?
+      "uploads/test/#{model.class.name.downcase.gsub("::", "/")}/#{model.id}/icons/"
     else
       "uploads/#{model.class.name.downcase.gsub("::", "/")}/#{model.id}/icons/"
     end
@@ -85,7 +85,7 @@ class IconUploader < CarrierWave::Uploader::Base
         img.fill icon_color
       end
 
-      base_image = MiniMagick::Image.open(Rails.root.join(BASE_FILE))
+      base_image = MiniMagick::Image.open(File.join(Application.config.root, BASE_FILE))
 
       base_image.format 'png'
 

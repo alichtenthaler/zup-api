@@ -1,4 +1,4 @@
-require 'rails_helper'
+require 'app_helper'
 
 describe Field do
   describe 'validates' do

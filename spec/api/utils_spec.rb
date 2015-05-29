@@ -1,4 +1,4 @@
-require 'rails_helper'
+require 'app_helper'
 
 describe Utils::API do
   describe 'GET /utils/city-boundary/validate' do

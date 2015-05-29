@@ -1,8 +1,11 @@
 class Group < ActiveRecord::Base
-  has_and_belongs_to_many :users
+  include MemoryCache
+  include LikeSearchable
+
+  has_and_belongs_to_many :users, uniq: true
   has_one :permission, class_name: 'GroupPermission', autosave: true
 
-  validates :name, presence: true
+  validates :name, presence: true, uniqueness: true
   validates :guest, inclusion: { in: [true, false] }
 
   before_validation :set_default_attributes
@@ -60,4 +63,6 @@ class Group < ActiveRecord::Base
     self.guest = false if guest.nil?
     build_permission unless permission.present?
   end
+
+  enable_memory_cache ignore_assoc_table: [:group_users, :users]
 end

@@ -1,5 +1,27 @@
 # CHANGELOG
 
+## v1.5.1-p0
+* Melhorias no cadastro do usuário: usuário pode ter a senha gerada posterior ao cadastro
+* Melhorias no protocolo do relato: mudança no formato
+* Adicionado serviço para Geocoding usando Google Maps
+* Adicionados novos campos de endereço para relato
+* Adicionado campo cidade para o usuário
+* Melhoria na expiração de tokens de acesso
+* Melhorias de performance no endpoint de relato de histórico
+* Melhoria na customização dos emails enviados pela API
+* Melhoria na estrutura de status de relato
+* Melhoria na integração com webhook
+* Integração com Appsignal para monitoramento de performance
+* Melhorias nos retornos de erros
+* Correções nas permissões
+
+## v1.5.0-p0
+* Refinamento na clusterização de relatos e inventário
+* Otimizações de performance
+* Removida stack do Rails e dependências desnecessárias
+* Correções nos status de relatos
+* Correções nos históricos de relatos
+
 ## v1.4.2-p25
 * Correção na integração usando Webhooks
 * Correção na manipulação de status de relatos

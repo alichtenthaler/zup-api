@@ -2,7 +2,10 @@ ruby '2.2.1'
 
 source 'https://rubygems.org'
 
-gem 'rails', '4.1.9'
+gem 'activerecord', '4.1.10'
+gem 'activesupport', '4.1.10'
+gem 'actionmailer', '4.1.10'
+gem 'actionpack', '4.1.10'
 gem 'pg'
 gem 'rgeo', '0.3.20'
 gem 'rgeo-shapefile'
@@ -11,9 +14,8 @@ gem 'bcrypt', '~> 3.1.7'
 gem 'grape', '~> 0.11.0'
 gem 'grape-entity', github: 'intridea/grape-entity', ref: '48e5be7df9e362edc452332375e9397b12abdd45'
 gem 'grape-swagger', '~> 0.7.2'
-gem 'grape-swagger-rails', '~> 0.0.10', github: 'BrandyMint/grape-swagger-rails', ref: '121765deb29f1e2ab3e37c68ca7ff226c003eb13'
 gem 'cancancan', '~> 1.10'
-gem 'textacular', '~> 3.0', require: 'textacular/rails'
+gem 'textacular', '~> 3.0'
 gem 'omniauth'
 gem 'omniauth-twitter'
 gem 'omniauth-facebook'
@@ -23,8 +25,8 @@ gem 'carrierwave', '~> 0.9.0', git: 'https://github.com/carrierwaveuploader/carr
 gem 'fog', '~> 1.28.0'
 gem 'rack-cors', require: 'rack/cors'
 gem 'squeel'
-gem 'will_paginate'
-gem 'api-pagination'
+gem 'will_paginate', require: false
+gem 'api-pagination', require: false
 gem 'mini_magick'
 gem 'settingslogic'
 gem 'sidekiq'
@@ -42,38 +44,36 @@ gem 'ruby-progressbar', require: false
 gem 'sentry-raven', require: false
 gem 'foreman', require: false
 gem 'minitest'
-gem 'spring'
-gem 'dotenv-rails'
-gem 'newrelic_rpm'
-
-group :production do
-  gem 'rails_12factor'
-  gem 'passenger'
-  gem 'sass-rails', '~> 4.0.0'
-  gem 'uglifier', '>= 1.3.0'
-  gem 'coffee-rails', '~> 4.0.0'
-  gem 'jquery-rails'
-end
+gem 'dotenv'
+gem 'appsignal'
+gem 'grape-appsignal', github: 'madglory/grape-appsignal'
+gem 'grape_logging'
+gem 'require_all'
+gem 'redis-activesupport'
+gem 'redlock'
+gem 'geocoder'
 
 group :development, :test, :production do
-  gem 'factory_girl_rails', '~> 4.3.0', require: false
+  gem 'factory_girl', '~> 4.3.0', require: false
   gem 'ffaker', require: false
   gem 'cpf_faker', require: false
 end
 
 group :development, :test do
-  gem 'rspec-rails', '~> 3.2.1'
+  gem 'rspec', '~> 3.2.0'
   gem 'awesome_print'
   gem 'pry-byebug', '1.3.3'
   gem 'pry-remote'
 end
 
 group :profile do
-  gem 'ruby-prof'
+  gem 'stackprof'
 end
 
 group :development do
   gem 'foreman'
+  gem 'thin'
+  gem 'passenger'
 end
 
 group :test do

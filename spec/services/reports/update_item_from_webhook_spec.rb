@@ -1,4 +1,4 @@
-require 'rails_helper'
+require 'app_helper'
 
 describe Reports::UpdateItemFromWebhook do
   let!(:report) { create(:reports_item) }

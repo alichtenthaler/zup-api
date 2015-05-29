@@ -5,7 +5,8 @@ class ZupMailer < ActionMailer::Base
   before_action :validate_email
   sender_email = ENV['SENDER_EMAIL'] || 'suporte@zeladoriaurbana.com.br'
   sender_name = ENV['SENDER_NAME'] || 'Suporte ZUP'
-  default from: "#{sender_name} <#{sender_email}>"
+  default from: "#{sender_name} <#{sender_email}>",
+          content_type: 'text/html'
 
   # Disables email deliver if the
   # option is false

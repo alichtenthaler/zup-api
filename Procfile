@@ -1,2 +1,2 @@
-web: bundle exec passenger start -p 80 --nginx-config-template config/nginx.conf.erb
-worker: bundle exec sidekiq
+web: /usr/sbin/nginx -c /etc/nginx/nginx.conf
+worker: bundle exec sidekiq -r ./application.rb

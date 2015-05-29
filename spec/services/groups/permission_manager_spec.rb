@@ -1,4 +1,4 @@
-require 'rails_helper'
+require 'app_helper'
 
 describe Groups::PermissionManager do
   let!(:group) { create(:group) }
@@ -59,7 +59,7 @@ describe Groups::PermissionManager do
     let(:inventory_category) { create(:inventory_category) }
     before do
       group.permission.update(
-        inventories_items_edit: [inventory_category.id],
+        inventories_items_edit: [inventory_category.id, inventory_category.id],
         inventories_items_read_only: [inventory_category.id],
         reports_full_access: true
       )

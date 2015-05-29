@@ -15,14 +15,21 @@ class UserMailer < ZupMailer
   def send_password_recovery_instructions(user)
     @user = user
     @token = user.reset_password_token
-    mail to: user.email, subject: 'Pedido de Recuperação de Senha'
+    mail to: user.email, subject: 'Pedido de Recuperação de Senha', content_type: 'text/html'
+  end
+
+  def send_user_random_password(user, password)
+    @user = user
+    @password = password
+
+    mail to: user.email, subject: 'Você está cadastrado', content_type: 'text/html'
   end
 
   # Send email to user when it creates a report
   def notify_report_creation(report)
     @report = report
     @user = report.user
-    mail to: @user.email, subject: 'Recebemos sua solicitação'
+    mail to: @user.email, subject: 'Recebemos sua solicitação', content_type: 'text/html'
   end
 
   # If the status of a report changes, send e-mail
@@ -31,6 +38,15 @@ class UserMailer < ZupMailer
     @user = report.user
     status = report.status.title
 
-    mail to: @user.email, subject: "O status da sua solicitação foi alterado para '#{status}'"
+    mail to: @user.email, subject: "O status da sua solicitação foi alterado para '#{status}'", content_type: 'text/html'
+  end
+
+  # When some comment is added
+  def notify_report_comment(report, comment)
+    @report = report
+    @user = report.user
+    @comment = comment
+
+    mail to: @user.email, subject: 'Um novo comentário foi feito na sua solicitação', content_type: 'text/html'
   end
 end

@@ -7,7 +7,8 @@ class Reports::SearchItems
               :order, :paginator, :page,
               :per_page, :address, :query,
               :signed_user, :overdue, :clusterize, :zoom,
-              :assigned_to_my_group, :assigned_to_me
+              :assigned_to_my_group, :assigned_to_me, :reporter,
+              :user_document
 
   def initialize(user, opts = {})
     @position_params = opts[:position]
@@ -32,6 +33,8 @@ class Reports::SearchItems
     @zoom            = opts[:zoom]
     @assigned_to_my_group = opts[:assigned_to_my_group]
     @assigned_to_me  = opts[:assigned_to_me]
+    @reporter        = opts[:reporter]
+    @user_document   = opts[:user_document]
   end
 
   def search
@@ -39,7 +42,7 @@ class Reports::SearchItems
       :images, :comments, :category, :inventory_item, user: :groups
     )
 
-    permissions = UserAbility.new(signed_user)
+    permissions = UserAbility.for_user(signed_user)
 
     if inventory_item
       scope = scope.where(inventory_item_id: inventory_item.id)
@@ -62,6 +65,12 @@ class Reports::SearchItems
       )
     end
 
+    if user_document
+      scope = scope.joins(:user).like_search(
+        'users.document' => user_document
+      )
+    end
+
     if user
       if user.is_a?(Array)
         users_ids = user.map { |u| u.id }
@@ -70,6 +79,16 @@ class Reports::SearchItems
       end
 
       scope = scope.where(user_id: users_ids)
+    end
+
+    if reporter
+      if reporter.is_a?(Array)
+        reporters_ids = reporter.map { |r| r.id }
+      elsif reporter.is_a?(User)
+        reporters_ids = reporter.id
+      end
+
+      scope = scope.where(reporter_id: reporters_ids)
     end
 
     if category
@@ -81,7 +100,7 @@ class Reports::SearchItems
     end
 
     if !permissions.can?(:manage, Reports::Category)
-      categories_user_can_see = permissions.reports_categories_visible
+      categories_user_can_see = permissions.reports_categories_visible_for_items
 
       if categories_ids.any?
         categories_ids = categories_user_can_see & categories_ids

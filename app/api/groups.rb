@@ -35,19 +35,23 @@ module Groups
           current_user.permissions.inventories_categories_edit.any? ||
           current_user.permissions.reports_categories_edit.any? ||
           current_user.permissions.reports_items_forward.any? ||
+          current_user.permissions.reports_items_edit.any? ||
           current_user.permissions.inventories_full_access ||
           current_user.permissions.reports_full_access
           groups = groups.where(groups: { id: user_permissions.groups_visible })
         end
 
         unless search_query.blank?
-          groups = groups.advanced_search(search_query, false)
+          groups = groups.fuzzy_search(search_query, false)
         end
+
+        options = { display_users: safe_params[:display_users], only: return_fields }
+        options[:display_type] = 'full' unless params[:return_only]
 
         {
           groups: Group::Entity.represent(
             groups,
-            display_users: safe_params[:display_users]
+            options
           )
         }
       end

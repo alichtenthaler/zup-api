@@ -1,5 +1,5 @@
 # encoding: utf-8
-require 'rails_helper'
+require 'app_helper'
 
 describe Inventory::Category do
   context 'validations' do

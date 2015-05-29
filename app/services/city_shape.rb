@@ -5,8 +5,6 @@ class CityShape
 
   class << self
     def load(file, geocode)
-      log.info "Loading shape file '#{File.basename(file)}' with code '#{geocode}'..."
-
       @@geocode = geocode
       @@shape = find_shape(file)
     end
@@ -36,10 +34,6 @@ class CityShape
       fail "Geocode specified in CD_GEOCDM was not found: #{geocode}" unless found_file
 
       found_file
-    end
-
-    def log
-      Rails.logger
     end
   end
 end

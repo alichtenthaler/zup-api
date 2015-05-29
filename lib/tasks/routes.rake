@@ -1,6 +1,6 @@
 namespace :api do
   desc 'Grape routes'
-  task routes: :environment do
+  task :routes do
     ZUP::API.routes.each do |api|
       method = api.route_method.ljust(10)
       path = api.route_path

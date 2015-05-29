@@ -1,4 +1,4 @@
-require 'rails_helper'
+require 'app_helper'
 
 describe User do
   it 'validates basic login fields' do
@@ -32,6 +32,23 @@ describe User do
         user.password = user.password_confirmation = '12345'
         expect(user).to_not be_valid
         expect(user.errors).to include(:password)
+      end
+    end
+
+    context 'email format' do
+      %w(estevao@gmail estevao!2#!@#@fadsf@gmail.com).each do |invalid_email|
+        it "isn't allowed invalid email like '#{invalid_email}' to be registered" do
+          user = build(:user, email: invalid_email)
+          expect(user).to_not be_valid
+          expect(user.errors).to include(:email)
+        end
+      end
+
+      %w(test+taggedemail@gmail.com user@prefeitura.gov.sp.br).each do |valid_email|
+        it "is allowed valid email like '#{valid_email}' to be registered" do
+          user = build(:user, email: valid_email)
+          expect(user).to be_valid
+        end
       end
     end
   end
@@ -120,6 +137,16 @@ describe User do
       new_key.should be_a(AccessKey)
 
       user.last_access_key.should == new_key.key
+    end
+  end
+
+  describe '#generate_random_password!' do
+    let(:user) { build(:user, password: nil, password_confirmation: nil) }
+
+    it 'generates new password for the user' do
+      user.generate_random_password!
+      expect(user.password).to_not be_blank
+      expect(user.password_confirmation).to_not be_blank
     end
   end
 

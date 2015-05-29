@@ -1,11 +1,12 @@
 module Reports
   class ForwardToGroup
-    attr_reader :report, :category, :user
+    attr_reader :report, :category, :user, :old_group
 
-    def initialize(report, user)
+    def initialize(report, user = nil)
       @report = report
       @category = report.category
       @user = user
+      @old_group = report.assigned_group
     end
 
     def forward!(group, message = nil)
@@ -43,16 +44,21 @@ module Reports
     end
 
     def create_history_entry(group)
-      Reports::CreateHistoryEntry.new(report, user)
-        .create('forward', "Relato foi encaminhado para o grupo #{group.name}",
-                group)
+      unless old_group
+        Reports::CreateHistoryEntry.new(report, user)
+          .create('forward', "Relato foi encaminhado para o grupo '#{group.name}'",             new: group.entity(only: [:id, :name]))
+      else
+        Reports::CreateHistoryEntry.new(report, user)
+          .create('forward', "Relato foi encaminhado do grupo '#{old_group.name}' para o grupo '#{group.name}'",             old: old_group.entity(only: [:id, :name]),
+            new: group.entity(only: [:id, :name]))
+      end
     end
 
     def forward(group)
       return if report.assigned_group == group
       validate_group_belonging!(group)
 
-      report.update(
+      report.update!(
         assigned_group: group,
         assigned_user: nil
       )

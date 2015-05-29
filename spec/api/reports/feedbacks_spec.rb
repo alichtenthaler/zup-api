@@ -1,4 +1,4 @@
-require 'rails_helper'
+require 'app_helper'
 
 describe Reports::Feedbacks::API do
   let(:user) { create(:user) }
@@ -25,8 +25,8 @@ describe Reports::Feedbacks::API do
           'kind' => 'positive',
           'content' => 'Deu tudo certo',
           'images' => [
-            Base64.encode64(fixture_file_upload('images/valid_report_item_photo.jpg').read),
-            Base64.encode64(fixture_file_upload('images/valid_report_item_photo.jpg').read)
+            Base64.encode64(fixture_file_upload("#{Application.config.root}/spec/fixtures/images/valid_report_item_photo.jpg").read),
+            Base64.encode64(fixture_file_upload("#{Application.config.root}/spec/fixtures/images/valid_report_item_photo.jpg").read)
           ]
         }
     end

@@ -61,7 +61,11 @@ class Reports::GetStats
 
   def fetch_stats_from_statuses(statuses, category)
     count = 0
+
     statuses.each do |status|
+      sc = status.for_category(category)
+      next unless sc
+
       reports_items = status.reports_items.where(reports_category_id: category.id)
 
       if begin_date || end_date
@@ -71,11 +75,14 @@ class Reports::GetStats
       count += reports_items.count
     end
 
+    status = statuses.first
+    first_sc = status.for_category(category)
+
     {
-      status_id: statuses.first.id, # Deprecated
-      title: statuses.first.title,
+      status_id: status.id, # Deprecated
+      title: status.title,
       count: count,
-      color: statuses.first.color
+      color: first_sc.try(:color)
     }
   end
 

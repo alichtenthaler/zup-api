@@ -1,4 +1,4 @@
-require 'rails_helper'
+require 'app_helper'
 require 'return_fields_params'
 
 describe ReturnFieldsParams do

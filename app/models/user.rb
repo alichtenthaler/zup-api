@@ -3,17 +3,26 @@ class User < ActiveRecord::Base
   include LikeSearchable
   include Unsubscribeable
 
-  attr_accessor :from_webhook
+  attr_accessor :from_webhook, :ignore_password_requirement
 
   has_many :access_keys
   has_many :reports, class_name: 'Reports::Item', foreign_key: 'user_id'
-  has_and_belongs_to_many :groups
+  has_and_belongs_to_many :groups, uniq: true
+  has_many :groups_permissions, through: :groups,
+                                class_name: 'GroupPermission',
+                                source: :permission
   has_many :feedbacks, class_name: 'Reports::Feedback'
   has_many :flows, class_name: 'Flow', foreign_key: :created_by_id
   has_many :cases, class_name: 'Case', foreign_key: :created_by_id
   has_many :cases_log_entries
 
-  validates :email, presence: true, uniqueness: { scope: [:disabled] }
+  EMAIL_REGEXP = /\A(([A-Za-z0-9]+_+)|([A-Za-z0-9]+\-+)|([A-Za-z0-9]+\.+)|
+                    ([A-Za-z0-9]+\++))*[A-Z<200c><200b>a-z0-9]+@((\w+\-+)|
+                    (\w+\.))*\w{1,63}\.[a-zA-Z]{2,6}\z/x
+
+  validates :email, presence: true,
+                    uniqueness: { scope: [:disabled] },
+                    format: { with: EMAIL_REGEXP }
   validates :name, presence: true, length: { in: 4..64 }
 
   with_options unless: :from_webhook do |u|
@@ -54,10 +63,6 @@ class User < ActiveRecord::Base
     super(options)
   end
 
-  def entity
-    Entity.new(self)
-  end
-
   def guest?
     false
   end
@@ -74,27 +79,33 @@ class User < ActiveRecord::Base
     !disabled?
   end
 
+  def group_ids
+    if ENV['DISABLE_MEMORY_CACHE'] == 'true'
+      groups.pluck(:id)
+    else
+      @group_ids ||= groups.pluck(:id)
+    end
+  end
+
   # Compile all user permissions from group
   def permissions
-    if @permissions.nil? || @permissions.to_h.blank?
-      @permissions = OpenStruct.new
+    struct = OpenStruct.new
 
-      groups.joins(:permission).each do |group|
-        GroupPermission.permissions_columns.each do |c|
-          value = group.permission.send(c)
+    Group.cached_find(group_ids).each do |group|
+      GroupPermission.permissions_columns.each do |c|
+        value = group.permission.send(c)
 
-          if value.is_a?(Array)
-            @permissions[c] ||= []
-            @permissions[c] += value
-            @permissions[c] = @permissions[c].uniq
-          else
-            @permissions[c] = value unless @permissions[c] === true
-          end
+        if value.is_a?(Array)
+          struct[c] ||= []
+          struct[c] += value
+          struct[c] = struct[c].uniq
+        else
+          struct[c] = value unless struct[c] === true
         end
       end
     end
 
-    @permissions
+    struct
   end
 
   def reload_permissions
@@ -117,9 +128,9 @@ class User < ActiveRecord::Base
     expose :id
     expose :name
     expose :disabled
-    expose :groups, with: Group::Entity, unless: { collection: true }
-    expose :permissions
-    expose :groups_names
+    expose :groups, with: Group::Entity, unless: lambda { |_, opts| opts[:collection] == true && !opts[:show_groups] }
+    expose :permissions, unless: { collection: true }
+    expose :groups_names, unless: { collection: true }
 
     with_options(if: { display_type: 'full' }) do
       expose :email
@@ -129,6 +140,7 @@ class User < ActiveRecord::Base
       expose :address_additional
       expose :postal_code
       expose :district
+      expose :city
       expose :device_token
       expose :device_type
       expose :created_at
@@ -162,6 +174,10 @@ class User < ActiveRecord::Base
 
     def save
       false
+    end
+
+    def cache_key
+      'user/0'
     end
 
     def save!
