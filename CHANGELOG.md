@@ -1,5 +1,8 @@
 # CHANGELOG
 
+## v1.5.2-p1
+* Correção na validação de limite geográfico
+
 ## v1.5.2
 * Novo: relatos podem ser reportados por usuários
 * Correções na autenticação dos usuários
