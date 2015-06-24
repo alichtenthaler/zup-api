@@ -35,12 +35,10 @@ class Reports::Status < Reports::Base
   # Because we won't send any emails for the user
   # if it's private, you know.
   def private_for_category?(category)
-    relation = Reports::StatusCategory.all_private.find_by(
+    Reports::StatusCategory.all_private.find_by(
       reports_status_id: id,
       reports_category_id: category.id
-    )
-
-    relation.present?
+    ).present?
   end
 
   def for_category(category)

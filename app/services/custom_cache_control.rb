@@ -12,7 +12,7 @@ class CustomCacheControl
   def garner_cache_key
     if last_updated_at
       unique_string = "#{last_updated_at}/user/#{user.try(:id) || 0}/#{group_permission_last_updated_at}/#{params}"
-      "categories/#{Digest::SHA1.hexdigest(unique_string)}"
+      "#{klass.name.titleize.downcase}/#{Digest::SHA1.hexdigest(unique_string)}"
     end
   end
 

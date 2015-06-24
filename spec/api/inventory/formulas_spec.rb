@@ -56,6 +56,18 @@ describe Inventory::Formulas::API do
 
       expect(response.status).to_not be_an_error
     end
+
+    context 'run for all pre-existing items' do
+      before do
+        valid_params['run_formula'] = true
+      end
+
+      it 'schedules a job for the category' do
+        expect do
+          subject
+        end.to change(ExecuteFormulaForCategory.jobs, :size).by(1)
+      end
+    end
   end
 
   context 'PUT /inventory/categories/:category_id/formulas/:id' do

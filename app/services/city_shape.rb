@@ -25,7 +25,9 @@ class CityShape
 
       found_file = nil
       file.each do |record|
-        if record.attributes['CD_GEOCODM'].to_i == geocode.to_i
+        geocode = geocode.to_i
+
+        if record.attributes['CD_GEOCODM'].to_i == geocode || record.attributes['CD_GEOCMU'].to_i == geocode
           found_file = record
           break
         end

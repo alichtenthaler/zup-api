@@ -1,6 +1,8 @@
 class SetReportsOverdue
   include Sidekiq::Worker
 
+  sidekiq_options queue: :high
+
   # Send push notification for mobile clients
   def perform
     sc_table = Reports::StatusCategory.table_name

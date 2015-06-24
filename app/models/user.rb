@@ -50,11 +50,15 @@ class User < ActiveRecord::Base
     access_keys.active.last.key
   end
 
-  def generate_access_key!
+  def generate_access_key!(long_lived = false)
+    expiration_date = long_lived ? AccessKey.long_lived_duration : AccessKey.short_lived_duration
+
+    params = { expires_at: expiration_date }
+
     if self.new_record?
-      access_keys.build
+      access_keys.build(params)
     else
-      access_keys.create
+      access_keys.create(params)
     end
   end
 
@@ -182,6 +186,28 @@ class User < ActiveRecord::Base
 
     def save!
       false
+    end
+  end
+
+  class Anonymous < User
+    def id
+      -1
+    end
+
+    def groups
+      Group.guest
+    end
+
+    def name
+      'Anônimo'
+    end
+
+    def disabled
+      false
+    end
+
+    def email
+      'anonimo@test.com'
     end
   end
 end

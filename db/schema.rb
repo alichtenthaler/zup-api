@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20150529012138) do
+ActiveRecord::Schema.define(version: 20150618151455) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -26,6 +26,7 @@ ActiveRecord::Schema.define(version: 20150529012138) do
     t.datetime "expired_at"
     t.datetime "created_at"
     t.datetime "updated_at"
+    t.datetime "expires_at",                 null: false
   end
 
   add_index "access_keys", ["key"], :name => "index_access_keys_on_key"
@@ -575,6 +576,7 @@ ActiveRecord::Schema.define(version: 20150529012138) do
     t.string   "city"
     t.string   "state"
     t.string   "country"
+    t.boolean  "offensive",                                               default: false
   end
 
   add_index "reports_items", ["inventory_item_id"], :name => "index_reports_items_on_inventory_item_id"
@@ -584,6 +586,15 @@ ActiveRecord::Schema.define(version: 20150529012138) do
   add_index "reports_items", ["reports_status_id"], :name => "index_reports_items_on_reports_status_id"
   add_index "reports_items", ["user_id"], :name => "index_reports_items_on_user_id"
   add_index "reports_items", ["uuid"], :name => "index_reports_items_on_uuid"
+
+  create_table "reports_offensive_flags", force: true do |t|
+    t.integer  "reports_item_id"
+    t.integer  "user_id"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  add_index "reports_offensive_flags", ["reports_item_id", "user_id"], :name => "index_reports_offensive_flags_on_reports_item_id_and_user_id", :unique => true
 
   create_table "reports_statuses", force: true do |t|
     t.string   "title"

@@ -37,6 +37,39 @@ describe Reports::GetStats do
       expect(returned_count).to eq(7)
     end
 
+    context 'status with same title, different casing' do
+      let!(:status2) { create(:status, title: status.title.upcase) }
+      let!(:reports_with_other_status) do
+        create_list(:reports_item, 4, category: report_category, status: status2)
+      end
+
+      before do
+        Reports::StatusCategory.create(
+          status: status2,
+          category: report_category,
+          initial: false,
+          final: false
+        )
+
+        Reports::StatusCategory.where(
+          reports_category_id: report_category.id
+        ).where.not(
+          reports_status_id: [status.id, status2.id]
+        ).destroy_all
+      end
+
+      it do
+        returned_stats = described_class.new([report_category.id]).fetch
+
+        expect(returned_stats.size).to eq(1)
+        expect(returned_stats.first[:statuses].size).to eq(1)
+
+        returned_count = returned_stats.first[:statuses].first[:count]
+
+        expect(returned_count).to eq(11)
+      end
+    end
+
     context 'category with subcategories' do
       let!(:subcategory) do
         create(:reports_category_with_statuses, parent_category: report_category)

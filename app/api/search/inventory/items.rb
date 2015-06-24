@@ -33,8 +33,6 @@ module Search::Inventory::Items
                desc: 'The zoom level for the map'
     end
     get 'inventory/items' do
-      authenticate!
-
       search_params = safe_params.permit(
         :address, :title, :query, :sort,
         :order, :clusterize, :zoom,

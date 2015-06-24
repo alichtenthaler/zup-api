@@ -1,6 +1,6 @@
 class Inventory::CreateItemFromCategoryForm
   attr_reader :category, :user, :item_params,
-              :status
+              :status, :item
 
   def initialize(opts = {})
     @category = opts[:category]
@@ -10,7 +10,7 @@ class Inventory::CreateItemFromCategoryForm
   end
 
   def create!
-    item = Inventory::Item.new(category: category, user: user, status: status)
+    @item = Inventory::Item.new(category: category, user: user, status: status)
     representer = item.represented_data(user)
     representer.attributes = item_params
 
@@ -19,10 +19,19 @@ class Inventory::CreateItemFromCategoryForm
       representer.item.save!
 
       representer.create_history_entry
+
+      check_formulas
     else
       fail ActiveRecord::RecordInvalid.new(representer)
     end
 
     item
+  end
+
+  private
+
+  def check_formulas
+    updater = Inventory::UpdateStatusWithFormulas.new(item, user)
+    updater.check_and_update!
   end
 end

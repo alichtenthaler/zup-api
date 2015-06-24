@@ -1,8 +1,8 @@
 require 'app_helper'
 
 describe ExpireAccessKeys do
-  let!(:key_to_be_destroyed) { create(:access_key, created_at: 7.months.ago) }
-  let!(:key_to_be_expired) { create(:access_key, created_at: 25.hours.ago) }
+  let!(:key_to_be_destroyed) { create(:access_key, expired_at: 7.months.ago) }
+  let!(:key_to_be_expired) { create(:access_key, expired: false, expires_at: 1.day.ago) }
 
   subject { described_class.new.perform }
 

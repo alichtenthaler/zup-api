@@ -29,6 +29,15 @@ module ZUP
 
     formatter :json, -> (object, _env) { Oj.dump(object) }
 
+    # This is necessary because `grape-swagger`
+    # gem adds this, thus causing CORS error
+    # when trying to load externally the documentation
+    # endpoint.
+    after do
+      header.delete('Access-Control-Allow-Origin')
+      header.delete('Access-Control-Request-Method')
+    end
+
     rescue_from :all do |e|
       Raven.capture_exception(e)
 
@@ -74,10 +83,30 @@ module ZUP
       rack_response({ error: I18n.t(:'errors.messages.unique'), type: 'model_validation' }.to_json, 400)
     end
 
+    UNALLOWED_BS_ENDPOINTS = %w(/users/unsubscribe/:token /reset_password /recover_password)
+
+    before do
+      # If a token comes with the request, let's validate it
+      # before doing anything, if it's invalid let's return an error
+      unless UNALLOWED_BS_ENDPOINTS.include?(route.route_path)
+        validates_app_token! if app_token
+      end
+    end
+
     helpers do
+      def app_token
+        # TODO: Remove this BS
+        return false if (headers['X-App-Token'].blank? || headers['X-App-Token'] == 'null') && env['X-App-Token'].blank? && params[:token].blank?
+        @app_token ||= headers['X-App-Token'] || env['X-App-Token'] || params[:token]
+      end
+
+      def validates_app_token!
+        @current_user ||= User.authorize(app_token)
+        authenticate!
+      end
+
       def current_user
-        token = headers['X-App-Token'] || env['X-App-Token'] || params[:token]
-        @current_user ||= User.authorize(token) if token
+        @current_user
       end
 
       def authenticate!
@@ -137,6 +166,6 @@ module ZUP
       end
     end
 
-    add_swagger_documentation
+    add_swagger_documentation(hide_format: true)
   end
 end

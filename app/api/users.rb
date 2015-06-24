@@ -8,7 +8,8 @@ module Users
       optional :device_type, type: String, desc: 'Could be ios or android'
     end
     post :authenticate do
-      user = User.authenticate(params[:email], params[:password])
+      device = (params[:device_type] ? :mobile : :other)
+      user = User.authenticate(params[:email], params[:password], device)
 
       if user
         if params[:device_token] || params[:device_type]

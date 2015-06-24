@@ -34,5 +34,9 @@ FactoryGirl.define do
     trait :overdue do
       overdue true
     end
+
+    trait :offensive do
+      offensive true
+    end
   end
 end

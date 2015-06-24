@@ -119,6 +119,8 @@ module Inventory::Categories
         validate_permission!(:delete, category)
         category.destroy
 
+        Garner.config.cache.delete_matched('inventory/category*')
+
         { message: 'Category deleted successfully' }
       end
 

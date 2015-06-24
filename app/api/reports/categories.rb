@@ -209,6 +209,8 @@ module Reports::Categories
         validate_permission!(:delete, category)
         category.destroy
 
+        Garner.config.cache.delete_matched('reports/category*')
+
         status 204
       end
     end

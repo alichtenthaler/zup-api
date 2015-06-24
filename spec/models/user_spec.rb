@@ -126,17 +126,35 @@ describe User do
         user.disable!
         User.authenticate(user.email, '123456').should be_falsy
       end
+
+      it 'generates a long lived token if device is mobile' do
+        allow_any_instance_of(User).to \
+          receive(:generate_access_key!).and_return(true)
+
+        found_user = User.authenticate(user.email, '123456', :mobile)
+        expect(found_user).to have_received(:generate_access_key!)
+                                .with(long_lived: true)
+      end
     end
   end
 
   context 'generating a new access key' do
-    let(:user) { create(:user) }
+    describe '#generate_access_key!' do
+      let(:user) { create(:user) }
 
-    it 'generate_access_key! creates a new key' do
-      new_key = user.generate_access_key!
-      new_key.should be_a(AccessKey)
+      it 'creates a new key' do
+        new_key = user.generate_access_key!
+        new_key.should be_a(AccessKey)
 
-      user.last_access_key.should == new_key.key
+        user.last_access_key.should == new_key.key
+      end
+
+      it 'creates a long lived key if true' do
+        new_key = user.generate_access_key!(long_lived: true)
+        new_key.should be_a(AccessKey)
+
+        expect(new_key.expires_at).to be > 1.day.from_now
+      end
     end
   end
 

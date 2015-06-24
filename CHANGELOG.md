@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## v1.5.2
+* Novo: relatos podem ser reportados por usuários
+* Correções na autenticação dos usuários
+* Correção nas estatísticas de relatos
+* Correções nas buscas para usuários deslogados
+* Mudança na expiração de chaves de acesso
+
 ## v1.5.1-p0
 * Melhorias no cadastro do usuário: usuário pode ter a senha gerada posterior ao cadastro
 * Melhorias no protocolo do relato: mudança no formato

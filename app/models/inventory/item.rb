@@ -57,6 +57,8 @@ class Inventory::Item < Inventory::Base
   end
 
   class Entity < Grape::Entity
+    include GrapeEntityHelper
+
     expose :id
     expose :title do |obj, _|
       "##{obj.sequence}"
@@ -98,14 +100,7 @@ class Inventory::Item < Inventory::Base
         objects = objects.where(inventory_field_id: ids)
       end
 
-      # What is the better way to do this?
-      if options[:only]
-        options[:only] = options[:only].select do |i|
-          i.is_a?(Hash) && i.keys.include?(:data)
-        end
-
-        options[:only] = options[:only].first[:data] if options[:only].any?
-      end
+      options = extract_options_for(:data)
 
       Inventory::ItemData::Entity.represent(objects, options)
     end

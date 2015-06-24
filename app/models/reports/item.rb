@@ -33,6 +33,10 @@ class Reports::Item < Reports::Base
                      foreign_key: :reports_item_id,
                      dependent: :destroy
 
+  has_many :offensive_flags, class_name: 'Reports::OffensiveFlag',
+                             foreign_key: :reports_item_id,
+                             dependent: :destroy
+
   before_save :set_initial_status
   before_validation :get_position_from_inventory_item, :set_uuid, :clear_postal_code
 
@@ -99,6 +103,8 @@ class Reports::Item < Reports::Base
   end
 
   class Entity < Grape::Entity
+    include GrapeEntityHelper
+
     expose :id
     expose :protocol
     expose :overdue
@@ -143,7 +149,7 @@ class Reports::Item < Reports::Base
       end
     end
 
-    expose :user, using: User::Entity
+    expose :user
     expose :reporter, using: User::Entity
 
     # With display_type equal to full
@@ -184,6 +190,20 @@ class Reports::Item < Reports::Base
 
     def comments
       Reports::GetCommentsForUser.new(object, options[:user]).comments
+    end
+
+    def user
+      user = options[:user]
+      permissions = UserAbility.for_user(user)
+
+      options = extract_options_for(:user)
+
+      if permissions.can?(:view_private, object) ||
+          permissions.can?(:edit, object) || user.try(:id) == object.user_id
+        User::Entity.represent(object.user, options)
+      else
+        User::Entity.represent(User::Anonymous.new, options)
+      end
     end
   end
 

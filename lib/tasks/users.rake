@@ -1,4 +1,23 @@
 namespace :users do
+  task randomize_sensitive_data: :environment do
+    require 'ffaker'
+    require 'faker/cpf'
+
+    puts 'Randomizing user sensitive data...'
+
+    User.find_in_batches do |users|
+      users.each do |user|
+        user.email = FFaker::Internet.email
+        user.name = FFaker::Name.name
+        user.document = Faker::CPF.numeric
+        user.postal_code = '04005000'
+        user.save
+      end
+    end
+
+    puts 'Done!'
+  end
+
   task destroy: :environment do
     fail 'Missing info! You need to inform the user ids on USERS_IDS env var (USERS_IDS=1,3,5,6)' if ENV['USERS_IDS'].blank?
 

@@ -41,4 +41,9 @@ RUN sed -ri "s@PASSENGER_ROOT@`passenger-config --root`@" /etc/nginx/nginx.conf 
     && ln -s /opt/nginx/sbin/nginx /usr/sbin/nginx \
     && mkdir -p /var/log/nginx
 
-CMD ["bundle", "exec", "foreman", "start", "-f", "Procfile"]
+COPY boot.sh /boot.sh
+RUN chmod +x /boot.sh
+
+WORKDIR /usr/src/app
+
+CMD ["/boot.sh"]

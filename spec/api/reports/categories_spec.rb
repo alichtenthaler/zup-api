@@ -184,7 +184,7 @@ describe Reports::Categories::API do
       expect(category.statuses.map { |s| s.title }).to match_array(['Open', 'Closed'])
 
       expect(category.inventory_categories.pluck(:id)).to \
-        eq(valid_params[:inventory_categories])
+        match_array(valid_params[:inventory_categories])
 
       valid_params.except(:inventory_categories, :token, :statuses, :marker, :icon).each do |param_key, param_value|
         expect(category[param_key.to_s]).to eq(param_value)

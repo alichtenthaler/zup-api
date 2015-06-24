@@ -30,10 +30,10 @@ module Reports::Statuses
       params do
         requires :title, type: String, desc: 'The status title (maximum 160)'
         requires :color, type: String, desc: 'Color in hexadecimal format'
-        requires :initial, type: String, desc: 'If the status is initial'
-        requires :final, type: String, desc: 'If the status is final'
-        optional :active, type: String, desc: 'If the status is active to use'
-        optional :private, type: String, desc: 'If the status is private or not'
+        requires :initial, type: Boolean, desc: 'If the status is initial'
+        requires :final, type: Boolean, desc: 'If the status is final'
+        optional :active, type: Boolean, desc: 'If the status is active to use'
+        optional :private, type: Boolean, desc: 'If the status is private or not'
       end
       post do
         validate_permission!(:edit, Reports::Category)
@@ -66,10 +66,10 @@ module Reports::Statuses
       params do
         optional :title, type: String, desc: 'The status title (maximum 160)'
         optional :color, type: String, desc: 'Color in hexadecimal format'
-        optional :initial, type: String, desc: 'If the status is initial'
-        optional :final, type: String, desc: 'If the status is final'
-        optional :active, type: String, desc: 'If the status is active to use'
-        optional :private, type: String, desc: 'If the status is private or not'
+        optional :initial, type: Boolean, desc: 'If the status is initial'
+        optional :final, type: Boolean, desc: 'If the status is final'
+        optional :active, type: Boolean, desc: 'If the status is active to use'
+        optional :private, type: Boolean, desc: 'If the status is private or not'
       end
       put ':id' do
         validate_permission!(:edit, Reports::Category)

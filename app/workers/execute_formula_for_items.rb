@@ -1,6 +1,8 @@
 class ExecuteFormulaForItems
   include Sidekiq::Worker
 
+  sidekiq_options queue: :low
+
   def perform(user_id, formula_id, items_ids)
     user = User.find_by(id: user_id)
     formula = Inventory::Formula.find_by(id: formula_id)

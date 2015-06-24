@@ -67,6 +67,16 @@ pt-BR:
   trigger_condition_deleted: Condição do Gatilho apagado com sucesso
   case_created: Caso criado com sucesso
   permission_denied: "Usuário não pode '%{action}' %{table_name}"
+  reports:
+    items:
+      offensive:
+        flag:
+          success: Obrigado por contribuir com a melhoria da sua cidade!
+        unflag:
+          success: O relato foi marcado como apropriado novamente.
+        error:
+          already_reported: Você já reportou esse relato!
+          limit_reached: Você já atingiu o limite de reportagem de relatos por hora, aguarde antes de reportar outros relatos.
   activerecord:
     models:
       group: Grupo

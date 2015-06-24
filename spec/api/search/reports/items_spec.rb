@@ -514,5 +514,70 @@ describe Search::Reports::Items::API do
         expect(parsed_body['reports'].map { |r| r['id'] }).to eq([correct_item.id])
       end
     end
+
+    context 'reports with offensive flags' do
+      let(:items) do
+        create_list(:reports_item, 3, category: category)
+      end
+      let(:offensive_item) { items.sample }
+
+      before do
+        Reports::OffensiveFlag.create(
+          user: user,
+          item: offensive_item
+        )
+      end
+
+      let(:valid_params) do
+        Oj.load <<-JSON
+          {
+            "flagged_offensive": true
+          }
+        JSON
+      end
+
+      it 'returns the correct items marked as offensive' do
+        get '/search/reports/items', valid_params, auth(user)
+        expect(response.status).to eq(200)
+        expect(parsed_body['reports'].map { |r| r['id'] }).to eq([offensive_item.id])
+      end
+    end
+
+    context 'reports marked offensive' do
+      let!(:offensive_items) do
+        create_list(:reports_item, 3, :offensive, category: category)
+      end
+      let!(:items) do
+        create_list(:reports_item, 3, category: category)
+      end
+      let(:group) { create(:group) }
+
+      context "user can't manage category" do
+        before do
+          group.permission.update!(reports_items_read_public: [category.id])
+
+          user.groups = [group]
+          user.save!
+        end
+
+        it "won't return those items" do
+          get '/search/reports/items', nil, auth(user)
+          expect(response.status).to eq(200)
+          expect(parsed_body['reports'].map { |r| r['id'] }).to match_array(items.map(&:id))
+        end
+
+        context 'user can edit items in category' do
+          before do
+            group.permission.update!(reports_items_edit: [category.id])
+          end
+
+          it 'returns offensive items' do
+            get '/search/reports/items', nil, auth(user)
+            expect(response.status).to eq(200)
+            expect(parsed_body['reports'].map { |r| r['id'] }).to match_array(items.map(&:id) + offensive_items.map(&:id))
+          end
+        end
+      end
+    end
   end
 end

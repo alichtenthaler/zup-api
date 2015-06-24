@@ -152,7 +152,7 @@ module Reports::Items
       Reports::Item.transaction do
         report_params = safe_params.permit(
           :description, :address, :reference, :confidential, :district,
-          :number, :postal_code, :city, :state, :country
+          :number, :postal_code, :city, :state, :country, :offensive
         )
 
         if safe_params[:category_id].present?

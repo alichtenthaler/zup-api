@@ -94,10 +94,10 @@ module PasswordAuthenticable
 
   module ClassMethods
     # Authenticates email and password
-    def authenticate(email, password)
+    def authenticate(email, password, device = :other)
       if (user = enabled.find_by(email: email))
         if user.check_password(password)
-          user.generate_access_key!
+          user.generate_access_key!(long_lived: device == :mobile)
           return user.reload
         else
           return false

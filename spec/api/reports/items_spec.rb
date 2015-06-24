@@ -802,6 +802,14 @@ describe Reports::Items::API do
 
         expect(report['protocol']).to_not be_blank
       end
+
+      it 'shows the user' do
+        get "/reports/items/#{item.id}?return_fields=id,user", nil, auth(user)
+        expect(response.status).to eq(200)
+        report = parsed_body['report']
+
+        expect(report['user']).to_not be_blank
+      end
     end
 
     context "if the user didn't create the item" do
@@ -818,6 +826,14 @@ describe Reports::Items::API do
         report = parsed_body['report']
 
         expect(report['protocol']).to be_blank
+      end
+
+      it 'shows anonymous user' do
+        get "/reports/items/#{item.id}?return_fields=id,user", nil, auth(user)
+        expect(response.status).to eq(200)
+        report = parsed_body['report']
+
+        expect(report['user']['name']).to eq('Anônimo')
       end
     end
 

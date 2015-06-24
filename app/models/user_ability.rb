@@ -277,6 +277,11 @@ class UserAbility
      permissions.reports_items_delete).uniq
   end
 
+  def reports_categories_with_editable_items
+    (permissions.reports_items_edit + \
+     permissions.reports_categories_edit).uniq || []
+  end
+
   def reports_categories_visible_for_items
     (permissions.reports_items_read_public + \
      permissions.reports_items_read_private + \

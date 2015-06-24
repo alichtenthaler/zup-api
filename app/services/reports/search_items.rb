@@ -8,7 +8,7 @@ class Reports::SearchItems
               :per_page, :address, :query,
               :signed_user, :overdue, :clusterize, :zoom,
               :assigned_to_my_group, :assigned_to_me, :reporter,
-              :user_document
+              :user_document, :flagged_offensive
 
   def initialize(user, opts = {})
     @position_params = opts[:position]
@@ -35,6 +35,7 @@ class Reports::SearchItems
     @assigned_to_me  = opts[:assigned_to_me]
     @reporter        = opts[:reporter]
     @user_document   = opts[:user_document]
+    @flagged_offensive = opts[:flagged_offensive]
   end
 
   def search
@@ -157,6 +158,24 @@ class Reports::SearchItems
           assigned_user_id: signed_user.id
         }
       )
+    end
+
+    if flagged_offensive
+      scope = scope.joins(:offensive_flags)
+    end
+
+    if permissions.cannot?(:manage, Reports::Category)
+      if permissions.reports_categories_with_editable_items.any?
+        query = <<-SQL
+          offensive = FALSE OR (offensive = TRUE AND reports_items.reports_category_id IN (?))
+        SQL
+
+        scope = scope.where(
+          query, permissions.reports_categories_with_editable_items
+        )
+      else
+        scope = scope.where(offensive: false)
+      end
     end
 
     # WTF

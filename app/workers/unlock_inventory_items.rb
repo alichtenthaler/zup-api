@@ -1,6 +1,8 @@
 class UnlockInventoryItems
   include Sidekiq::Worker
 
+  sidekiq_options queue: :critical
+
   # Send push notification for mobile clients
   def perform
     Inventory::Item.locked.each do |item|

@@ -1,6 +1,8 @@
 class NotificationPusher
   include Sidekiq::Worker
 
+  sidekiq_options queue: :high
+
   # Send push notification for mobile clients
   def perform(user_id, message, object_id = nil, kind = nil)
     user = User.find(user_id)

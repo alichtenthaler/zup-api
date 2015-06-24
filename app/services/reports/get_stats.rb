@@ -47,7 +47,7 @@ class Reports::GetStats
 
     # Statuses
     category_statuses = category_statuses.group_by do |s|
-      s.title
+      s.title.downcase
     end
 
     statuses_stats = []

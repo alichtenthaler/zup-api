@@ -35,13 +35,13 @@ module Search::Reports::Items
                desc: 'Reporter ids, format: "3,5,7"'
       optional :user_document, type: String,
                desc: 'User document, only numbers'
+      optional :flagged_offensive, type: Boolean,
+               desc: 'Show only reports flagged as offensive'
     end
     get 'reports/items' do
-      authenticate!
-
       search_params = safe_params.permit(
         :begin_date, :end_date, :address, :query, :overdue, :clusterize, :zoom,
-        :assigned_to_my_group, :assigned_to_me, :user_document
+        :assigned_to_my_group, :assigned_to_me, :user_document, :flagged_offensive
       )
 
       search_params[:paginator] = method(:paginate)
