@@ -40,15 +40,6 @@ GIT
     database_rewinder (0.5.1)
 
 GIT
-  remote: git://github.com/tim-vandecasteele/grape-swagger.git
-  revision: 89e38f15b98aa14b26a076456c64b55e74678f0b
-  ref: 89e38f15b98aa14b26a076456c64b55e74678f0b
-  specs:
-    grape-swagger (0.10.2)
-      grape (>= 0.8.0)
-      grape-entity
-
-GIT
   remote: https://github.com/carrierwaveuploader/carrierwave.git
   revision: 17399e692d3b29ec7c2e609308c6e2ec7c622694
   ref: 17399e692d3b29ec7c2e609308c6e2ec7c622694
@@ -246,6 +237,9 @@ GEM
       rack-accept
       rack-mount
       virtus (>= 1.0.0)
+    grape-swagger (0.10.1)
+      grape (>= 0.8.0)
+      grape-entity
     grape_logging (1.0.2)
       grape
     hashie (3.4.2)
@@ -267,7 +261,7 @@ GEM
     mini_magick (4.2.0)
     mini_portile (0.6.2)
     minitest (5.7.0)
-    multi_json (1.11.0)
+    multi_json (1.11.2)
     multi_xml (0.5.5)
     multipart-post (2.0.0)
     net-scp (1.2.1)
@@ -326,7 +320,7 @@ GEM
     pry-remote (0.1.8)
       pry (~> 0.9)
       slop (~> 3.0)
-    rack (1.5.3)
+    rack (1.5.5)
     rack-accept (0.4.5)
       rack (>= 0.4)
     rack-cors (0.3.1)
@@ -454,7 +448,7 @@ DEPENDENCIES
   grape (~> 0.11.0)
   grape-appsignal!
   grape-entity!
-  grape-swagger!
+  grape-swagger
   grape_logging
   knapsack
   mini_magick

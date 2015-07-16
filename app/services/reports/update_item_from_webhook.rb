@@ -19,6 +19,8 @@ module Reports
 
         if params[:status]
           status = find_or_create_status!(params[:status], category || report.category)
+        elsif category
+          status = find_or_create_status!({ name: report.status.title }, category)
         end
 
         if status && category

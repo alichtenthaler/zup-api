@@ -6,8 +6,6 @@ module Reports::Comments
         requires :id, type: Integer, desc: 'The id of the report'
       end
       get do
-        authenticate!
-
         report = Reports::Item.find(params[:id])
 
         comments = Reports::GetCommentsForUser.new(report, current_user).comments

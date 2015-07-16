@@ -13,7 +13,7 @@ module Reports
       old_category = item.category
 
       if old_category.id != new_category.id && item.update(category: new_category)
-        Reports::UpdateItemStatus.new(item).update_status!(new_status)
+        update_status!
 
         # Forward to default group
         if new_category.default_solver_group
@@ -28,7 +28,15 @@ module Reports
           .create('category', "O relato foi movido da categoria '#{old_category.title}' para '#{new_category.title}'",
                   old: old_category.entity(only: [:id, :title]),
                   new: new_category.entity(only: [:id, :title]))
+      elsif old_category.id == new_category.id
+        update_status!
       end
+    end
+
+    private
+
+    def update_status!
+      Reports::UpdateItemStatus.new(item).update_status!(new_status)
     end
   end
 end
