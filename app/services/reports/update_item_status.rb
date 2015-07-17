@@ -35,11 +35,13 @@ module Reports
     end
 
     def create_comment!(message, visibility)
-      item.comments.create!(
+      comment = item.comments.create!(
         author: user,
         message: message,
         visibility: visibility
       )
+
+      Reports::NotifyUser.new(item).notify_new_comment!(comment)
     end
 
     private

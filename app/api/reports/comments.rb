@@ -42,9 +42,7 @@ module Reports::Comments
 
         comment.save!
 
-        unless comment.visibility == Reports::Comment::INTERNAL
-          Reports::NotifyUser.new(report).notify_new_comment!(comment)
-        end
+        Reports::NotifyUser.new(report).notify_new_comment!(comment)
 
         create_history = Reports::CreateHistoryEntry.new(report, current_user)
         create_history.create('comment',

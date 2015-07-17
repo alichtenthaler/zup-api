@@ -59,4 +59,28 @@ describe Reports::NotifyUser do
       end
     end
   end
+
+  describe '#notify_new_comment!' do
+    context 'is a public comment' do
+      let(:comment) { create(:reports_comment, item: item) }
+
+      it 'sends the email' do
+        allow(UserMailer).to receive(:delay).and_return(UserMailer)
+
+        subject.notify_new_comment!(comment)
+        expect(UserMailer).to have_received(:delay)
+      end
+    end
+
+    context 'is an internal comment' do
+      let(:comment) { create(:reports_comment, :internal, item: item) }
+
+      it 'sends the email' do
+        allow(UserMailer).to receive(:delay).and_return(UserMailer)
+
+        subject.notify_new_comment!(comment)
+        expect(UserMailer).to_not have_received(:delay)
+      end
+    end
+  end
 end

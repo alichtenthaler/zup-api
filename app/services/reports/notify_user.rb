@@ -25,6 +25,8 @@ module Reports
     end
 
     def notify_new_comment!(comment = nil)
+      return false if comment.visibility == Reports::Comment::INTERNAL
+
       if user.push_notification_available?
         NotificationPusher.perform_async(user.id,
           'Existe um novo comentário da prefeitura para um relato que você realizou',
