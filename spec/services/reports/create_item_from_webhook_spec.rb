@@ -3,6 +3,17 @@ require 'app_helper'
 describe Reports::CreateItemFromWebhook do
   let!(:category) { create(:reports_category_with_statuses, title: 'Solicitação/colocação de contêineres') }
 
+  before do
+    Webhook.load_categories_from_file(
+      File.join(Application.config.root, 'spec', 'support', 'webhook_categories.yml')
+    )
+
+    allow(subject).to receive(:external_category_id).and_return(100)
+    allow(subject).to receive(:report?).and_return(true)
+    allow(subject).to receive(:solicitation?).and_return(false)
+    allow(Webhook).to receive(:enabled?).and_return(true)
+  end
+
   subject { described_class.new(valid_params) }
 
   context '#create!' do

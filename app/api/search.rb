@@ -1,5 +1,5 @@
 module Search
-  class API < Grape::API
+  class API < Base::API
     namespace :search do
       mount Search::Groups::API
       mount Search::Users::API

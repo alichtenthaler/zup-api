@@ -1,4 +1,10 @@
 pt-BR:
+  metric_reports:
+    delete:
+      success: 'O relatório foi excluído com sucesso'
+  charts:
+    delete:
+      success: 'O gráfico foi excluído com sucesso'
   edit: editar
   create: criar
   view: visualizar
@@ -242,6 +248,8 @@ pt-BR:
       too_short: ! 'é muito curto (mínimo: %{count} caracteres)'
       wrong_length: não possui o tamanho esperado (%{count} caracteres)
       unique: Já existe essa relação no sistema. Tente novamente com outros usuários.
+      end_date_lower_than_begin_date: Data inicial precisa ser anterior à data final
+      version_mismatch: A manipulação do relato é improcedente, nova versão foi inserida no servidor, atualize a sua versão local
     template:
       body: ! 'Por favor, verifique o(s) seguinte(s) campo(s):'
       header:

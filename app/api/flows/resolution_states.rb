@@ -1,6 +1,6 @@
 module Flows
   module ResolutionStates
-    class API < Grape::API
+    class API < Base::API
       resources ':flow_id/resolution_states' do
         desc 'Create a Resolution State'
         params do

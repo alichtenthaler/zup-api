@@ -1,5 +1,5 @@
 module Utils
-  class API < Grape::API
+  class API < Base::API
     desc 'Validates if lat and lon is allowed for the city'
     params do
       requires :latitude, type: Float
@@ -30,13 +30,15 @@ module Utils
       flow_steps = Step.all
       inventory_categories = Inventory::Category.all
       reports_categories = Reports::Category.main.includes(:statuses, :subcategories).all
+      business_reports = BusinessReport.all
 
       {
         groups: Group::Entity.represent(groups, only: [:id, :name]),
         flows: Flow::Entity.represent(flows, only: [:id, :title]),
         flow_steps: Step::Entity.represent(flow_steps, only: [:id, :title]),
         inventory_categories: Inventory::Category::Entity.represent(inventory_categories, only: [:id, :title]),
-        reports_categories: Reports::Category::Entity.represent(reports_categories, only: [:id, :title, subcategories: [:id, :title]], display_type: :full)
+        reports_categories: Reports::Category::Entity.represent(reports_categories, only: [:id, :title, subcategories: [:id, :title]], display_type: :full),
+        business_reports: BusinessReport::Entity.represent(business_reports, only: [:id, :title])
       }
     end
   end

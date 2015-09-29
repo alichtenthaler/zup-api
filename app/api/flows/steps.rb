@@ -1,5 +1,5 @@
 module Flows::Steps
-  class API < Grape::API
+  class API < Base::API
     resources ':flow_id/steps' do
       desc 'List of Steps'
       params { optional :display_type, type: String, desc: 'Display type for Step' }
@@ -15,7 +15,7 @@ module Flows::Steps
         authenticate!
         validate_permission!(:update, Step)
 
-        Flow.find(safe_params[:flow_id]).steps.update_order!(safe_params[:ids], current_user)
+        Flow.find(safe_params[:flow_id]).steps.update_order!(safe_params[:ids])
         { message: I18n.t(:steps_order_updated) }
       end
 
@@ -41,7 +41,7 @@ module Flows::Steps
 
       desc 'Update a Step'
       params do
-        requires :title,                type: String,  desc: 'Title of resolution state'
+        optional :title,                type: String,  desc: 'Title of resolution state'
         optional :conduction_mode_open, type: Boolean, desc: 'Condution mode is Open, true for "open" or false for "selective" (default is true)'
         optional :step_type,            type: String,  desc: 'Type of step (form or flow)'
         optional :child_flow_id,        type: Integer, desc: 'Child Flow id'
@@ -82,7 +82,7 @@ module Flows::Steps
 
       desc 'Set Permissions to Step of Case'
       params do
-        requires :group_ids,       type: Array,  desc: 'Array of Group IDs'
+        optional :group_ids,       type: Array,  desc: 'Array of Group IDs'
         requires :permission_type, type: String, desc: 'Permission type to change (can_execute_step, can_view_step)'
       end
       put ':id/permissions' do
@@ -90,34 +90,21 @@ module Flows::Steps
         validate_permission!(:manage, Flow)
         permission_type = safe_params[:permission_type]
         types           = %w{can_execute_step can_view_step}
+        step_id = safe_params[:id].to_i
+        group_ids = safe_params[:group_ids] ? safe_params[:group_ids].map! { |id| id.to_i } : []
         error!(I18n.t(:permission_type_not_included), 400) unless types.include? permission_type
 
-        safe_params[:group_ids].each do |group_id|
+        # Add permissions to the groups indicated on the request
+        group_ids.each do |group_id|
           group = Group.find(group_id)
-          group.permission.update(permission_type => group.permission.send(permission_type) + [safe_params[:id].to_i])
+          group.permission.update(permission_type => [step_id])
           group.save!
         end
 
-        { message: I18n.t(:permissions_updated) }
-      end
-
-      desc 'Unset Permissions to Step of Case'
-      params do
-        requires :group_ids,       type: Array,  desc: 'Array of Group IDs'
-        requires :permission_type, type: String, desc: 'Permission type to change (can_execute_step, can_view_step)'
-      end
-      delete ':id/permissions' do
-        authenticate!
-        validate_permission!(:manage, Flow)
-        permission_type = safe_params[:permission_type]
-        types           = %w{can_execute_step can_view_step}
-        error!(I18n.t(:permission_type_not_included), 400) unless types.include? permission_type
-
-        safe_params[:group_ids].each do |group_id|
-          group = Group.find(group_id)
-          group.permission.update(permission_type => group.permission.send(permission_type) - [safe_params[:id].to_i])
-          group.save!
-        end
+        # Remove permission to groups that are not present on the request
+        Group.that_includes_permission(permission_type, step_id)
+             .reject { |g| group_ids.include?(g.id) }
+             .each { |g| Groups::PermissionManager.new(g).remove_with_objects(permission_type, [step_id]) }
 
         { message: I18n.t(:permissions_updated) }
       end

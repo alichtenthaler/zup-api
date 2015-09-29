@@ -1,5 +1,5 @@
 module Reports::Stats
-  class API < Grape::API
+  class API < Base::API
     desc 'Return stats for desired category'
     params do
       optional :category_id,

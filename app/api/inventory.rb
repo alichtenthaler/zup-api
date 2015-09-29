@@ -1,5 +1,5 @@
 module Inventory
-  class API < Grape::API
+  class API < Base::API
     namespace :inventory do
       mount Inventory::Categories::API
       mount Inventory::Items::API

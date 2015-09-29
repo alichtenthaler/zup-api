@@ -1,5 +1,5 @@
 module Flows::Steps::Triggers
-  class API < Grape::API
+  class API < Base::API
     resources ':step_id/triggers' do
       desc 'Get all Triggers'
       get do

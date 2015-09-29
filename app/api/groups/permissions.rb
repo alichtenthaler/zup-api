@@ -1,5 +1,5 @@
 module Groups::Permissions
-  class API < Grape::API
+  class API < Base::API
     helpers do
       def load_group(group_id = params[:group_id])
         Group.find(group_id)
@@ -24,8 +24,6 @@ module Groups::Permissions
         params do
           optional :objects_ids, type: Array,
                   desc: 'Array of ids of the object type'
-          optional :objects_type, type: String,
-                  desc: 'The type for the objects ids'
           requires :permissions, type: Array,
                   desc: 'Array of permission names'
         end

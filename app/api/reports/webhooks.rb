@@ -1,5 +1,5 @@
 module Reports::Webhooks
-  class API < Grape::API
+  class API < Base::API
     namespace :webhooks do
       desc 'Receives a new report'
       params do

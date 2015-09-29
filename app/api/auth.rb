@@ -1,5 +1,5 @@
 module Auth
-  class API < Grape::API
+  class API < Base::API
     namespace :auth do
       get 'twitter/callback' do
         unless env['omniauth.auth'].nil?

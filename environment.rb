@@ -42,6 +42,14 @@ module Application
   def self.load_tasks
     Dir['lib/tasks/**/*.rake'].each { |f| load f }
   end
+
+  def self.logger
+    @logger ||= Logger.new(
+      GrapeLogging::MultiIO.new(
+        STDOUT, File.open("log/#{Application.config.env}.log", 'a')
+      )
+    )
+  end
 end
 
 # General application configuration
@@ -60,6 +68,7 @@ end
 Time.zone = Application.config.time_zone
 ActiveRecord::Base.time_zone_aware_attributes = true
 ActiveRecord::Base.default_timezone = :utc
+ActiveRecord::Base.schema_format = :sql
 
 # Database configuration
 database_file = "#{Application.config.root}/config/database.yml"

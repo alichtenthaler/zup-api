@@ -14,7 +14,10 @@ module Reports
       validate_status_belonging!(new_status)
       set_status_history_update(new_status)
 
+      relation = get_status_relation(new_status)
+
       item.status = new_status
+      item.resolved_at = Time.now if relation.final?
     end
 
     def update_status!(new_status)
@@ -56,9 +59,13 @@ module Reports
     end
 
     def validate_status_belonging!(new_status)
-      unless category.status_categories.exists?(reports_status_id: new_status.id)
+      unless get_status_relation(new_status)
         fail "Status doesn't belongs to category"
       end
+    end
+
+    def get_status_relation(status)
+      category.status_categories.find_by(reports_status_id: status.id)
     end
   end
 end

@@ -27,6 +27,7 @@ describe SetReportsOverdue do
 
       overdue_reports.each do |item|
         expect(item).to be_overdue
+        expect(item.overdue_at).to_not be_blank
       end
 
       not_overdue_reports.each do |item|

@@ -1,5 +1,5 @@
 module Flows
-  class API < Grape::API
+  class API < Base::API
     resources :flows do
       desc 'List of all flows'
       params do

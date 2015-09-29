@@ -1,5 +1,5 @@
 module Reports::Statuses
-  class API < Grape::API
+  class API < Base::API
     helpers do
       def load_category
         Reports::Category.find(params[:category_id])
@@ -124,6 +124,20 @@ module Reports::Statuses
 
         sc = category.status_categories.find_by(reports_status_id: status.id)
         sc.update!(active: true)
+
+        {
+          status: Reports::Status::Entity.represent(status, only: return_fields)
+        }
+      end
+
+      desc 'Delete a status (disables it)'
+      delete ':id' do
+        validate_permission!(:edit, Reports::Category)
+
+        category = load_category
+        status = Reports::Status.find(params[:id])
+        sc = category.status_categories.find_by(reports_status_id: status.id)
+        sc.update!(active: false)
 
         {
           status: Reports::Status::Entity.represent(status, only: return_fields)

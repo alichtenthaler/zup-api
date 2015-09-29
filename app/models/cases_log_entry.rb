@@ -13,6 +13,7 @@ class CasesLogEntry < ActiveRecord::Base
   ACTION_TYPES = %w{create_case next_step update_step removed_case_step finished transfer_case
                     transfer_flow delete_case restored_case started_step not_satisfied}
 
+  # TODO: shouldn't it have more validations? At least presence ones
   validates :action, inclusion: { in: ACTION_TYPES }, presence: true
 
   class Entity < Grape::Entity

@@ -55,7 +55,11 @@ class MemoryCacheImpl
         object_id, _ = update_id.split(':')
         object_id = object_id.to_i
         if cache[object_id]
-          cache[object_id].reload
+          begin
+            cache[object_id].reload
+          rescue ActiveRecord::RecordNotFound
+            cache[object_id] = nil
+          end
         end
       end
     end

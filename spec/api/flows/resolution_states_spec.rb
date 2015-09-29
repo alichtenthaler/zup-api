@@ -60,7 +60,7 @@ describe Flows::ResolutionStates::API do
   end
 
   describe 'on update' do
-    let(:flow)         { create(:flow) }
+    let(:flow)         { create(:flow, :with_resolution_state) }
     let!(:resolution)  { flow.resolution_states.first }
     let(:valid_params) { { title: 'Success', default: true } }
 
@@ -108,7 +108,7 @@ describe Flows::ResolutionStates::API do
   end
 
   describe 'on delete' do
-    let(:flow)         { create(:flow) }
+    let(:flow)         { create(:flow, :with_resolution_state) }
     let!(:resolution)  { flow.resolution_states.first }
 
     context 'no authentication' do

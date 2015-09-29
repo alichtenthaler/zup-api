@@ -1,7 +1,7 @@
 class CaseStepDataAttachment < ActiveRecord::Base
   mount_uploader :attachment, FilesUploader
 
-  belongs_to :case_step_step_data
+  belongs_to :case_step_data_field
 
   def url
     attachment.url

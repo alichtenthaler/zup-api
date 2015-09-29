@@ -126,6 +126,8 @@ module Inventory
     end
 
     def same_value?(field, new_content, actual_content)
+      return true if new_content.nil? && actual_content.nil?
+
       if new_content.is_a?(Array) && actual_content.is_a?(Array)
         (new_content - actual_content).empty?
       elsif field.use_options? && !new_content.is_a?(Array)

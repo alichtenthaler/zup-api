@@ -10,6 +10,7 @@ FactoryGirl.define do
       manage_config true
       panel_access true
       create_reports_from_panel true
+      business_reports_edit true
     end
   end
 end

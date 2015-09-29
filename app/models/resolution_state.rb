@@ -5,6 +5,7 @@ class ResolutionState < ActiveRecord::Base
   belongs_to :flow
   has_many :cases
 
+  validates_presence_of :flow
   validates :title, uniqueness: { scope: :flow_id }, length: { maximum: 100 }, presence: true
   validate :unique_by_default, if: -> { default }
 

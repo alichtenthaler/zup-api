@@ -1,5 +1,3 @@
-# Read about factories at https://github.com/thoughtbot/factory_girl
-
 FactoryGirl.define do
   factory :inventory_field, class: 'Inventory::Field' do
     sequence :title do |n|

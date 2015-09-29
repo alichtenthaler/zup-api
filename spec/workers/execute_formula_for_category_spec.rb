@@ -1,19 +1,25 @@
 require 'spec_helper'
 
 describe ExecuteFormulaForCategory do
-  let(:user) { create(:user) }
-  let(:formula) { create(:inventory_formula, :with_conditions) }
+  let!(:user) { create(:user) }
+  let!(:formula) { create(:inventory_formula, :with_conditions) }
 
-  subject { described_class.new }
+  subject { ExecuteFormulaForCategory.new.perform(user.id, formula.id) }
 
   describe '#perform' do
-    let(:status) { create(:inventory_status) }
-    let!(:item) { create(:inventory_item, category: formula.category, status: status) }
+    let!(:status) { create(:inventory_status) }
+    let!(:item1) { create(:inventory_item, category: formula.category, status: status) }
+    let!(:item2) { create(:inventory_item, category: formula.category, status: status) }
 
-    it 'calls `check_and_update!` for the item' do
+    it 'creates a job' do
       expect do
-        subject.perform(user.id, formula.id)
+        subject
       end.to change(ExecuteFormulaForItems.jobs, :size).by(1)
+    end
+
+    it 'calls ExecuteFormulaForItems with the correct params' do
+      expect(ExecuteFormulaForItems).to receive(:perform_async).with(user.id, formula.id, [item1.id, item2.id])
+      subject
     end
   end
 end

@@ -1,5 +1,5 @@
 module FeatureFlags
-  class API < Grape::API
+  class API < Base::API
     resources :feature_flags do
       desc 'List all feature flags'
       get do

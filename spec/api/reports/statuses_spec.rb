@@ -101,4 +101,16 @@ describe Reports::Statuses::API do
       expect(sc.active).to be_truthy
     end
   end
+
+  describe 'DELETE /reports/categories/:category_id/statuses/:id'  do
+    let!(:status) { create(:status, :with_category, category: category) }
+
+    it 'deletes status' do
+      delete "/reports/categories/#{category.id}/statuses/#{status.id}", nil, auth(user)
+      sc = category.status_categories.find_by(reports_status_id: status.id)
+
+      expect(response.status).to eq(200)
+      expect(sc.active).to be_falsy
+    end
+  end
 end

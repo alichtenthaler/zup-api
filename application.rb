@@ -15,10 +15,6 @@ ZupServer = Rack::Builder.new do
     provider :google_oauth2, ENV['GOOGLE_CLIENT_ID'], ENV['GOOGLE_CLIENT_SECRET']
   end
 
-  if Application.config.env == :profile
-    use Rack::RubyProf, path: './tmp/profile'
-  end
-
   map '/' do
     run ZUP::API
   end

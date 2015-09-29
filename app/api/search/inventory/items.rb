@@ -1,5 +1,5 @@
 module Search::Inventory::Items
-  class API < Grape::API
+  class API < Base::API
     desc 'Search for inventory items'
     paginate per_page: 25
     params do

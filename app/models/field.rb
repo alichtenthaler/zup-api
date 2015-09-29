@@ -9,7 +9,7 @@ class Field < ActiveRecord::Base
                    meter centimeter kilometer year month day hour minute second previous_field
                    radio select checkbox category_inventory category_inventory_field category_report}
 
-  belongs_to :user
+  belongs_to :user # who created the Field
   belongs_to :step
   belongs_to :category_inventory, class_name: 'Inventory::Category', foreign_key: :category_inventory_id
   belongs_to :category_report,    class_name: 'Reports::Category',   foreign_key: :category_report_id
@@ -19,7 +19,7 @@ class Field < ActiveRecord::Base
   scope :active,    -> { where(active: true) }
   scope :requireds, -> { where("requirements -> 'presence' = 'true'") }
 
-  validates :title, presence: true
+  validates_presence_of :title, :step, :user
   validates :field_type, inclusion: { in: VALID_TYPES }
   validates :origin_field_id, presence: true, if: -> { %w{previous_field category_inventory_field}.include? field_type }
   validates :category_report_id, presence: true, if: -> { field_type == 'category_report' }
@@ -27,7 +27,7 @@ class Field < ActiveRecord::Base
   validates :values, presence: true, if: -> { %w{checkbox radio}.include? field_type }
   validate :category_inventory_present?, if: -> { field_type == 'category_inventory_field' }
 
-  after_create :add_field_on_step
+  after_create :add_field_to_step_field_versions!
   before_save :set_origin_field_version, if: :origin_field_id?
   before_update :set_draft, unless: :draft_changed?
   before_update :remove_step_on_flow, if: -> { active_changed? && !active }
@@ -82,11 +82,12 @@ class Field < ActiveRecord::Base
     Inventory::Field.find(origin_field_id)
   end
 
-  def add_field_on_step
-    field_versions = step.fields_versions.dup
-    field_versions.merge!(id.to_s => nil)
-    step.update! user: user, fields_versions: {}
-    step.update! user: user, fields_versions: field_versions
+  def add_field_to_step_field_versions!
+    initial_papertrail_version = nil
+
+    fields_versions = step.fields_versions.dup
+    fields_versions.merge!(id.to_s => initial_papertrail_version)
+    step.update! user: user, fields_versions: fields_versions
   end
 
   def set_draft

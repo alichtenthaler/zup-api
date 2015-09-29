@@ -24,6 +24,12 @@ describe Reports::UpdateItemStatus do
       subject.set_status(status)
       expect(item.status_history.last.new_status).to eq(status)
     end
+
+    it 'sets the `resolved_at` if the status is final' do
+      category.status_categories.find_by(reports_status_id: status.id).update(final: true)
+      subject.set_status(status)
+      expect(item.resolved_at).to_not be_blank
+    end
   end
 
   describe '#update_status!' do

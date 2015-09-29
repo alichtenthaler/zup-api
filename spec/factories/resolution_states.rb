@@ -3,6 +3,7 @@ FactoryGirl.define do
     title { generate(:name) }
     default false
     active true
-    user { User.first }
+    flow
+    user
   end
 end

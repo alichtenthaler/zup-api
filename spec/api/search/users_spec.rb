@@ -1,7 +1,7 @@
 require 'spec_helper'
 
 describe Search::Users::API do
-  let(:user) { create(:user) }
+  let(:logged_user) { create(:user) }
 
   context 'GET /search/users' do
     let!(:users) { create_list(:user, 5) }
@@ -11,7 +11,7 @@ describe Search::Users::API do
         any_user = users.sample
         any_user.update(name: 'Nome de teste')
 
-        get '/search/users?name=teste', nil, auth(user)
+        get '/search/users?name=teste', nil, auth(logged_user)
         expect(response.status).to eq(200)
         body = parsed_body
 
@@ -25,7 +25,7 @@ describe Search::Users::API do
         any_user = users.sample
         any_user.update(email: 'teste@gmail.com')
 
-        get '/search/users?email=tes', nil, auth(user)
+        get '/search/users?email=tes', nil, auth(logged_user)
         expect(response.status).to eq(200)
         body = parsed_body
 
@@ -39,28 +39,25 @@ describe Search::Users::API do
       let(:group) { create(:group) }
 
       before do
-        user.groups = [group]
-        user.email = 'test1@gmail.com'
-        user.save!
+        logged_user.groups = [group]
+        logged_user.email = 'test1@gmail.com'
+        logged_user.save!
         another_user.update!(email: 'test2@gmail.com')
       end
 
       it 'returns only users with certain group' do
-        get "/search/users?email=test&groups=#{group.id}", nil, auth(user)
+        get "/search/users?email=test&groups=#{group.id}", nil, auth(logged_user)
         expect(response.status).to eq(200)
 
         body = parsed_body
         expect(body['users'].size).to eq(1)
-        expect(body['users'].first['id']).to eq(user.id)
+        expect(body['users'].first['id']).to eq(logged_user.id)
       end
     end
 
     context 'sorting' do
-      let(:correct_order_users) do
-        (users << user).sort_by do |user|
-          user.name
-        end
-      end
+      let!(:first_user) { create(:user, name: 'Aaaa') }
+      let!(:last_user) { create(:user, name: 'Zzzzz') }
       let(:valid_params) do
         {
           sort: 'name',
@@ -68,15 +65,13 @@ describe Search::Users::API do
         }
       end
 
-      it 'returns the users on the correct position' do
-        get '/search/users', valid_params, auth(user)
+      it 'returns the users in the correct sorting order' do
+        get '/search/users', valid_params, auth(logged_user)
         expect(response.status).to eq(200)
         users = parsed_body['users']
 
-        expect(users).to_not be_blank
-        expect(users.map do |u|
-          u['id']
-        end).to eq(correct_order_users.map(&:id))
+        expect(users.first['id']).to eq(first_user.id)
+        expect(users.last['id']).to eq(last_user.id)
       end
     end
   end
@@ -98,7 +93,7 @@ describe Search::Users::API do
       any_user = users.sample
       any_user.update(name: 'Nome de teste')
 
-      get "/search/groups/#{group.id}/users?name=teste", nil, auth(user)
+      get "/search/groups/#{group.id}/users?name=teste", nil, auth(logged_user)
       expect(response.status).to eq(200)
       body = parsed_body
 
@@ -114,7 +109,7 @@ describe Search::Users::API do
         any_user = users.sample
         any_user.update(email: 'teste@gmail.com')
 
-        get "/search/groups/#{group.id}/users?email=tes", nil, auth(user)
+        get "/search/groups/#{group.id}/users?email=tes", nil, auth(logged_user)
         expect(response.status).to eq(200)
         body = parsed_body
 
@@ -137,7 +132,7 @@ describe Search::Users::API do
       end
 
       it 'returns the users on the correct position' do
-        get "/search/groups/#{group.id}/users", valid_params, auth(user)
+        get "/search/groups/#{group.id}/users", valid_params, auth(logged_user)
         expect(response.status).to eq(200)
 
         users = parsed_body['users']

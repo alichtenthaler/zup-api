@@ -1,5 +1,3 @@
-# Read about factories at https://github.com/thoughtbot/factory_girl
-
 FactoryGirl.define do
   factory :inventory_category, class: 'Inventory::Category' do
     title { generate(:name) }

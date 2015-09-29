@@ -2,8 +2,8 @@ module Rails
   def self.application
     Struct.new(:config, :paths) do
       def load_seed
-        require File.expand_path('../application', __FILE__)
-        require File.expand_path('../db/seeds', __FILE__)
+        require File.join(Application.config.root, 'application.rb')
+        require File.join(Application.config.root, 'db', 'seeds.rb')
       end
     end.new(config, paths)
   end
@@ -33,8 +33,6 @@ end
 if ARGV[0] && ARGV[0].start_with?('db:test')
   Bundler.require(:default, :test, :development)
 end
-
-Application.eager_load!
 
 ActiveRecord::Tasks::DatabaseTasks.database_configuration = Rails.config.db_config
 

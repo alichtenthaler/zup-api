@@ -1,5 +1,5 @@
 module Reports::ItemHistories
-  class API < Grape::API
+  class API < Base::API
     helpers do
       def load_item
         Reports::Item.find(params[:item_id])

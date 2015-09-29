@@ -9,13 +9,14 @@ class Step < ActiveRecord::Base
   has_many :triggers,   dependent: :destroy
   has_many :fields,     dependent: :destroy
   has_many :case_steps
+  has_many :cases_log_entries
 
   default_scope -> { order(id: :asc) }
   scope :active, -> { where(active: true) }
 
   validates :title, length: { maximum: 100 }, presence: true
   validates :step_type, presence: true
-  validates :step_type, inclusion: { in: %w{form flow} }, allow_blank: true
+  validates :step_type, inclusion: %w(form flow), allow_blank: true
   validate :cant_use_parent_flow_on_child_flow, if: -> { step_type == 'flow' && child_flow.present? }
 
   after_create :add_step_on_flow
@@ -23,15 +24,17 @@ class Step < ActiveRecord::Base
   before_update :remove_step_on_flow, if: -> { active_changed? && !active }
   before_destroy :remove_step_on_flow
 
-  def self.update_order!(ids, _user = nil)
-    get_flow  = find(ids.first).flow
-    steps     = get_flow.steps_versions
-    order_ids = ids.inject({}) do |ids, id|
+  def self.update_order!(steps_ids)
+    flow      = find(steps_ids.first).flow
+    steps     = flow.steps_versions
+
+    order_ids = steps_ids.inject({}) do |ids, id|
       ids[id.to_s] = steps[id.to_s]
       ids
     end
-    get_flow.update! steps_versions: {}
-    get_flow.update! steps_versions: order_ids
+
+    flow.update! steps_versions: {}
+    flow.update! steps_versions: order_ids
   end
 
   def inactive!
@@ -44,13 +47,13 @@ class Step < ActiveRecord::Base
     case_steps.where(options.merge(step_version: my_version))
   end
 
-  def my_fields(options = {}, live = false)
-    return fields.where(options) if versions.blank? || live
+  def my_fields(options = {})
+    return fields.where(options) if fields_versions.blank?
     Version.where('Field', fields_versions, options)
   end
 
-  def my_triggers(options = {}, live = false)
-    return triggers.where(options) if versions.blank? || live
+  def my_triggers(options = {})
+    return triggers.where(options) if triggers_versions.blank?
     Version.where('Trigger', triggers_versions, options)
   end
 

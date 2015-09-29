@@ -1,5 +1,5 @@
 module Groups
-  class API < Grape::API
+  class API < Base::API
     resources :groups do
       mount Groups::Permissions::API
 

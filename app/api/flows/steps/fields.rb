@@ -1,5 +1,5 @@
 module Flows::Steps::Fields
-  class API < Grape::API
+  class API < Base::API
     resources ':step_id/fields' do
       desc 'Get all Fields'
       get do

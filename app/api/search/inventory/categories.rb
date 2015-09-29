@@ -1,5 +1,5 @@
 module Search::Inventory::Categories
-  class API < Grape::API
+  class API < Base::API
     desc 'Search for inventory categories'
     paginate per_page: 25
     params do

@@ -1,5 +1,5 @@
 module Inventory::Categories
-  class API < Grape::API
+  class API < Base::API
     resources :categories do
       desc 'List all categories'
       paginate(per_page: 25)

@@ -1,5 +1,3 @@
-# Read about factories at https://github.com/thoughtbot/factory_girl
-
 FactoryGirl.define do
   factory :inventory_formula, class: 'Inventory::Formula' do
     association :category, factory: :inventory_category_with_sections

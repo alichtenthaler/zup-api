@@ -6,7 +6,7 @@ FactoryGirl.define do
     category_report_id 1
     origin_field_id 1
     active true
-    step nil
-    user { User.first }
+    step
+    user
   end
 end

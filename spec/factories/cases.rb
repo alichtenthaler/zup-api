@@ -1,8 +1,6 @@
-# Read about factories at https://github.com/thoughtbot/factory_girl
-
 FactoryGirl.define do
   factory :case do
-    created_by { User.first || create(:user) }
-    initial_flow_id 1
+    association :created_by, factory: :user
+    association :initial_flow, factory: :flow
   end
 end

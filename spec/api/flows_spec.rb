@@ -70,8 +70,22 @@ describe Flows::API, versioning: true do
         end
 
         context 'successfully' do
+          context 'when sent draft' do
+            before { get "/flows/#{flow.id}", { draft: true }, auth(user) }
+
+            it { expect(response.status).to be_a_success_request }
+            it { expect(parsed_body['flow']).to be_an_entity_of(flow.reload) }
+          end
+
+          context 'when not sent draft' do
+            before { get "/flows/#{flow.id}", {}, auth(user) }
+
+            it { expect(response.status).to be_a_success_request }
+            it { expect(parsed_body['flow']).to be_an_entity_of(flow.reload) }
+          end
+
           context 'when sent display_type full' do
-            before { get "/flows/#{flow.id}", { draft: true, display_type: 'full' }, auth(user) }
+            before { get "/flows/#{flow.id}", { display_type: 'full' }, auth(user) }
 
             it { expect(response.status).to be_a_success_request }
             it { expect(parsed_body['flow']).to be_an_entity_of(flow.reload, display_type: 'full') }

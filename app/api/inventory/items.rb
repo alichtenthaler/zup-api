@@ -1,5 +1,5 @@
 module Inventory::Items
-  class API < Grape::API
+  class API < Base::API
     helpers do
       def load_category(inventory_category_id = nil)
         Inventory::Category.find(inventory_category_id || safe_params[:category_id])

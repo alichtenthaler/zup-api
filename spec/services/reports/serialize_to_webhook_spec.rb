@@ -15,6 +15,10 @@ describe Reports::SerializeToWebhook do
 
   describe '#serialize' do
     before do
+      Webhook.load_categories_from_file(
+        File.join(Application.config.root, 'spec', 'support', 'webhook_categories.yml')
+      )
+
       allow(subject).to receive(:external_category_id).and_return(100)
       allow(subject).to receive(:report?).and_return(true)
       allow(subject).to receive(:solicitation?).and_return(false)
@@ -45,11 +49,12 @@ describe Reports::SerializeToWebhook do
           name: report.status.title
         },
         images: [{
-                   data: Base64.encode64(image.image.read),
-                   :'mime-type' => 'image/png'
-                 }],
+          data: Base64.encode64(image.image.read),
+          :'mime-type' => 'image/png'
+        }],
         user: an_instance_of(Hash),
-        protocol: report.protocol
+        protocol: report.protocol,
+        created_at: report.created_at
       )
     end
   end

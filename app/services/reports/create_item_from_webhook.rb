@@ -9,7 +9,10 @@ module Reports
     def create!
       ActiveRecord::Base.transaction do
         report = Reports::Item.create!(build_reports_params)
-        report.update_images!(build_images_params(params[:images]))
+
+        if params[:images]
+          report.update_images!(build_images_params(params[:images]))
+        end
 
         report
       end
@@ -42,13 +45,16 @@ module Reports
 
       # Comments params
       comments = params[:comments]
-      comments.each do |comment|
-        reports_params = reports_params.deep_merge(
-          comments_attributes: [{
-            author: create_user(comment[:user]),
-            message: comment[:message]
-          }]
-        )
+
+      if comments
+        comments.each do |comment|
+          reports_params = reports_params.deep_merge(
+            comments_attributes: [{
+              author: create_user(comment[:user]),
+              message: comment[:message]
+            }]
+          )
+        end
       end
 
       # Find or create status
@@ -60,26 +66,30 @@ module Reports
       reports_params
     end
 
-    def create_user(parameters)
-      user = parameters
-
+    def create_user(params)
       user_params = {
-        name: user[:name],
-        email: user[:email],
-        phone: user[:phone],
-        document: user[:document],
-        address: user[:address],
-        address_additional: user[:address_additional],
-        postal_code: user[:postal_code],
-        district: user[:district],
+        name: params[:name],
+        email: params[:email],
+        phone: params[:phone],
+        document: params[:document],
+        address: params[:address],
+        address_additional: params[:address_additional],
+        postal_code: params[:postal_code],
+        district: params[:district],
         ignore_password_requirement: true,
         from_webhook: true
       }
 
-      user_email = user_params.delete(:email)
+      user = User.find_by(email: params[:email])
 
-      User.create_with(user_params)
-          .find_or_create_by!(email: user_email)
+      if user
+        user_params.delete(:email)
+        user.update!(user_params)
+      else
+        user = User.create!(user_params)
+      end
+
+      user
     end
 
     def build_images_params(parameters)
@@ -99,7 +109,7 @@ module Reports
       status = Reports::Status.create_with(color: '#cccccc')
                               .find_or_create_by!(title: name)
 
-      category.status_categories.find_or_create_by!(
+      category.status_categories.create_with(color: '#cccccc').find_or_create_by!(
         reports_status_id: status.id
       )
 

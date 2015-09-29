@@ -36,7 +36,8 @@ module Reports
         user: build_user_data(report.user),
         uuid: report.uuid,
         external_category_id: external_category_id,
-        protocol: report.protocol
+        protocol: report.protocol,
+        created_at: report.created_at
       )
     end
 
@@ -93,6 +94,9 @@ module Reports
           }
         end
       end
+    rescue => e
+      Raven.capture_exception(e)
+      []
     end
   end
 end

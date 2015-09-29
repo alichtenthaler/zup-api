@@ -11,6 +11,7 @@ describe Reports::Categories::API do
         resolution_time: 2 * 60 * 60 * 24,
         user_response_time: 1 * 60 * 60 * 24,
         color: '#f3f3f3',
+        priority: 'high',
         inventory_categories: inventory_categories.map(&:id),
         confidential: true,
         statuses: {
@@ -187,7 +188,7 @@ describe Reports::Categories::API do
         match_array(valid_params[:inventory_categories])
 
       valid_params.except(:inventory_categories, :token, :statuses, :marker, :icon).each do |param_key, param_value|
-        expect(category[param_key.to_s]).to eq(param_value)
+        expect(category.send(param_key.to_s)).to eq(param_value)
       end
 
       expect(category[:icon]).to_not be_empty

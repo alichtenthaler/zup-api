@@ -1,7 +1,7 @@
 require 'spec_helper'
 
 describe Users::API do
-  context 'POST /authenticate' do
+  describe 'POST /authenticate' do
     let(:user) { create(:user, password: '123456') }
     let(:valid_params) do
       Oj.load <<-JSON
@@ -44,7 +44,7 @@ describe Users::API do
     end
   end
 
-  context 'DELETE /sign_out' do
+  describe 'DELETE /sign_out' do
     let(:user) { create(:user) }
     let(:access_key) { user.access_keys.last }
 
@@ -58,7 +58,7 @@ describe Users::API do
     end
   end
 
-  context 'PUT /recover_password' do
+  describe 'PUT /recover_password' do
     let(:user) { create(:user) }
     let(:valid_params) do
       Oj.load <<-JSON
@@ -76,8 +76,8 @@ describe Users::API do
     end
   end
 
-  context 'PUT /reset_password' do
-    let(:user) { user = create(:user) }
+  describe 'PUT /reset_password' do
+    let(:user) { create(:user) }
     let(:valid_params) do
       Oj.load <<-JSON
         {
@@ -99,7 +99,7 @@ describe Users::API do
     end
   end
 
-  context 'POST /users' do
+  describe 'POST /users' do
     let!(:guest_group) { create(:guest_group) }
     let(:valid_params) do
       Oj.load <<-JSON
@@ -181,7 +181,7 @@ describe Users::API do
     end
   end
 
-  context 'GET /users/:id' do
+  describe 'GET /users/:id' do
     let(:user) { create(:user) }
 
     it "returns user's data" do
@@ -206,7 +206,7 @@ describe Users::API do
     end
   end
 
-  context 'GET /me' do
+  describe 'GET /me' do
     let(:user) { create(:user) }
     it "returns the signed user's data" do
       get '/me', nil, auth(user)
@@ -225,7 +225,7 @@ describe Users::API do
     end
   end
 
-  context 'DELETE /me' do
+  describe 'DELETE /me' do
     let(:user) { create(:user) }
 
     it 'destroys current user' do
@@ -234,29 +234,47 @@ describe Users::API do
     end
   end
 
-  context 'PUT /users' do
-    let(:user) { create(:user, password: '123456') }
+  describe 'PUT /users' do
+    let!(:user) { create(:user, name: 'Carlos Morais', email: 'email@gmail.com', postal_code: '22130-011') }
+    let!(:new_group) { create(:group) }
 
-    let(:valid_params) do
-      Oj.load <<-JSON
-        {
-          "email": "anotheremail@gmail.com"
-        }
-      JSON
-    end
-
-    it "updates user's info" do
+    def do_action
       put "/users/#{user.id}", valid_params, auth(user)
-      expect(response.status).to eq(200)
-      expect(user.reload.email).to eq('anotheremail@gmail.com')
     end
 
-    context 'changing password' do
-      before do
-        group = create(:guest_group)
-        user.groups = [group]
-        user.save!
+    context 'success' do
+      let(:valid_params) do
+        Oj.load <<-JSON
+          {
+            "email": "anotheremail@gmail.com",
+            "name": "Lucas",
+            "postal_code": "20230-001",
+            "groups_ids": [#{new_group.id}]
+          }
+        JSON
       end
+
+      it 'returns 200 status' do
+        do_action
+        expect(response.status).to eq(200)
+      end
+
+      it "updates user's info" do
+        do_action
+        user.reload
+        expect(user.email).to eq('anotheremail@gmail.com')
+        expect(user.name).to eq('Lucas')
+        expect(user.postal_code).to eq('20230-001')
+      end
+
+      it "updates user's groups as well" do
+        do_action
+        expect(user.reload.groups).to include(new_group)
+      end
+    end
+
+    describe 'changing password' do
+      let!(:user) { create(:guest_user, password: '123456') }
 
       let(:valid_params) do
         Oj.load <<-JSON
@@ -267,29 +285,34 @@ describe Users::API do
         JSON
       end
 
-      it "throw error if the current_password attribute isn't present" do
-        put "/users/#{user.id}", valid_params, auth(user)
-        expect(response.status).to eq(400)
+      context "current_password attribute isn't present" do
+        it 'throws error' do
+          do_action
+          expect(response.status).to eq(400)
+        end
       end
 
-      it "doesn't throw error if the current_password attribute is present" do
-        valid_params['current_password'] = '123456'
-        old_password_hash = user.encrypted_password
-        put "/users/#{user.id}", valid_params, auth(user)
-        expect(response.status).to eq(200)
+      context 'current_password attribute is present' do
+        before do
+          valid_params['current_password'] = '123456'
+        end
 
-        expect(user.reload.encrypted_password).to_not eq(old_password_hash)
+        it "doesn't throw error" do
+          do_action
+          expect(response.status).to eq(200)
+        end
+
+        it 'updates the password' do
+          expect do
+            do_action
+          end.to change{ user.reload.encrypted_password }
+        end
       end
 
       context 'user manager changing the password' do
-        let(:manager) { create(:user, groups: []) }
-        let(:group) { create(:group) }
-
-        before do
-          group.permission.update!(users_full_access: true)
-          manager.groups << group
-          manager.save!
-        end
+        let!(:admin_permission) { create(:admin_permissions) }
+        let!(:admin_group) { create(:group, permission: admin_permission) }
+        let!(:manager) { create(:user, groups: [admin_group]) }
 
         it "doesn't need current_password if a manager is changing" do
           put "/users/#{user.id}", valid_params, auth(manager)
@@ -297,9 +320,36 @@ describe Users::API do
         end
       end
     end
+
+    context 'invalid params' do
+      let(:invalid_params) do
+        Oj.load <<-JSON
+          {
+            "email": "a",
+            "groups_ids": [#{new_group.id}]
+          }
+        JSON
+      end
+
+      def do_action
+        put "/users/#{user.id}", invalid_params, auth(user)
+      end
+
+      it 'wont update users attributes' do
+        expect do
+          do_action
+        end.to_not change{ user.reload.email }
+      end
+
+      it 'wont update the groups' do
+        expect do
+          do_action
+        end.to_not change{ user.reload.groups }
+      end
+    end
   end
 
-  context 'DELETE /users/:id' do
+  describe 'DELETE /users/:id' do
     let(:user) { create(:user) }
     let(:other_user) { create(:user) }
 
@@ -319,7 +369,7 @@ describe Users::API do
     end
   end
 
-  context 'PUT /users/:id/enable' do
+  describe 'PUT /users/:id/enable' do
     let(:user) { create(:user, :disabled) }
     let(:other_user) { create(:user, :disabled) }
 
@@ -340,7 +390,7 @@ describe Users::API do
     end
   end
 
-  context 'GET /users' do
+  describe 'GET /users' do
     let!(:user) { create(:user, name: 'Burns', email: 'burns@test.com') }
     let!(:users) { create_list(:user, 5) }
     let!(:group) { create(:group) }
@@ -427,6 +477,50 @@ describe Users::API do
 
         expect(body['message']).to eq('Usuário não encontrado')
       end
+    end
+  end
+
+  describe 'GET /autocomplete/user' do
+    let!(:logged_user) { create(:user, name: 'Trunks') }
+    let!(:son_goku) { create(:user, name:'Son Goku') }
+    let!(:son_gohan) { create(:user, name:'Son Gohan') }
+
+    def make_request
+      get '/autocomplete/user?term=son', nil, auth(logged_user)
+    end
+
+    subject(:body) do
+      make_request
+      parsed_body
+    end
+
+    it 'returns success code' do
+      make_request
+      expect(response.status).to eq(200)
+    end
+
+    it 'returns the correct users' do
+      returned_ids = body['result'].map { |h| h['id'] }
+
+      expect(returned_ids).to include(son_gohan.id)
+      expect(returned_ids).to include(son_goku.id)
+    end
+
+    it "returns correct user's params" do
+      user_hash = body['result'].first
+
+      expect(user_hash['id']).to eq(son_gohan.id)
+      expect(user_hash['name']).to eq(son_gohan.name)
+      expect(user_hash['mention_string']).to eq("@U#{son_gohan.id}")
+    end
+
+    it 'orders the users by name asc' do
+      expect(body['result'].first['id']).to eq(son_gohan.id)
+    end
+
+    it 'returns only 5 users' do
+      create_list(:user, 4, name: 'Son Goten')
+      expect(body['result'].size).to eq(5)
     end
   end
 end

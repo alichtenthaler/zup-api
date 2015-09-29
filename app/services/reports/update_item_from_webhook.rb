@@ -10,7 +10,6 @@ module Reports
     def update!
       ActiveRecord::Base.transaction do
         report.update!(build_reports_params)
-
         report.reload
 
         if params[:external_category_id]
@@ -41,14 +40,40 @@ module Reports
       # Comments params
       comments = params[:comments]
 
+      # Report params
+      reports_params = reports_params.merge_if_not_nil(
+        external_category_id: params[:external_category_id],
+        is_solicitation: params[:is_solicitation],
+        is_report: params[:is_report],
+        description: params[:description],
+        address: params[:address],
+        reference: params[:reference]
+      )
+
+      if params[:user]
+        reports_params = reports_params.merge(
+          user: create_user(params[:user])
+        )
+      end
+
+      if params[:longitude] && params[:latitude]
+        reports_params = reports_params.merge(
+          position: Reports::Item.rgeo_factory.point(params[:longitude], params[:latitude])
+        )
+      end
+
       if comments
         comments.each do |comment|
-          reports_params = reports_params.deep_merge(
-            comments_attributes: [{
-              author: create_user(comment[:user]),
-              message: comment[:message]
-            }]
-          )
+          existing_comment = report.comments.find_by(message: comment[:message])
+
+          unless existing_comment
+            reports_params = reports_params.deep_merge(
+              comments_attributes: [{
+                author: create_user(comment[:user]),
+                message: comment[:message]
+              }]
+            )
+          end
         end
       end
 

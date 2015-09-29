@@ -2,9 +2,8 @@ FactoryGirl.define do
   factory :flow do
     title 'title test'
     description 'description test'
-    created_by { User.first || create(:user) }
-    user { User.first }
-    resolution_states { [build(:resolution_state, default: true)] }
+    association :created_by, factory: :user
+    user
     steps { [build(:step)] }
     initial false
     status 'active'
@@ -22,5 +21,9 @@ FactoryGirl.define do
 
   factory :flow_with_more_steps, parent: :flow do
     steps { [build(:step), build(:step)] }
+  end
+
+  trait :with_resolution_state do
+    resolution_states { [build(:resolution_state, default: true)] }
   end
 end

@@ -15,13 +15,14 @@ class User < ActiveRecord::Base
   has_many :flows, class_name: 'Flow', foreign_key: :created_by_id
   has_many :cases, class_name: 'Case', foreign_key: :created_by_id
   has_many :cases_log_entries
+  has_many :cases_log_entries_as_before_user, class_name: 'CasesLogEntry', foreign_key: :before_user_id
+  has_many :cases_log_entries_as_after_user, class_name: 'CasesLogEntry', foreign_key: :after_user_id
 
   EMAIL_REGEXP = /\A(([A-Za-z0-9]+_+)|([A-Za-z0-9]+\-+)|([A-Za-z0-9]+\.+)|
-                    ([A-Za-z0-9]+\++))*[A-Z<200c><200b>a-z0-9]+@((\w+\-+)|
+                    ([A-Za-z0-9]+\++))*[A-Z<200c><200b>a-z0-9_]+@((\w+\-+)|
                     (\w+\.))*\w{1,63}\.[a-zA-Z]{2,6}\z/x
 
   validates :email, presence: true,
-                    uniqueness: { scope: [:disabled] },
                     format: { with: EMAIL_REGEXP }
   validates :name, presence: true, length: { in: 4..64 }
 
@@ -151,6 +152,12 @@ class User < ActiveRecord::Base
       expose :facebook_user_id
       expose :twitter_user_id
       expose :google_plus_user_id
+    end
+
+    with_options(if: { display_type: 'autocomplete' }) do
+      expose :mention_string do |user|
+        "@U#{user.id}"
+      end
     end
 
     def permissions

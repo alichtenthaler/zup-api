@@ -1,5 +1,5 @@
 module Reports::Categories
-  class API < Grape::API
+  class API < Base::API
     resource :categories do
       desc 'Creates a new report category'
       params do
@@ -19,6 +19,10 @@ module Reports::Categories
         requires :color, type: String,
                  desc: 'A hex color string that will be used as background color for the icons ' +
                  'and markers of this category'
+
+        optional :priority, type: String,
+                 desc: 'A priority of visualization. Used for listing and visualization.
+                 Accepts the values: low, medium and high'
 
         optional :resolution_time, type: Integer,
                  desc: 'The time this kind of report takes to be solved, in seconds.'
@@ -66,7 +70,7 @@ module Reports::Categories
 
         category_params = safe_params.permit(
           :title, :allows_arbitrary_position,
-          :resolution_time, :user_response_time, :color,
+          :resolution_time, :user_response_time, :color, :priority,
           :icon, :marker, :parent_id, :private, :confidential,
           :private_resolution_time, :resolution_time_enabled,
           :default_solver_group_id, :comment_required_when_forwarding,
@@ -160,7 +164,7 @@ module Reports::Categories
 
         category_params = safe_params.permit(
           :title, :allows_arbitrary_position,
-          :resolution_time, :user_response_time, :color,
+          :resolution_time, :user_response_time, :color, :priority,
           :parent_id, :confidential, :icon, :marker,
           :private_resolution_time, :resolution_time_enabled,
           :statuses, :default_solver_group_id, :comment_required_when_forwarding,

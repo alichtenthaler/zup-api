@@ -1,28 +1,29 @@
 class Case < ActiveRecord::Base
-  has_many :cases_log_entries
   has_many :case_steps
+  has_many :cases_log_entries
+  has_many :cases_log_entries_as_child_case, class_name: 'CasesLogEntry', foreign_key: :child_case_id
   belongs_to :initial_flow,     class_name: 'Flow',            foreign_key: :initial_flow_id
   belongs_to :created_by,       class_name: 'User',            foreign_key: :created_by_id
   belongs_to :updated_by,       class_name: 'User',            foreign_key: :updated_by_id
   belongs_to :resolution_state, class_name: 'ResolutionState', foreign_key: :resolution_state_id
   belongs_to :original_case,    class_name: 'Case',            foreign_key: :original_case_id
   has_many :children_cases,   class_name: 'Case',            foreign_key: :original_case_id
+  # TODO: define "dependent" for each association
 
   accepts_nested_attributes_for :case_steps
 
   scope :active,        -> { where(status: %w{active pending transfer not_satisfied}) }
   scope :not_inactive,  -> { where.not(status: 'inactive') }
   scope :inactive,      -> { where(status: 'inactive') }
-  scope :not_inactive_and_transfered, -> { where.not(status: ['inactive', 'transfer']) }
 
   validates :created_by_id, :initial_flow_id, presence: true
-  validates :status, inclusion: { in: %w{active pending finished inactive transfer not_satisfied} }
+  validates :status, inclusion: { in: %w{active pending finished inactive transfer not_satisfied} } # TODO: use enum?
   validate :not_change_initial_flow, on: :update
 
   def log!(action, options = {})
     basic = { flow: initial_flow, flow_version: flow_version, user: created_by,
              step: case_steps.last.try(:my_step), action: action }
-    cases_log_entries.create! options.merge(basic)
+    cases_log_entries.create! basic.merge(options)
   end
 
   def responsible_user_id
@@ -87,21 +88,6 @@ class Case < ActiveRecord::Base
         case_step_ids = case_steps.map(&:id) if case_steps.present?
       end
       CaseStep::Entity.represent case_steps, options.merge(simplify_to: case_step_ids)
-    end
-
-    def select_steps_that_user_can_see(steps)
-      steps.map do |step|
-        if @permissions.can?(:show, step[:step])
-          step[:flow_steps] = select_steps_that_user_can_see(step[:flow_steps]) if step[:flow_steps].present?
-          step
-        else
-          step[:step] = step[:step].slice(:id, :title, :step_type)
-          step[:flow] = step[:flow].slice(:id, :title) if step[:flow].present?
-          step[:flow_steps] = select_steps_that_user_can_see(step[:flow_steps]) if step[:flow_steps].present?
-          step
-        end
-      end
-      steps
     end
 
     def case_step_ids(instance, options)

@@ -1,3 +1,6 @@
+# to solve autoloading issues
+Application.eager_load!
+
 ActiveRecord::Base.logger = Logger.new(STDOUT)
 
 class CacheStore
@@ -15,3 +18,5 @@ class CacheStore
 end
 
 Application.config.cache = CacheStore.new
+
+ActiveRecord::Base.connection

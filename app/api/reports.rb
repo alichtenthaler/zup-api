@@ -1,5 +1,5 @@
 module Reports
-  class API < Grape::API
+  class API < Base::API
     namespace :reports do
       mount Reports::Categories::API
       mount Reports::Items::API

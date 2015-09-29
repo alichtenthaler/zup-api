@@ -1,5 +1,5 @@
 module Reports::Comments
-  class API < Grape::API
+  class API < Base::API
     namespace ':id/comments' do
       desc 'Get all comments from a report item'
       params do
@@ -36,9 +36,8 @@ module Reports::Comments
 
         comment = Reports::Comment.new(comment_params)
 
-        if [Reports::Comment::INTERNAL, Reports::Comment::PRIVATE].include?(comment.visibility)
-          validate_permission!(:edit, report)
-        end
+        validate_permission!(:create_internal, comment) if Reports::Comment::INTERNAL == comment.visibility
+        validate_permission!(:create, comment) if Reports::Comment::PRIVATE == comment.visibility
 
         comment.save!
 

@@ -1,23 +1,9 @@
-development:
+production: &default
   adapter: postgis
-  encoding: unicode
-  database: postgis_development<%= ENV['TEST_ENV_NUMBER'] %>
   host: localhost
-  pool: 10
-  username: postgres
-  password: test
-  postgis_extension: true
-  schema_search_path: public,postgis
-  port: 5432
+  database: zup_api_test<%= ENV['CI_NODE_INDEX'] %>
+  username: lynxnathan
+  password:
 
 test:
-  adapter: postgis
-  encoding: unicode
-  database: postgis_test<%= ENV['TEST_ENV_NUMBER'] %>
-  host: localhost
-  pool: 10
-  username: postgres
-  password: test
-  postgis_extension: true
-  schema_search_path: public,postgis
-  port: 5432
+  <<: *default

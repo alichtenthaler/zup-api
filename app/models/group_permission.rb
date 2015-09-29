@@ -9,7 +9,8 @@ class GroupPermission < ActiveRecord::Base
     user: User,
     group: Group,
     inventory: Inventory::Category,
-    report: Reports::Category
+    report: Reports::Category,
+    business_report: BusinessReport
   }
 
   # Types of permissions
@@ -64,6 +65,11 @@ class GroupPermission < ActiveRecord::Base
       'reports_items_alter_status' => Array,
       'reports_categories_edit' => Array,
       'reports_full_access' => Boolean
+    },
+
+    business_report: {
+      'business_reports_edit' => Boolean,
+      'business_reports_view' => Array
     }
   }
 
@@ -110,6 +116,8 @@ class GroupPermission < ActiveRecord::Base
       manage_flows
       manage_config
       create_reports_from_panel
+      business_reports_edit
+      business_reports_view
     )
   end
 end

@@ -277,6 +277,27 @@ describe Reports::Items::API do
       body = parsed_body['report']
       expect(body['confidential']).to be_truthy
     end
+
+    context 'validating versions' do
+      context 'valid version' do
+        it 'updates the item' do
+          valid_params['version'] = existent_item.version
+
+          put "/reports/#{category.id}/items/#{existent_item.id}", valid_params, auth(user)
+          expect(response.status).to eq(200)
+        end
+      end
+
+      context 'invalid version' do
+        it "doesn't update the item" do
+          valid_params['version'] = 2
+
+          put "/reports/#{category.id}/items/#{existent_item.id}", valid_params, auth(user)
+          expect(response.status).to eq(400)
+          expect(parsed_body['type']).to eq('version_mismatch')
+        end
+      end
+    end
   end
 
   context 'PUT /reports/:category_id/items/:id/change_category' do

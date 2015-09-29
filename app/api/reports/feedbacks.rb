@@ -1,5 +1,5 @@
 module Reports::Feedbacks
-  class API < Grape::API
+  class API < Base::API
     namespace ':id/feedback' do
       desc 'Get the feedback for the report item'
       params do

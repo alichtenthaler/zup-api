@@ -1,5 +1,5 @@
 module Reports::Items
-  class API < Grape::API
+  class API < Base::API
     desc 'Creates a new report'
     params do
       requires :category_id, type: Integer,
@@ -140,6 +140,8 @@ module Reports::Items
                desc: 'An array of images(post data or encoded on base64) for this report.'
       optional :confidential, type: Boolean,
                desc: 'If the report is confidential or not'
+      optional :version, type: Integer,
+               desc: 'Sends the version together with the update for validation'
     end
     put ':reports_category_id/items/:id' do
       authenticate!
@@ -148,6 +150,10 @@ module Reports::Items
       report = Reports::Item.find_by!(id: safe_params[:id], reports_category_id: category.id)
 
       validate_permission!(:edit, report)
+
+      if params[:version]
+        Reports::ValidateVersion.new(report, params[:version]).validate!
+      end
 
       Reports::Item.transaction do
         report_params = safe_params.permit(

@@ -1,5 +1,5 @@
 module Inventory::Statuses
-  class API < Grape::API
+  class API < Base::API
     helpers do
       def load_category
         Inventory::Category.find(params[:category_id])

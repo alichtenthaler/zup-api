@@ -1,9 +1,10 @@
 FactoryGirl.define do
   factory :step do
     title { generate(:name) }
-    description 'MyText'
+    description 'Passo 1'
     step_type 'flow'
-    user { User.first }
+    association :flow, factory: :flow_without_steps
+    user
   end
 
   factory :step_type_form, parent: :step do

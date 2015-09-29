@@ -64,7 +64,9 @@ describe Reports::GetStats do
         expect(returned_stats.size).to eq(1)
         expect(returned_stats.first[:statuses].size).to eq(1)
 
-        returned_count = returned_stats.first[:statuses].first[:count]
+        returned_count = returned_stats.first[:statuses].select do |s|
+          s[:status_id] == status2.id || s[:status_id] == status.id
+        end.first[:count]
 
         expect(returned_count).to eq(11)
       end

@@ -44,6 +44,7 @@ RSpec.configure do |config|
   config.before(:each) do
     # Always create the guest group
     FactoryGirl.create(:guest_group)
+    Sidekiq::Worker.clear_all
   end
 
   config.after(:each) do

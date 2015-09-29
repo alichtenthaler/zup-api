@@ -34,7 +34,7 @@ class SetReportsOverdue
     items.find_in_batches do |group|
       group.each do |item|
         unless item.overdue?
-          item.update(overdue: true)
+          item.update(overdue: true, overdue_at: Time.now)
 
           Reports::CreateHistoryEntry.new(item)
             .create('overdue', 'Relato entrou em atraso, quando estava no status:',

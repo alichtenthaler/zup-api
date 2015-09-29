@@ -1,5 +1,5 @@
 module Cases
-  class API < Grape::API
+  class API < Base::API
     helpers CaseHelper
 
     resources :cases do

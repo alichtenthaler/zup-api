@@ -57,6 +57,19 @@ describe Groups::Permissions::API do
 
         expect(response.status).to eq(404)
       end
+
+      context 'business_report permission' do
+        let(:objects_ids) { create_list(:business_report, 2).map(&:id) }
+        let(:permissions) { %w(business_reports_view) }
+
+        it 'adds the ids to the array of ids of the permissions' do
+          post "/groups/#{group.id}/permissions/business_report", valid_params, auth(user)
+          expect(response.status).to eq(201)
+
+          group.permission.reload
+          expect(group.permission.business_reports_view).to match_array(objects_ids)
+        end
+      end
     end
 
     context 'boolean permissions' do

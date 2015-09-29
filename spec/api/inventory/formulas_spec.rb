@@ -67,6 +67,11 @@ describe Inventory::Formulas::API do
           subject
         end.to change(ExecuteFormulaForCategory.jobs, :size).by(1)
       end
+
+      it 'schedules the job with the correct params' do
+        expect(ExecuteFormulaForCategory).to receive(:perform_async).with(user.id, kind_of(Integer)).and_return(true)
+        subject
+      end
     end
   end
 

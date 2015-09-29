@@ -79,6 +79,10 @@ class UserAbility
       can :manage, Inventory::FormulaCondition
     end
 
+    if permissions.business_reports_edit
+      can :manage, BusinessReport
+    end
+
     # Users permissions
     # User can edit it's own info
     can :edit, User do |u|
@@ -145,7 +149,8 @@ class UserAbility
     end
 
     can :view, Reports::Item do |report|
-      permissions.reports_items_read_public.include?(report.reports_category_id) ||
+      permissions.reports_items_read_private.include?(report.reports_category_id) ||
+        permissions.reports_items_read_public.include?(report.reports_category_id) ||
         permissions.reports_categories_edit.include?(report.reports_category_id)
     end
 
@@ -159,6 +164,20 @@ class UserAbility
 
     can :alter_status, Reports::Item do |report|
       permissions.reports_items_alter_status.include?(report.reports_category_id)
+    end
+
+    can :create_internal, Reports::Comment do |comment|
+      report = comment.item
+      permissions.reports_items_create_internal_comment.include?(report.reports_category_id) ||
+        permissions.reports_items_edit.include?(report.reports_category_id) ||
+        permissions.reports_full_access
+    end
+
+    can :create, Reports::Comment do |comment|
+      report = comment.item
+      permissions.reports_items_create_comment.include?(report.reports_category_id) ||
+        permissions.reports_items_edit.include?(report.reports_category_id) ||
+        permissions.reports_full_access
     end
 
     # Inventory items permissions
@@ -254,6 +273,11 @@ class UserAbility
       can_view_all_steps    = permissions.flow_can_view_all_steps.include?(case_step.step.flow.id)
       can_execute_step || can_view_step || can_execute_all_steps || can_view_all_steps
     end
+
+    # Business reports
+    can :view, BusinessReport do |business_report|
+      business_reports_visible.include?(business_report.id)
+    end
   end
 
   def inventory_categories_visible
@@ -296,5 +320,9 @@ class UserAbility
 
   def groups_visible
     (permissions.group_read_only + permissions.group_edit + permissions.users_edit).uniq
+  end
+
+  def business_reports_visible
+    permissions.business_reports_view
   end
 end

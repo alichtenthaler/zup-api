@@ -1,6 +1,11 @@
 require 'app_helper'
 
 describe Group do
+  describe 'associations' do
+    it { should have_and_belong_to_many(:users) }
+    it { should have_one(:permission).class_name('GroupPermission').autosave(true) }
+  end
+
   it 'validates name' do
     group = Group.new
     expect(group).to_not be_valid

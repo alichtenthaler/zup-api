@@ -1,6 +1,7 @@
 require 'ffaker'
+require 'faker/cpf'
 require 'cpf_faker'
-require 'factory_girl_rails'
+require 'factory_girl'
 
 #IconUploader.enable_processing = false
 #MarkerUploader.enable_processing = false
@@ -8,6 +9,7 @@ require 'factory_girl_rails'
 
 # encoding: utf-8
 fg = FactoryGirl
+fg.find_definitions
 
 ## Create groups
 guest_group = fg.create(:guest_group, name: 'Público')
@@ -26,6 +28,8 @@ puts "Administrator password: #{password}"
 puts '******************************************************************'
 
 if ENV['WITH_FAKE_DATA'] == 'true'
+  # Create test admin user
+  fg.create(:user, email: 'tecnologia@ntxdev.com.br', password: '123456', groups: [admin])
 
   ## Users
   # Common Users
@@ -48,25 +52,25 @@ if ENV['WITH_FAKE_DATA'] == 'true'
       color: '#ff6049'
   )
 
-  arvores_icon = Rails.root.join('public/base/default_icons/icon_arvore@2x.png').open
+  arvores_icon = File.open(File.join(Application.config.root, 'public/base/default_icons/icon_arvore@2x.png'))
   arvores.update!(
       icon: arvores_icon,
       marker: arvores_icon,
       pin: arvores_icon
   )
-  bocas_de_lobo_icon = Rails.root.join('public/base/default_icons/icon_bocalobo@2x.png').open
+  bocas_de_lobo_icon = File.open(File.join(Application.config.root, 'public/base/default_icons/icon_bocalobo@2x.png'))
   bocas_de_lobo.update!(
       icon: bocas_de_lobo_icon,
       marker: bocas_de_lobo_icon,
       pin: bocas_de_lobo_icon
   )
-  wifi_icon = Rails.root.join('public/base/default_icons/icon_pracawifi@2x.png').open
+  wifi_icon = File.open(File.join(Application.config.root, 'public/base/default_icons/icon_pracawifi@2x.png'))
   pracas_wifi.update!(
       icon: wifi_icon,
       marker: wifi_icon,
       pin: wifi_icon
   )
-  entulhos_icon = Rails.root.join('public/base/default_icons/icon_coletaentulho@2x.png').open
+  entulhos_icon = File.open(File.join(Application.config.root, 'public/base/default_icons/icon_coletaentulho@2x.png'))
 
   ## Modify forms
   section = arvores.sections.build(title: 'Outros dados')
@@ -164,17 +168,17 @@ if ENV['WITH_FAKE_DATA'] == 'true'
   # Association reports categories to inventory categories
   limpeza_de_boca.inventory_categories << bocas_de_lobo
 
-  available_dates = [5.months.ago, 2.months.ago, 29.days.ago, 6.days.ago]
-
   ## Create reports items for categories
   Reports::Item.skip_callback('create', :after, :send_email_to_user)
-  30.times do
-    available_dates.each do |date|
-      2.times do
-        fg.create(:reports_item, inventory_item: boca_de_lobo_items.sample, category: limpeza_de_boca, created_at: date, user: users.sample)
-        fg.create(:reports_item, category: coleta_de_entulho, created_at: date, user: users.sample)
-      end
+  60.times do |i|
+    created_at = i.days.from_now
+
+    if i > 50
+      created_at += 1.year
     end
+
+    fg.create(:reports_item, inventory_item: boca_de_lobo_items.sample, category: limpeza_de_boca, created_at: created_at, user: users.sample, reporter: users.sample)
+    fg.create(:reports_item, category: coleta_de_entulho, created_at: i.days.from_now, user: users.sample, reporter: users.sample)
   end
 
   # Balance the reports items statuses

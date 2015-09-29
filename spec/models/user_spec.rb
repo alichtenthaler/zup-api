@@ -1,53 +1,82 @@
 require 'app_helper'
 
 describe User do
-  it 'validates basic login fields' do
-    user = User.new
-    user.should_not be_valid
-    user.errors.should include(:email)
-    user.errors.should include(:encrypted_password)
+  describe 'associations' do
+    it { should have_many(:access_keys) }
+    it { should have_many(:cases_log_entries) }
+    it { should have_many(:cases_log_entries_as_before_user).class_name('CasesLogEntry').with_foreign_key(:before_user_id) }
+    it { should have_many(:cases_log_entries_as_after_user).class_name('CasesLogEntry').with_foreign_key(:after_user_id) }
+    it { should have_many(:flows).class_name('Flow').with_foreign_key(:created_by_id) }
+    it { should have_many(:cases).class_name('Case').with_foreign_key(:created_by_id) }
+    it { should have_many(:reports).class_name('Reports::Item').with_foreign_key(:user_id) }
+    it { should have_many(:feedbacks).class_name('Reports::Feedback') }
+    it { should have_and_belong_to_many(:groups) }
+    it { should have_many(:groups_permissions).class_name('GroupPermission').through(:groups).source(:permission) }
   end
 
-  context 'validations' do
-    context 'password length' do
-      let(:user) { build(:user) }
-
-      it 'is at least 6 chars' do
-        user.password = user.password_confirmation = '12345'
-        expect(user).to_not be_valid
-        expect(user.errors).to include(:password)
-      end
-
-      it 'is 16 chars length at maximum' do
-        user.password = user.password_confirmation = '12345678901234567'
-        expect(user).to_not be_valid
-        expect(user.errors).to include(:password)
-      end
-    end
-
-    context 'name length' do
-      let(:user) { build(:user) }
-
-      it 'is at least 6 chars' do
-        user.password = user.password_confirmation = '12345'
-        expect(user).to_not be_valid
-        expect(user.errors).to include(:password)
-      end
-    end
-
-    context 'email format' do
-      %w(estevao@gmail estevao!2#!@#@fadsf@gmail.com).each do |invalid_email|
-        it "isn't allowed invalid email like '#{invalid_email}' to be registered" do
-          user = build(:user, email: invalid_email)
-          expect(user).to_not be_valid
-          expect(user.errors).to include(:email)
+  describe 'validations' do
+    context 'default (without from_webhook)' do
+      describe 'presence' do
+        [:name, :email, :encrypted_password, :phone, :document, :address, :postal_code, :district].each do |field|
+          it { should validate_presence_of(field) }
         end
       end
 
-      %w(test+taggedemail@gmail.com user@prefeitura.gov.sp.br).each do |valid_email|
-        it "is allowed valid email like '#{valid_email}' to be registered" do
-          user = build(:user, email: valid_email)
-          expect(user).to be_valid
+      describe 'password length' do
+        let(:user) { build(:user) }
+
+        it 'has at least 6 chars' do
+          user.password = user.password_confirmation = '12345'
+          user.save
+          expect(user.errors).to include(:password)
+        end
+
+        it 'has 16 chars length at maximum' do
+          user.password = user.password_confirmation = '12345678901234567'
+          user.save
+          expect(user.errors).to include(:password)
+        end
+      end
+
+      describe 'name length' do
+        let(:user) { build(:user) }
+
+        it 'has at least 6 chars' do
+          user.password = user.password_confirmation = '12345'
+          expect(user).to_not be_valid
+          expect(user.errors).to include(:password)
+        end
+      end
+
+      describe 'email format' do
+        let(:user) { build(:user) }
+
+        %w(estevao@gmail estevao!2#!@#@fadsf@gmail.com).each do |invalid_email|
+          it "isn't allowed invalid email like '#{invalid_email}' to be registered" do
+            user.email = invalid_email
+            user.save
+            expect(user.errors).to include(:email)
+          end
+        end
+
+        %w(test+taggedemail@gmail.com user@prefeitura.gov.sp.br user_testing@gmail.com user_@gmail.com).each do |valid_email|
+          it "is allowed valid email like '#{valid_email}' to be registered" do
+            user.email = valid_email
+            expect(user).to be_valid
+          end
+        end
+      end
+    end
+
+    context 'from_webhook' do
+      let(:user) { build(:user, from_webhook: true) }
+
+      describe 'presence' do
+        [:encrypted_password, :phone, :document, :address, :postal_code, :district].each do |field|
+          it "doesnt validate presence of #{field}" do
+            user.send("#{field}=", nil)
+            expect(user).to be_valid
+          end
         end
       end
     end

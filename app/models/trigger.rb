@@ -37,8 +37,8 @@ class Trigger < ActiveRecord::Base
     versions.present? ? update!(active: false) : destroy!
   end
 
-  def my_trigger_conditions(options = {}, live = false)
-    return trigger_conditions.where(options) if versions.blank? || live
+  def my_trigger_conditions(options = {})
+    return trigger_conditions.where(options) if trigger_conditions_versions.blank?
     Version.where('TriggerCondition', trigger_conditions_versions, options)
   end
 

@@ -1,5 +1,5 @@
 module Inventory::FieldOptions
-  class API < Grape::API
+  class API < Base::API
     helpers do
       def load_field(field_id = nil)
         Inventory::Field.find(

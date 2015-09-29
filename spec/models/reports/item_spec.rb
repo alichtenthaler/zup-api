@@ -142,7 +142,30 @@ describe Reports::Item do
 
     it 'returns the protocol just after created' do
       report.save!
-      expect(report.protocol).to_not be_blank
+      expect(report.reload.protocol).to_not be_blank
+    end
+  end
+
+  context 'versioning' do
+    let(:report) { create(:reports_item) }
+
+    it 'returns the version number 1, if no modifications were done' do
+      expect(report.reload.version).to eq(1)
+    end
+
+    it 'updates the version number if an update is made' do
+      report.update(address: 'Teste teste')
+      expect(report.reload.version).to eq(2)
+    end
+
+    it 'updates the version number if an update is made' do
+      require 'parallel'
+
+      Parallel.each([report.id, report.id], in_threads: 2) do |report_id|
+        described_class.find(report_id).update(address: "Teste teste #{rand(900)}")
+      end
+
+      expect(described_class.find(report.id).version).to eq(3)
     end
   end
 end

@@ -10,7 +10,7 @@ class Version < PaperTrail::Version
   def self.where(class_name, ids = {}, conditions = {})
     # maked this way to return in sequence
     ids.map do |id, version|
-      resource = version.present? ? reify(version) : class_name.constantize.find(id)
+      resource = version.present? && !conditions.include?(:draft) ? reify(version) : class_name.constantize.find(id)
       invalid  = conditions.map { |key, value| resource.try(key) == value }.include? false
       invalid ? nil : resource
     end.compact

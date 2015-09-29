@@ -93,13 +93,6 @@ describe Flows::Steps::API do
 
       context 'and user can manage steps' do
         context 'and failure' do
-          context 'because validations fields' do
-            before { put "/flows/#{flow.id}/steps/#{step.id}", {}, auth(user) }
-
-            it { expect(response.status).to be_a_bad_request }
-            it { expect(response.body).to be_an_error('title' => [I18n.t('activerecord.errors.messages.blank')]) }
-          end
-
           context 'because step type isn\'t flow or form' do
             before { put "/flows/#{flow.id}/steps/#{step.id}", valid_params.merge(step_type: :invalid), auth(user) }
 
@@ -268,8 +261,7 @@ describe Flows::Steps::API do
         end
 
         context 'successfully' do
-          let(:reload_flow) { flow.reload }
-          let(:steps_ids)   { reload_flow.steps.pluck(:id).map(&:to_s) }
+          let(:steps_ids)   { flow.reload.steps_versions.to_h.keys }
 
           before { put "/flows/#{flow.id}/steps", valid_params, auth(user) }
 
@@ -277,7 +269,7 @@ describe Flows::Steps::API do
           it { expect(response.body).to be_a_success_message_with(I18n.t(:steps_order_updated)) }
 
           it 'should has steps_versions on flow' do
-            expect(reload_flow.steps_versions).to eql(steps_ids.first => nil, steps_ids.last => nil)
+            expect(steps_ids).to eql(valid_params[:ids].map(&:to_s))
           end
         end
       end
@@ -313,52 +305,23 @@ describe Flows::Steps::API do
           end
         end
 
-        context 'successfully' do
+        context 'successfully adding permission' do
           before { put "/flows/#{flow.id}/steps/#{step.id}/permissions", valid_params, auth(user) }
 
           it { expect(response.status).to be_a_success_request }
           it { expect(response.body).to be_a_success_message_with(I18n.t(:permissions_updated)) }
           it { expect(user.groups.first.reload.permission.send(valid_params[:permission_type])).to eql [step.id] }
         end
-      end
-    end
-  end
 
-  describe 'DELETE permissions' do
-    let(:valid_params) { { group_ids: [user.groups.first.id], permission_type: 'can_view_step' } }
-    let!(:flow)        { create(:flow) }
-    let(:step)         { flow.steps.first }
-
-    context 'no authentication' do
-      before { delete "/flows/#{flow.id}/steps/#{step.id}/permissions" }
-      it     { expect(response.status).to be_a_bad_request }
-    end
-
-    context 'with authentication' do
-      context 'and user can\'t manage flows' do
-        let(:error) { I18n.t(:permission_denied, action: I18n.t(:manage), table_name: I18n.t(:flows)) }
-
-        before { delete "/flows/#{flow.id}/steps/#{step.id}/permissions", valid_params, auth(guest_user) }
-        it     { expect(response.status).to be_a_forbidden }
-        it     { expect(parsed_body).to be_an_error(error) }
-      end
-
-      context 'and user can manage flows' do
-        context 'failure' do
-          context 'when sent invalid permission_type' do
-            before { delete "/flows/#{flow.id}/steps/#{step.id}/permissions", valid_params.merge(permission_type: 'invalid'), auth(user) }
-
-            it { expect(response.status).to be_a_bad_request }
-            it { expect(response.body).to be_an_error(I18n.t(:permission_type_not_included)) }
+        context 'succesfully removing permission' do
+          before do
+            valid_params[:group_ids] = []
+            put "/flows/#{flow.id}/steps/#{step.id}/permissions", valid_params, auth(user)
           end
-        end
-
-        context 'successfully' do
-          before { delete "/flows/#{flow.id}/steps/#{step.id}/permissions", valid_params, auth(user) }
 
           it { expect(response.status).to be_a_success_request }
           it { expect(response.body).to be_a_success_message_with(I18n.t(:permissions_updated)) }
-          it { expect(user.groups.first.reload.permission.send(valid_params[:permission_type])).to eql([]) }
+          it { expect(user.groups.first.reload.permission.send(valid_params[:permission_type])).to eql [] }
         end
       end
     end

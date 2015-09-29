@@ -1,5 +1,7 @@
 module Users
-  class API < Grape::API
+  class API < Base::API
+    USERS_SHOWN_ON_AUTOCOMPLETE = 5
+
     desc 'Authenticate user and return a valid access token'
     params do
       requires :email, type: String, desc: "User's email address"
@@ -76,8 +78,6 @@ module Users
     desc 'Shows authenticated info'
     get :me do
       authenticate!
-
-      current_user.groups.includes(:permission)
 
       { user: User::Entity.represent(current_user,
                                      only: return_fields,
@@ -197,9 +197,7 @@ module Users
         )
 
         if params[:groups_ids].present?
-          user.groups = params[:groups_ids].map do |id|
-            Group.find(id)
-          end
+          user.groups = Group.find(params[:groups_ids])
 
           validate_permission!(:create, user)
         else
@@ -242,6 +240,7 @@ module Users
         optional :postal_code, type: String, desc: 'CEP'
         optional :district, type: String, desc: "User's neighborhood"
         optional :city, type: String, desc: "User's city"
+        optional :groups_ids, type: Array, desc: 'User groups'
 
         optional :device_token, type: String, desc: 'The device token if registration is from mobile'
         optional :device_type, type: String, desc: 'Could be ios or android'
@@ -266,6 +265,10 @@ module Users
         end
 
         user.update!(user_params.merge(user_changing_password: current_user))
+
+        if params[:groups_ids]
+          user.groups = Group.find(params[:groups_ids])
+        end
 
         { message: 'Conta alterada com sucesso.' }
       end
@@ -305,6 +308,20 @@ module Users
           { message: 'Usuário não encontrado' }
         end
       end
+    end
+
+    desc 'Autocomplete for users on chat'
+    params do
+      requires :term, type: String, desc: 'The search string for the autocomplete'
+    end
+    get '/autocomplete/user' do
+      authenticate!
+
+      users = User.like_search(name: safe_params[:term]).order(:name).limit(USERS_SHOWN_ON_AUTOCOMPLETE)
+
+      {
+        result: User::Entity.represent(users, display_type: 'autocomplete', only: [:id, :name, :mention_string])
+      }
     end
   end
 end

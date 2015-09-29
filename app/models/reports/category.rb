@@ -20,6 +20,8 @@ class Reports::Category < Reports::Base
   belongs_to :parent_category, class_name: 'Reports::Category', foreign_key: 'parent_id'
   has_many :subcategories, class_name: 'Reports::Category', foreign_key: 'parent_id'
 
+  enum priority: [:low, :medium, :high]
+
   scope :active, -> { where(active: true) }
   scope :main, -> { where(parent_id: nil) }
 
@@ -113,6 +115,7 @@ class Reports::Category < Reports::Base
     expose :icon_structure, as: :icon
     expose :marker_structure, as: :marker
     expose :color
+    expose :priority
     expose :resolution_time_enabled
     expose :resolution_time
     expose :private_resolution_time

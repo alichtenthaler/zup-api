@@ -45,7 +45,7 @@ class ListUsers
     if sort &&
       sort.in?(AVAILABLE_SORT_FIELDS) &&
       %w(desc asc).include?(order.downcase)
-      @scope = scope.order("#{sort.to_sym} #{order.to_sym}")
+      @scope = scope.order("#{sort} #{order}")
     else
       @scope = scope.order('users.id ASC')
     end

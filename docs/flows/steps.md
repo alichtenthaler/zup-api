@@ -27,8 +27,7 @@ curl -X POST --data-binary '{"campo":"valor"}' -H 'Content-Type:application/json
 * [Exibir](#show)
 * [Deleção](#delete)
 * [Redefinir Ordenação](#order)
-* [Adicionar Permissão](#permission_add)
-* [Remover Permissão](#permission_rem)
+* [Permissão](#permission)
 
 ___
 
@@ -1505,11 +1504,13 @@ Content-Type: application/json
 
 ___
 
-### Adicionar Permissão <a name="permission_add"></a>
+### Permissão <a name="permission"></a>
+
+Altera permissões de grupos que podem visualizar ou executar a etapa indicada.
 
 Endpoint: `/flows/:flow_id/steps/:id/permissions`
 
-Method: put
+Method: PUT
 
 #### Parâmetros de Entrada
 
@@ -1517,51 +1518,6 @@ Method: put
 |-----------------|---------|-------------|------------------------------------------------|
 | group_ids       | Array   | Sim         | Array de IDs dos Grupos a seram alterados.     |
 | permission_type | String  | Sim         | Tipo de permissão a ser adicionado.            |
-
-#### Tipos de Permissões
-
-| Permissão                 | Parâmetro             | Descrição                                                                         |
-|---------------------------|-----------------------|-----------------------------------------------------------------------------------|
-| can_execute_step          | ID da Etapa           | Pode visualizar e executar/atualizar uma Etapa do Caso.                           |
-| can_view_step             | ID da Etapa           | Pode visualizar uma Etapa do Caso.                                                |
-
-#### Status HTTP
-
-| Código | Descrição               |
-|--------|-------------------------|
-| 400    | Permissão não existe.   |
-| 401    | Acesso não autorizado.  |
-| 404    | Não existe.             |
-| 200    | Atualizado com sucesso. |
-
-#### Exemplo
-
-##### Response
-```
-Status: 200
-Content-Type: application/json
-```
-
-```json
-{
-  message: "Permissões atualizadas com sucesso"
-}
-```
-
-___
-
-### Remover Permissão <a name="permission_rem"></a>
-
-Endpoint: `/flows/:flow_id/steps/:id/permissions`
-
-Method: delete
-
-#### Parâmetros de Entrada
-
-| Nome            | Tipo    | Obrigatório | Descrição                                      |
-|-----------------|---------|-------------|------------------------------------------------|
-| group_ids       | Array   | Sim         | Array de IDs dos Grupos a seram alterados.     |
-| permission_type | String  | Sim         | Tipo de permissão a ser removida.              |
 
 #### Tipos de Permissões
 

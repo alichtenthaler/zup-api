@@ -1,5 +1,5 @@
 module Flows::Steps::Triggers::TriggerConditions
-  class API < Grape::API
+  class API < Base::API
     resources ':trigger_id/trigger_conditions' do
       desc 'Delete a Trigger Condition'
       delete ':id' do

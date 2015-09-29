@@ -98,5 +98,53 @@ describe Reports::Comments do
         expect(created_comment.visibility).to eq(Reports::Comment::PUBLIC)
       end
     end
+
+    context 'when user hasn\'t permissions to create private comments' do
+      let(:valid_params) do
+        Oj.load <<-JSON
+          {
+            "message": "Test message",
+            "visibility": 1
+          }
+        JSON
+      end
+
+      before do
+        group = create(:group)
+        group.permission.update(reports_items_read_private: [item.category.id])
+        user.groups = [group]
+        user.save!
+      end
+
+      it 'returns error' do
+        subject
+
+        expect(response.status).to eq(403)
+      end
+    end
+
+    context 'when user has permissions to create private comments' do
+      let(:valid_params) do
+        Oj.load <<-JSON
+          {
+            "message": "Test message",
+            "visibility": 1
+          }
+        JSON
+      end
+
+      before do
+        group = create(:group)
+        group.permission.update(reports_items_create_comment: [item.category.id])
+        user.groups = [group]
+        user.save!
+      end
+
+      it 'creates the comment' do
+        subject
+
+        expect(response.status).to eq(201)
+      end
+    end
   end
 end

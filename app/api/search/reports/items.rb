@@ -1,5 +1,5 @@
 module Search::Reports::Items
-  class API < Grape::API
+  class API < Base::API
     desc 'Search for report items'
     paginate per_page: 25
     params do

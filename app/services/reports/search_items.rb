@@ -40,7 +40,8 @@ class Reports::SearchItems
 
   def search
     scope = Reports::Item.includes(
-      :images, :comments, :category, :inventory_item, user: :groups
+      :images, :comments, :category, :inventory_item, :assigned_group,
+      :assigned_user, user: :groups, reporter: :groups, offensive_flags: :user
     )
 
     permissions = UserAbility.for_user(signed_user)

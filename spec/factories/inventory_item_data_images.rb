@@ -1,5 +1,3 @@
-# Read about factories at https://github.com/thoughtbot/factory_girl
-
 FactoryGirl.define do
   factory :inventory_item_data_image, class: 'Inventory::ItemDataImage' do
     association :item_data, factory: :inventory_item_data

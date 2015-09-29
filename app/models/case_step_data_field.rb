@@ -12,7 +12,7 @@ class CaseStepDataField < ActiveRecord::Base
 
   default_scope { order(:field_id) }
 
-  validates :field_id, presence: true
+  validates_presence_of :field_id
 
   class Entity < Grape::Entity
     expose :id

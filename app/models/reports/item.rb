@@ -32,12 +32,16 @@ class Reports::Item < Reports::Base
   has_many :comments, class_name: 'Reports::Comment',
                      foreign_key: :reports_item_id,
                      dependent: :destroy
+  has_many :histories, class_name: 'Reports::ItemHistory',
+                       foreign_key: 'reports_item_id',
+                       dependent: :destroy
 
   has_many :offensive_flags, class_name: 'Reports::OffensiveFlag',
                              foreign_key: :reports_item_id,
                              dependent: :destroy
 
   before_save :set_initial_status
+  after_update :update_version
   before_validation :get_position_from_inventory_item, :set_uuid, :clear_postal_code
 
   validates :description, length: { maximum: 800 }
@@ -78,6 +82,15 @@ class Reports::Item < Reports::Base
     end
   end
 
+  def overdue!(user = nil)
+    update(overdue: true)
+
+    Reports::CreateHistoryEntry.new(self, user)
+    .create('overdue', 'Relato entrou em atraso, quando estava no status:',
+            new: status.entity(only: [:id, :name])
+           )
+  end
+
   def fetch_image_versions(mounted)
     res = {}
 
@@ -108,6 +121,7 @@ class Reports::Item < Reports::Base
     expose :id
     expose :protocol
     expose :overdue
+    expose :version
     expose :assigned_user, using: User::Entity
     expose :assigned_group, using: Group::Entity
 
@@ -118,6 +132,7 @@ class Reports::Item < Reports::Base
         obj.inventory_item.location[:address]
       end
     end
+
     expose :number
     expose :reference
     expose :district
@@ -142,6 +157,7 @@ class Reports::Item < Reports::Base
         { latitude: position.y, longitude: position.x }
       end
     end
+
     expose :description
     expose :category_icon do |obj|
       if obj.category.present?
@@ -149,6 +165,8 @@ class Reports::Item < Reports::Base
       end
     end
 
+    # user: the user associated with the report item
+    # reporter: the user who created the report item
     expose :user
     expose :reporter, using: User::Entity
 
@@ -222,6 +240,12 @@ class Reports::Item < Reports::Base
       new_status = category.status_categories.initial.first!.status
       Reports::UpdateItemStatus.new(self).set_status(new_status)
     end
+  end
+
+  # @after_update
+  # Increments the item version by one
+  def update_version
+    self.class.increment_counter(:version, id)
   end
 
   # Set uuid

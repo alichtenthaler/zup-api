@@ -1,17 +1,14 @@
 module Search::Users
-  class API < Grape::API
+  class API < Base::API
     desc 'Search for users'
     paginate per_page: 25
     params do
       optional :name, type: String, desc: 'The name of the user to search for'
       optional :email, type: String, desc: 'The email of the user to search for'
-      optional :sort, type: String,
-        desc: 'The field to sort the users. Values: `name`, `username`, `phone`, `email`, `created_at`, `updated_at`'
-      optional :order, type: String,
-        desc: 'The order, can be `desc` or `asc`'
+      optional :sort, type: String, desc: 'The field to sort the users. Values: `name`, `username`, `phone`, `email`, `created_at`, `updated_at`'
+      optional :order, type: String, desc: 'The order, can be `desc` or `asc`'
       optional :disabled, type: Boolean
-      optional :user_document, type: String,
-               desc: 'User document, only numbers'
+      optional :user_document, type: String, desc: 'User document, only numbers'
     end
     get :users do
       authenticate!

@@ -2,7 +2,6 @@ class CaseStep < ActiveRecord::Base
   belongs_to :case
   belongs_to :step
   belongs_to :trigger
-  has_many :cases_log_entries
   has_many :case_step_data_fields
   belongs_to :created_by,        class_name: 'User',  foreign_key: :created_by_id
   belongs_to :updated_by,        class_name: 'User',  foreign_key: :updated_by_id
@@ -14,8 +13,8 @@ class CaseStep < ActiveRecord::Base
   URI_FORMAT   = /(^$)|(^(http|https|ftp|udp):\/\/[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,5}(:[0-9]{1,5})?([\/].*)?$)/ix
   EMAIL_FORMAT = /^([^\s]+)((?:[-a-z0-9]\.)[a-z]{2,})$/
 
-  validates :step_id, uniqueness: { scope: :case_id }
-  validate :fields_of_step, if: -> { case_step_data_fields.present? }
+  validates_uniqueness_of :step_id, scope: :case_id
+  validate :fields_of_step, if: -> { executed? }
 
   def my_step
     Version.reify(step_version)

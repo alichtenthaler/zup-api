@@ -1,6 +1,6 @@
 module Reports
   module OffensiveFlags
-    class API < Grape::API
+    class API < Base::API
       helpers do
         def load_item
           Reports::Item.find(params[:id])

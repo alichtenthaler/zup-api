@@ -83,14 +83,16 @@ module Groups
     end
 
     def validate_objects_existence(permission_name, objects_ids)
-      if permission_name['reports']
+      if permission_name.to_s.start_with?('reports')
         klass = Reports::Category
-      elsif permission_name['inventories']
+      elsif permission_name.to_s.start_with?('inventories')
         klass = Inventory::Category
-      elsif permission_name['groups']
+      elsif permission_name.to_s.start_with?('groups')
         klass = Group
-      elsif permission_name['users']
+      elsif permission_name.to_s.start_with?('users')
         klass = User
+      elsif permission_name.to_s.start_with?('business_reports')
+        klass = BusinessReport
       else
         return
       end

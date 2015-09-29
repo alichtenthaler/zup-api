@@ -1,6 +1,6 @@
 module Search
   module Groups
-    class API < Grape::API
+    class API < Base::API
       desc 'Search for groups'
       paginate per_page: 25
       params do

@@ -13,8 +13,9 @@ FactoryGirl.define do
     active true
     allows_arbitrary_position false
     color '#f3f3f3'
-    icon { File.read("#{Application.config.root}/spec/fixtures/images/valid_report_category_icon.png") }
-    marker { File.read("#{Application.config.root}/spec/fixtures/images/valid_report_category_marker.png") }
+    priority :high
+    icon { fixture_file_upload("#{Application.config.root}/spec/fixtures/images/valid_report_category_icon.png") }
+    marker { fixture_file_upload("#{Application.config.root}/spec/fixtures/images/valid_report_category_marker.png") }
     confidential false
 
     factory :reports_category_with_statuses do
