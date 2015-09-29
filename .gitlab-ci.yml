@@ -1,0 +1,44 @@
+stages:
+    - build
+    - test
+    - deploy
+
+build_image:
+    stage: build
+    script:
+      - ./build_and_test.sh build
+
+rubocop:
+    stage: test
+    script:
+      - ./build_and_test.sh rubocop
+
+knapsack1:
+    stage: test
+    script:
+      - ./build_and_test.sh test 0 5
+
+knapsack2:
+    stage: test
+    script:
+      - ./build_and_test.sh test 1 5
+
+knapsack3:
+    stage: test
+    script:
+      - ./build_and_test.sh test 2 5
+
+knapsack4:
+    stage: test
+    script:
+      - ./build_and_test.sh test 3 5
+
+knapsack5:
+    stage: test
+    script:
+      - ./build_and_test.sh test 4 5
+
+deploy:
+    stage: deploy
+    script:
+      - ./build_and_test.sh deploy

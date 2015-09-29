@@ -1,6 +1,0 @@
-production:
-  adapter: postgis
-  host: localhost
-  database: zup_api_dev
-  username: root
-  password:

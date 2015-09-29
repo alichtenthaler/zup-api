@@ -1,2 +1,0 @@
-web: passenger start -p 3000 --nginx-config-template "`pwd`/nginx.conf.erb" --log-level 3
-worker: bundle exec sidekiq -r ./application.rb -C ./config/sidekiq.yml

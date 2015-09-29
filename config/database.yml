@@ -1,9 +1,0 @@
-production: &default
-  adapter: postgis
-  host: localhost
-  database: zup_api_test<%= ENV['CI_NODE_INDEX'] %>
-  username: lynxnathan
-  password:
-
-test:
-  <<: *default
