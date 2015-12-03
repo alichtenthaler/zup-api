@@ -5,15 +5,15 @@ describe Reports::Items::API do
   let(:category) { create(:reports_category_with_statuses) }
   let(:valid_params) do
     {
-        latitude: FFaker::Geolocation.lat,
-        longitude: FFaker::Geolocation.lng,
-        address: 'Fake Street, 1234',
-        reference: 'Close to the store',
-        description: 'The situation is really crappy around here.',
-        images: [
-            Base64.encode64(fixture_file_upload("#{Application.config.root}/spec/fixtures/images/valid_report_item_photo.jpg").read),
-            Base64.encode64(fixture_file_upload("#{Application.config.root}/spec/fixtures/images/valid_report_item_photo.jpg").read)
-        ]
+      latitude: FFaker::Geolocation.lat,
+      longitude: FFaker::Geolocation.lng,
+      address: 'Fake Street, 1234',
+      reference: 'Close to the store',
+      description: 'The situation is really crappy around here.',
+      images: [
+        Base64.encode64(fixture_file_upload("#{Application.config.root}/spec/fixtures/images/valid_report_item_photo.jpg").read),
+        Base64.encode64(fixture_file_upload("#{Application.config.root}/spec/fixtures/images/valid_report_item_photo.jpg").read)
+      ]
     }
   end
 
@@ -177,6 +177,38 @@ describe Reports::Items::API do
         end
       end
     end
+
+    context 'forwarding to category perimeter group solver' do
+      let(:category) { create(:reports_category_with_statuses, perimeters: true) }
+      let!(:perimeter) { create(:reports_perimeter, :imported) }
+      let!(:category_perimeter) { create(:reports_category_perimeter, category: category, perimeter: perimeter) }
+
+      let(:valid_params) do
+        {
+          latitude: -22.906662240700097,
+          longitude: -43.181757530761786,
+          address: 'Praça Tiradentes',
+          city: 'Rio de Janeiro',
+          county: 'Brasil',
+          district: 'Centro',
+          number: '10',
+          postal_code: '20060-070',
+          state: 'RJ'
+        }
+      end
+
+      it 'assigns group and perimeter' do
+        post "/reports/#{category.id}/items", valid_params, auth(user)
+
+        expect(response.status).to eq(201)
+
+        body = parsed_body['report']
+        report = Reports::Item.find(body['id'])
+
+        expect(report.perimeter).to eq(perimeter)
+        expect(report.assigned_group).to eq(category_perimeter.group)
+      end
+    end
   end
 
   context 'PUT /reports/:category_id/items/:id' do
@@ -205,6 +237,7 @@ describe Reports::Items::API do
       valid_params = {
         images: [{
           id: existent_item.images.first.id,
+          title: 'Image',
           file: Base64.encode64(fixture_file_upload("#{Application.config.root}/spec/fixtures/images/valid_report_category_marker.png").read)
         }]
       }
@@ -217,6 +250,7 @@ describe Reports::Items::API do
       body = parsed_body['report']
 
       expect(existent_item.reload.images.first.url).to_not eq(old_image_url)
+      expect(existent_item.reload.images.first.title).to eq('Image')
       expect(existent_item.reload.images.last.url).to eq(old_image_url2)
     end
 
@@ -296,6 +330,30 @@ describe Reports::Items::API do
           expect(response.status).to eq(400)
           expect(parsed_body['type']).to eq('version_mismatch')
         end
+      end
+    end
+
+    context 'update latitude and longitude' do
+      let(:category) { create(:reports_category_with_statuses, perimeters: true) }
+      let(:item) { create(:reports_item_with_images, category: category, perimeter: create(:reports_perimeter)) }
+      let(:perimeter) { create(:reports_perimeter, :imported) }
+      let!(:category_perimeter) { create(:reports_category_perimeter, category: category, perimeter: perimeter) }
+
+      let(:valid_params) do
+        {
+          latitude: -22.906662240700097,
+          longitude: -43.181757530761786,
+          address: 'Praça Tiradentes'
+        }
+      end
+
+      it 'gets forwarded to category perimeter group' do
+        put "/reports/#{item.category.id}/items/#{item.id}", valid_params, auth(user)
+
+        item.reload
+
+        expect(item.perimeter).to eq(perimeter)
+        expect(item.assigned_group).to eq(category_perimeter.group)
       end
     end
   end

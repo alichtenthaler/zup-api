@@ -17,6 +17,43 @@ describe Case do
     it { should accept_nested_attributes_for(:case_steps) }
   end
 
+  describe 'search' do
+    context 'by status' do
+      let!(:active_case) { create(:case, status: 'active') }
+      let!(:inactive_case) { create(:case, status: 'inactive') }
+
+      it { expect(Case.search('active')).to include(active_case) }
+      it { expect(Case.search('active')).not_to include(inactive_case) }
+      it { expect(Case.search('inactive')).not_to include(active_case) }
+    end
+
+    context 'by resolution states' do
+      let!(:flow) { create(:flow) }
+      let!(:resolution_state) { create(:resolution_state, flow: flow) }
+      let!(:kase) { create(:case, resolution_state: resolution_state) }
+
+      it { expect(Case.search(resolution_state.title)).to include(kase) }
+      it { expect(Case.search(resolution_state.title.split('').shuffle.join)).to_not include(kase) }
+    end
+
+    context 'by completed steps' do
+      let!(:step) { create(:step) }
+      let!(:kase) { create(:case) }
+      let!(:case_step) { create(:case_step, step: step, case: kase) }
+
+      it { expect(Case.search(step.title)).to include(kase) }
+      it { expect(Case.search(step.title.split('').shuffle.join)).to_not include(kase) }
+    end
+
+    context 'by flow' do
+      let!(:flow) { create(:flow, initial: true) }
+      let!(:kase) { create(:case, initial_flow: flow) }
+
+      it { expect(Case.search(flow.title)).to include(kase) }
+      it { expect(Case.search(flow.title.split('').shuffle.join)).to_not include(kase) }
+    end
+  end
+
   describe 'scopes' do
     let!(:active_case) { create(:case, status: 'active') }
     let!(:pending_case) { create(:case, status: 'pending') }

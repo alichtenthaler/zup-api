@@ -7,6 +7,7 @@ gem 'activesupport', '4.1.10'
 gem 'actionmailer', '4.1.10'
 gem 'actionpack', '4.1.10'
 gem 'pg'
+gem 'pg_search'
 gem 'rgeo', '0.3.20'
 gem 'rgeo-shapefile'
 gem 'activerecord-postgis-adapter'
@@ -29,8 +30,9 @@ gem 'will_paginate', require: false
 gem 'api-pagination', require: false
 gem 'mini_magick'
 gem 'settingslogic'
-gem 'sidekiq',                        '3.4.2'
+gem 'sidekiq',                        '3.5.3'
 gem 'sidekiq-cron'
+gem 'sidekiq-unique-jobs'
 gem 'sinatra', '>= 1.3.0', require: nil
 gem 'oj'
 gem 'oj_mimic_json'
@@ -53,17 +55,20 @@ gem 'redis-activesupport'
 gem 'redlock'
 gem 'geocoder'
 gem 'axlsx', require: false
+gem 'yell'
 gem 'slackhook'
 gem 'yell'
 gem 'factory_girl', '~> 4.3.0', require: false
 gem 'ffaker', require: false
 gem 'cpf_faker', require: false
+gem 'exifr'
 
 group :development, :test do
   gem 'rspec', '~> 3.2.0'
   gem 'awesome_print'
   gem 'pry-byebug', '1.3.3'
   gem 'pry-remote'
+  gem 'timecop'
 end
 
 group :development do
@@ -73,6 +78,8 @@ group :development do
 end
 
 group :test do
+  gem 'test_after_commit'
+  gem 'rspec-sidekiq'
   gem 'database_rewinder', github: 'ntxcode/database_rewinder', branch: 'filtering_interface'
   gem 'shoulda-matchers'
   gem 'knapsack'

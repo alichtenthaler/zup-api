@@ -6,6 +6,7 @@ class GroupPermission < ActiveRecord::Base
 
   TYPES_CLASSES = {
     flow: Flow,
+    step: Step,
     user: User,
     group: Group,
     inventory: Inventory::Category,
@@ -19,10 +20,13 @@ class GroupPermission < ActiveRecord::Base
       'manage_flows' => Boolean,
       'flow_can_view_all_steps' => Array,
       'flow_can_execute_all_steps' => Array,
-      # "can_view_step" => Array,
-      # "can_execute_step" => Array,
       'flow_can_delete_all_cases' => Array,
       'flow_can_delete_own_cases' => Array
+    },
+
+    step: {
+      'can_view_step' => Array,
+      'can_execute_step' => Array,
     },
 
     user: {
@@ -63,8 +67,11 @@ class GroupPermission < ActiveRecord::Base
       'reports_items_create_internal_comment' => Array,
       'reports_items_create_comment' => Array,
       'reports_items_alter_status' => Array,
+      'reports_items_send_notification' => Array,
+      'reports_items_restart_notification' => Array,
       'reports_categories_edit' => Array,
-      'reports_full_access' => Boolean
+      'reports_full_access' => Boolean,
+      'manage_reports_categories' => Boolean
     },
 
     business_report: {
@@ -96,7 +103,10 @@ class GroupPermission < ActiveRecord::Base
       reports_items_create_internal_comment
       reports_items_create_comment
       reports_items_alter_status
+      reports_items_send_notification
+      reports_items_restart_notification
       reports_categories_edit
+      manage_reports_categories
       inventories_items_read_only
       inventories_items_create
       inventories_items_edit

@@ -1,4 +1,6 @@
 class Case < ActiveRecord::Base
+  include PgSearch
+
   has_many :case_steps
   has_many :cases_log_entries
   has_many :cases_log_entries_as_child_case, class_name: 'CasesLogEntry', foreign_key: :child_case_id
@@ -10,11 +12,19 @@ class Case < ActiveRecord::Base
   has_many :children_cases,   class_name: 'Case',            foreign_key: :original_case_id
   # TODO: define "dependent" for each association
 
+  has_many :steps, through: :case_steps
+
   accepts_nested_attributes_for :case_steps
 
   scope :active,        -> { where(status: %w{active pending transfer not_satisfied}) }
   scope :not_inactive,  -> { where.not(status: 'inactive') }
   scope :inactive,      -> { where(status: 'inactive') }
+
+  pg_search_scope :search, against: [:status], associated_against: {
+    initial_flow: :title,
+    steps: :title,
+    resolution_state: :title
+  }
 
   validates :created_by_id, :initial_flow_id, presence: true
   validates :status, inclusion: { in: %w{active pending finished inactive transfer not_satisfied} } # TODO: use enum?
@@ -158,6 +168,7 @@ class Case < ActiveRecord::Base
     expose :responsible_user_id
     expose :responsible_group_id
     expose :status
+    expose :resolution_state, using: ResolutionState::Entity
     expose :steps_not_fulfilled
     expose :completed do |instance, _options|
       instance.status == 'finished'

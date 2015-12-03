@@ -83,7 +83,7 @@ CREATE TABLE access_keys (
     expired_at timestamp without time zone,
     created_at timestamp without time zone,
     updated_at timestamp without time zone,
-    expires_at timestamp without time zone
+    expires_at timestamp without time zone NOT NULL
 );
 
 
@@ -438,8 +438,8 @@ CREATE TABLE fields (
     id integer NOT NULL,
     title character varying(255),
     field_type character varying(255),
-    category_inventory_id integer,
-    category_report_id integer,
+    category_inventory_id integer[] DEFAULT '{}'::integer[],
+    category_report_id integer[] DEFAULT '{}'::integer[],
     origin_field_id integer,
     active boolean DEFAULT true,
     step_id integer,
@@ -448,10 +448,10 @@ CREATE TABLE fields (
     multiple boolean DEFAULT false,
     filter character varying(255),
     requirements hstore,
-    "values" hstore,
     user_id integer,
     origin_field_version integer,
-    draft boolean DEFAULT true
+    draft boolean DEFAULT true,
+    "values" character varying(255)[] DEFAULT '{}'::character varying[]
 );
 
 
@@ -492,7 +492,8 @@ CREATE TABLE flows (
     current_version integer,
     draft boolean DEFAULT true,
     resolution_states_versions json DEFAULT '{}'::json,
-    steps_versions json DEFAULT '{}'::json
+    steps_versions json DEFAULT '{}'::json,
+    steps_order integer[] DEFAULT '{}'::integer[]
 );
 
 
@@ -582,7 +583,9 @@ CREATE TABLE group_permissions (
     reports_items_alter_status integer[] DEFAULT '{}'::integer[],
     users_edit integer[] DEFAULT '{}'::integer[],
     business_reports_edit boolean,
-    business_reports_view integer[] DEFAULT '{}'::integer[]
+    business_reports_view integer[] DEFAULT '{}'::integer[],
+    reports_items_send_notification integer[] DEFAULT '{}'::integer[],
+    reports_items_restart_notification integer[] DEFAULT '{}'::integer[]
 );
 
 
@@ -1273,7 +1276,8 @@ CREATE TABLE reports_items (
     resolved_at timestamp without time zone,
     overdue_at timestamp without time zone,
     version integer DEFAULT 1,
-    last_version_at timestamp without time zone
+    last_version_at timestamp without time zone,
+    reports_perimeter_id integer
 );
 
 
@@ -1320,7 +1324,10 @@ CREATE TABLE reports_categories (
     default_solver_group_id integer,
     comment_required_when_forwarding boolean DEFAULT false,
     comment_required_when_updating_status boolean DEFAULT false,
-    priority integer
+    notifications boolean DEFAULT false,
+    ordered_notifications boolean DEFAULT false,
+    priority integer,
+    perimeters boolean DEFAULT false NOT NULL
 );
 
 
@@ -1341,6 +1348,39 @@ CREATE SEQUENCE reports_categories_id_seq
 --
 
 ALTER SEQUENCE reports_categories_id_seq OWNED BY reports_categories.id;
+
+
+--
+-- Name: reports_categories_perimeters; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE TABLE reports_categories_perimeters (
+    id integer NOT NULL,
+    reports_category_id integer,
+    reports_perimeter_id integer,
+    solver_group_id integer,
+    created_at timestamp without time zone,
+    updated_at timestamp without time zone
+);
+
+
+--
+-- Name: reports_categories_perimeters_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE reports_categories_perimeters_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: reports_categories_perimeters_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE reports_categories_perimeters_id_seq OWNED BY reports_categories_perimeters.id;
 
 
 --
@@ -1452,7 +1492,9 @@ CREATE TABLE reports_images (
     image character varying(255),
     reports_item_id integer,
     created_at timestamp without time zone,
-    updated_at timestamp without time zone
+    updated_at timestamp without time zone,
+    title character varying(255),
+    date timestamp without time zone
 );
 
 
@@ -1565,6 +1607,81 @@ ALTER SEQUENCE reports_items_id_seq OWNED BY reports_items.id;
 
 
 --
+-- Name: reports_notification_types; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE TABLE reports_notification_types (
+    id integer NOT NULL,
+    reports_category_id integer NOT NULL,
+    title character varying(255),
+    "order" integer,
+    reports_status_id integer,
+    default_deadline_in_days integer DEFAULT 0,
+    layout text,
+    created_at timestamp without time zone,
+    updated_at timestamp without time zone,
+    active boolean DEFAULT true
+);
+
+
+--
+-- Name: reports_notification_types_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE reports_notification_types_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: reports_notification_types_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE reports_notification_types_id_seq OWNED BY reports_notification_types.id;
+
+
+--
+-- Name: reports_notifications; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE TABLE reports_notifications (
+    id integer NOT NULL,
+    user_id integer,
+    reports_item_id integer,
+    reports_notification_type_id integer,
+    previous_status_id integer,
+    deadline_in_days integer,
+    created_at timestamp without time zone,
+    updated_at timestamp without time zone,
+    overdue_at timestamp without time zone,
+    active boolean DEFAULT true NOT NULL,
+    content text
+);
+
+
+--
+-- Name: reports_notifications_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE reports_notifications_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: reports_notifications_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE reports_notifications_id_seq OWNED BY reports_notifications.id;
+
+
+--
 -- Name: reports_offensive_flags; Type: TABLE; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -1594,6 +1711,42 @@ CREATE SEQUENCE reports_offensive_flags_id_seq
 --
 
 ALTER SEQUENCE reports_offensive_flags_id_seq OWNED BY reports_offensive_flags.id;
+
+
+--
+-- Name: reports_perimeters; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE TABLE reports_perimeters (
+    id integer NOT NULL,
+    title character varying(255),
+    shp_file character varying(255),
+    shx_file character varying(255),
+    status integer DEFAULT 0 NOT NULL,
+    created_at timestamp without time zone,
+    updated_at timestamp without time zone,
+    geometry geometry(MultiPolygon,4326),
+    solver_group_id integer
+);
+
+
+--
+-- Name: reports_perimeters_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE reports_perimeters_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: reports_perimeters_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE reports_perimeters_id_seq OWNED BY reports_perimeters.id;
 
 
 --
@@ -1860,7 +2013,12 @@ CREATE TABLE users (
     email_notifications boolean DEFAULT true,
     unsubscribe_email_token character varying(255),
     disabled boolean DEFAULT false,
-    city character varying(255)
+    city character varying(255),
+    skype character varying(255),
+    institution character varying(255),
+    "position" character varying(255),
+    commercial_phone character varying(255),
+    birthdate date
 );
 
 
@@ -2145,6 +2303,13 @@ ALTER TABLE ONLY reports_categories ALTER COLUMN id SET DEFAULT nextval('reports
 -- Name: id; Type: DEFAULT; Schema: public; Owner: -
 --
 
+ALTER TABLE ONLY reports_categories_perimeters ALTER COLUMN id SET DEFAULT nextval('reports_categories_perimeters_id_seq'::regclass);
+
+
+--
+-- Name: id; Type: DEFAULT; Schema: public; Owner: -
+--
+
 ALTER TABLE ONLY reports_comments ALTER COLUMN id SET DEFAULT nextval('reports_comments_id_seq'::regclass);
 
 
@@ -2201,7 +2366,28 @@ ALTER TABLE ONLY reports_items ALTER COLUMN protocol SET DEFAULT nextval('protoc
 -- Name: id; Type: DEFAULT; Schema: public; Owner: -
 --
 
+ALTER TABLE ONLY reports_notification_types ALTER COLUMN id SET DEFAULT nextval('reports_notification_types_id_seq'::regclass);
+
+
+--
+-- Name: id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY reports_notifications ALTER COLUMN id SET DEFAULT nextval('reports_notifications_id_seq'::regclass);
+
+
+--
+-- Name: id; Type: DEFAULT; Schema: public; Owner: -
+--
+
 ALTER TABLE ONLY reports_offensive_flags ALTER COLUMN id SET DEFAULT nextval('reports_offensive_flags_id_seq'::regclass);
+
+
+--
+-- Name: id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY reports_perimeters ALTER COLUMN id SET DEFAULT nextval('reports_perimeters_id_seq'::regclass);
 
 
 --
@@ -2501,6 +2687,14 @@ ALTER TABLE ONLY inventory_statuses
 
 
 --
+-- Name: reports_categories_perimeters_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+--
+
+ALTER TABLE ONLY reports_categories_perimeters
+    ADD CONSTRAINT reports_categories_perimeters_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: reports_categories_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -2565,11 +2759,35 @@ ALTER TABLE ONLY reports_items
 
 
 --
+-- Name: reports_notification_types_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+--
+
+ALTER TABLE ONLY reports_notification_types
+    ADD CONSTRAINT reports_notification_types_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: reports_notifications_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+--
+
+ALTER TABLE ONLY reports_notifications
+    ADD CONSTRAINT reports_notifications_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: reports_offensive_flags_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
 --
 
 ALTER TABLE ONLY reports_offensive_flags
     ADD CONSTRAINT reports_offensive_flags_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: reports_perimeters_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+--
+
+ALTER TABLE ONLY reports_perimeters
+    ADD CONSTRAINT reports_perimeters_pkey PRIMARY KEY (id);
 
 
 --
@@ -3169,6 +3387,20 @@ CREATE INDEX index_reports_items_on_uuid ON reports_items USING btree (uuid);
 
 
 --
+-- Name: index_reports_notifications_on_reports_item_id; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX index_reports_notifications_on_reports_item_id ON reports_notifications USING btree (reports_item_id);
+
+
+--
+-- Name: index_reports_notifications_on_user_id; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX index_reports_notifications_on_user_id ON reports_notifications USING btree (user_id);
+
+
+--
 -- Name: index_reports_offensive_flags_on_reports_item_id_and_user_id; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -3684,9 +3916,53 @@ INSERT INTO schema_migrations (version) VALUES ('20150710081249');
 
 INSERT INTO schema_migrations (version) VALUES ('20150710081250');
 
+INSERT INTO schema_migrations (version) VALUES ('20150710203119');
+
 INSERT INTO schema_migrations (version) VALUES ('20150710220221');
+
+INSERT INTO schema_migrations (version) VALUES ('20150715104914');
+
+INSERT INTO schema_migrations (version) VALUES ('20150715110819');
+
+INSERT INTO schema_migrations (version) VALUES ('20150716190349');
+
+INSERT INTO schema_migrations (version) VALUES ('20150717121654');
 
 INSERT INTO schema_migrations (version) VALUES ('20150819001046');
 
 INSERT INTO schema_migrations (version) VALUES ('20150825142934');
+
+INSERT INTO schema_migrations (version) VALUES ('20150911153316');
+
+INSERT INTO schema_migrations (version) VALUES ('20150921175449');
+
+INSERT INTO schema_migrations (version) VALUES ('20150921192557');
+
+INSERT INTO schema_migrations (version) VALUES ('20150921192711');
+
+INSERT INTO schema_migrations (version) VALUES ('20151007122257');
+
+INSERT INTO schema_migrations (version) VALUES ('20151014155924');
+
+INSERT INTO schema_migrations (version) VALUES ('20151019161818');
+
+INSERT INTO schema_migrations (version) VALUES ('20151020091139');
+
+INSERT INTO schema_migrations (version) VALUES ('20151020165528');
+
+INSERT INTO schema_migrations (version) VALUES ('20151021095714');
+
+INSERT INTO schema_migrations (version) VALUES ('20151021151629');
+
+INSERT INTO schema_migrations (version) VALUES ('20151022100029');
+
+INSERT INTO schema_migrations (version) VALUES ('20151022193514');
+
+INSERT INTO schema_migrations (version) VALUES ('20151026152359');
+
+INSERT INTO schema_migrations (version) VALUES ('20151030195232');
+
+INSERT INTO schema_migrations (version) VALUES ('20151103153315');
+
+INSERT INTO schema_migrations (version) VALUES ('20151111142013');
 

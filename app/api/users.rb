@@ -166,13 +166,19 @@ module Users
 
         requires :name, type: String, desc: "User's name"
         requires :phone, type: String, desc: 'Phone, only numbers'
+        optional :commercial_phone, type: String, desc: 'Phone, only numbers'
+        optional :skype, type: String, desc: "User's skype username"
         requires :document, type: String, desc: "User's document (CPF), only numbers"
+        optional :birthdate, type: Date, desc: "User's birthdate"
         requires :address, type: String, desc: "User's address (with the number)"
         optional :address_additional, type: String, desc: 'Address complement'
         requires :postal_code, type: String, desc: 'CEP'
         requires :district, type: String, desc: "User's neighborhood"
         requires :city, type: String, desc: "User's city"
         optional :groups_ids, type: Array, desc: 'User groups'
+
+        optional :institution, type: String, desc: "User's institution"
+        optional :position, type: String, desc: "User's position"
 
         optional :facebook_user_id, type: Integer, desc: "User's id on facebook"
         optional :twitter_user_id, type: Integer, desc: "User's id on twitter"
@@ -187,7 +193,8 @@ module Users
         user = User.new(
           safe_params.permit(
             :password, :password_confirmation,
-            :name, :email, :phone, :document, :address,
+            :name, :email, :phone, :commercial_phone, :skype,
+            :document, :birthdate, :address, :institution, :position,
             :address_additional, :postal_code, :district,
             :facebook_user_id, :twitter_user_id,
             :google_plus_user_id, :groups_ids,
@@ -234,13 +241,19 @@ module Users
         optional :name, type: String, desc: "User's name"
         optional :email, type: String, desc: "User's email address"
         optional :phone, type: String, desc: 'Phone, only numbers'
+        optional :commercial_phone, type: String, desc: 'Phone, only numbers'
+        optional :skype, type: String, desc: "User's skype username"
         optional :document, type: String, desc: "User's document (CPF), only numbers"
+        optional :birthdate, type: Date, desc: "User's birthdate"
         optional :address, type: String, desc: "User's address (with the number)"
         optional :address_additional, type: String, desc: 'Address complement'
         optional :postal_code, type: String, desc: 'CEP'
         optional :district, type: String, desc: "User's neighborhood"
         optional :city, type: String, desc: "User's city"
         optional :groups_ids, type: Array, desc: 'User groups'
+
+        optional :institution, type: String, desc: "User's institution"
+        optional :position, type: String, desc: "User's position"
 
         optional :device_token, type: String, desc: 'The device token if registration is from mobile'
         optional :device_type, type: String, desc: 'Could be ios or android'
@@ -254,7 +267,8 @@ module Users
 
         user_params = safe_params.permit(
           :email, :current_password, :password,
-          :password_confirmation, :name, :phone, :document, :address,
+          :password_confirmation, :name, :phone, :commercial_phone, :skype,
+          :document, :birthdate, :address, :institution, :position,
           :address_additional, :postal_code, :district,
           :device_token, :device_type, :email_notifications, :city
         )

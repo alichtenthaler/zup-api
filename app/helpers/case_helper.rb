@@ -11,11 +11,7 @@ module CaseHelper
   def filter_params
     parameters = {}
     parameters[:initial_flow_id]      = split_param(:initial_flow_id)
-    parameters[:initial_flow_version] = split_param(:initial_flow_version)
-    parameters[:responsible_user_id]  = split_param(:responsible_user_id)
-    parameters[:responsible_group_id] = split_param(:responsible_group_id)
-    parameters[:created_by_id]        = split_param(:created_by_id)
-    parameters[:updated_by_id]        = split_param(:updated_by_id)
+    parameters[:resolution_state_id]  = split_param(:resolution_state_id)
     parameters[:step_id]              = split_param(:step_id)
     parameters
   end
@@ -110,13 +106,13 @@ module CaseHelper
       elem.update_case_step_data_attachments data_value
     when 'previous_field'
       #nothing to do
-    when 'category_inventory'
-      @items_with_update = elem.field.category_inventory.items.where(id: eval(data_value))
+    when 'inventory_item'
+      @items_with_update = elem.field.category_inventory.joins(:items).where(inventory_items: { id: eval(data_value) })
       data_value = @items_with_update.map(&:id)
-    when 'category_inventory_field'
+    when 'inventory_field'
       inventory_field = Inventory::Field.find(elem.origin_field_id)
       data_value      = convert_data(inventory_field.kind, data_value)
-    when 'category_report'
+    when 'report_item'
       #nothing to do
     end
     data_value

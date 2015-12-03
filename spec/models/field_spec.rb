@@ -47,4 +47,40 @@ describe Field do
       end
     end
   end
+
+  describe '#values=' do
+    describe 'when field_type is inventory_item' do
+      let(:step) { create(:step_type_form) }
+      let(:field) do
+        create(:field,
+               field_type: 'inventory_item',
+               step: step, category_inventory_id: [],
+               category_report_id: []
+              )
+      end
+      let(:inventory_category) { create(:inventory_category) }
+
+      it 'populates the field category_inventory_id' do
+        field.update(values: [inventory_category.id])
+        expect(field.category_inventory_id).to match_array([inventory_category.id])
+      end
+    end
+  end
+
+  describe '#values' do
+    describe 'when field_type is inventory_item' do
+      let(:step) { create(:step_type_form) }
+      let(:field) do
+        create(:field,
+               field_type: 'inventory_item',
+               step: step, category_inventory_id: [1, 2, 3],
+               category_report_id: []
+              )
+      end
+
+      it 'returns the category_inventory_id' do
+        expect(field.values).to match_array([1, 2, 3])
+      end
+    end
+  end
 end

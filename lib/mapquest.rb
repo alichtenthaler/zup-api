@@ -3,7 +3,7 @@ require 'net/http'
 
 # Small class to access Mapquest API
 class Mapquest
-  API_ROOT = 'http://open.mapquestapi.com/%s/v1/%s'
+  API_ROOT = 'http://open.mapquestapi.com/%s/v1/%s' unless const_defined?('API_ROOT')
 
   attr_reader :api_key
 

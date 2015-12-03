@@ -76,6 +76,16 @@ describe Reports::Category do
     end
   end
 
+  context '#find_perimeter' do
+    let!(:category)           { create(:reports_category) }
+    let!(:perimeter)          { create(:reports_perimeter, :imported) }
+    let!(:category_perimeter) { create(:reports_category_perimeter, category: category, perimeter: perimeter) }
+
+    it 'find perimeter with latitude and longitude' do
+      expect(category.find_perimeter(-22.9053121, -43.1956711)).to eq(category_perimeter)
+    end
+  end
+
   context 'entity' do
     context 'subcategories' do
       let!(:category) { create(:reports_category) }

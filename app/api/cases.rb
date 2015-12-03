@@ -19,6 +19,7 @@ module Cases
         validate_permission!(:create, initial_flow.cases.build.case_steps.build(step: step))
 
         case_step_params = { created_by: current_user, step: step, step_version: step.version.id }
+
         if safe_params[:fields].present?
           case_step_params.merge!(responsible_user_id: current_user.id,
                                   case_step_data_fields_attributes: fields_params)
@@ -46,47 +47,60 @@ module Cases
 
       desc 'Get all Cases'
       params do
-        optional :initial_flow_id,      type: String,  desc: 'String with of Initial Flows ID, split by comma'
-        optional :initial_flow_version, type: String,  desc: 'String with of Initial Flows ID, split by comma'
-        optional :responsible_user_id,  type: String,  desc: 'String with of Users ID, split by comma'
-        optional :responsible_group_id, type: String,  desc: 'String with of Groups ID, split by comma'
-        optional :created_by_id,        type: String,  desc: 'String with of Users ID, split by comma'
-        optional :updated_by_id,        type: String,  desc: 'String with of Users ID, split by comma'
-        optional :step_id,              type: String,  desc: 'String with of Steps ID, split by comma'
-        optional :completed,            type: Boolean, desc: 'true to filter Case with status == "finished"'
-        optional :display_type,         type: String,  desc: 'Display type for Case'
-        optional :just_user_can_view,   type: Boolean, desc: 'To return all items or only title because user can\'t view (true by default)'
+        optional :query,               type: String,  desc: 'Query of search'
+        optional :initial_flow_id,     type: String,  desc: 'String with of Initial Flows ID, split by comma'
+        optional :step_id,             type: String,  desc: 'String with of Steps ID, split by comma'
+        optional :resolution_state_id, type: String,  desc: 'String with of Resolution State ID, split by comma'
+        optional :completed,           type: Boolean, desc: 'true to filter Case with status equals "finished" or "inactive"'
+        optional :sort,                type: String,  desc: 'The field to sort the cases. Valid fields: resolution_state, updated_at, created_at, responsible_user'
+        optional :order,               type: String,  desc: 'The order, can be `desc` or `asc`'
+        optional :display_type,        type: String,  desc: 'Display type for Case'
+        optional :just_user_can_view,  type: Boolean, desc: 'To return all items or only title because user can\'t view (true by default)'
       end
       paginate per_page: 25
       get do
         authenticate!
-        parameters = filter_params
 
-        case_query = []
-        if parameters[:initial_flow_id].present?
-          case_query.push('initial_flow_id IN (:initial_flow_id)')
+        columns_permitted = ['resolution_state', 'updated_at', 'created_at', 'responsible_user']
+        order = safe_params[:order] if ['asc', 'desc'].include? safe_params[:order]
+        sort  = safe_params[:sort] if columns_permitted.include? safe_params[:sort]
+
+        order ||= 'asc'
+        sort  ||= 'id'
+
+        if 'resolution_state'.eql?(sort)
+          kases = Case.joins(:resolution_state).order("resolution_states.title #{order.upcase}")
+        else
+          kases = Case.order(sort => order.to_sym)
         end
-        if parameters[:initial_flow_version].present?
-          case_query.push('flow_version IN (:initial_flow_version)')
+
+        # Filtering by query
+        if safe_params[:query].present?
+          kases = kases.search(safe_params[:query])
         end
+
+        # Filtering by flows
+        if filter_params[:initial_flow_id].present?
+          kases = kases.where(initial_flow_id: filter_params[:initial_flow_id])
+        end
+
+        # Filtering by resolution state
+        if filter_params[:resolution_state_id].present?
+          kases = kases.where(resolution_state_id: filter_params[:resolution_state_id])
+        end
+
+        # Filtering by status
         if safe_params.has_key? :completed
-          status = safe_params[:completed] ? "= 'finished'" : "!= 'finished'"
-          case_query.push("status #{status}")
+          if safe_params[:completed]
+            kases = kases.where(status: ['inactive', 'finished'])
+          else
+            kases = kases.where.not(status: ['inactive', 'finished'])
+          end
         end
 
-        kases = Case.where(case_query.join(' and '), parameters.to_h)
-        if parameters[:step_id].present? || parameters[:responsible_group_id].present?  ||
-            parameters[:responsible_user_id].present? ||
-            parameters[:updated_by_id].present? || parameters[:created_by_id].present?
-
-          case_steps_params = parameters.slice(:step_id, :responsible_group_id,
-                                               :responsible_user_id,
-                                               :updated_by_id, :created_by_id)
-          case_steps_params.reject! { |_key, value| value.blank? }
-          kases = kases.select do |kase|
-            kase.case_steps = kase.case_steps.where(case_steps_params)
-            kase.case_steps.any?
-          end
+        # Filtering by steps
+        if filter_params[:step_id].present?
+          kases = kases.joins(:case_steps).where('case_steps.steps' => filter_params[:step_id])
         end
 
         { cases: Case::Entity.represent(paginate(kases), only: return_fields, display_type: safe_params[:display_type],

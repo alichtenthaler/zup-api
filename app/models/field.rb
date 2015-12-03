@@ -5,14 +5,12 @@ class Field < ActiveRecord::Base
   store_accessor :values
   has_paper_trail only: :just_with_build!, on: :update
 
-  VALID_TYPES = %w{angle date time date_time cpf cnpj url email image attachment text integer decimal
+  VALID_TYPES = %w(angle date time date_time cpf cnpj url email image attachment text integer decimal
                    meter centimeter kilometer year month day hour minute second previous_field
-                   radio select checkbox category_inventory category_inventory_field category_report}
+                   radio select checkbox inventory_item inventory_field report_item)
 
   belongs_to :user # who created the Field
   belongs_to :step
-  belongs_to :category_inventory, class_name: 'Inventory::Category', foreign_key: :category_inventory_id
-  belongs_to :category_report,    class_name: 'Reports::Category',   foreign_key: :category_report_id
   has_many :case_step_fields
 
   default_scope -> { order(id: :asc) }
@@ -21,11 +19,9 @@ class Field < ActiveRecord::Base
 
   validates_presence_of :title, :step, :user
   validates :field_type, inclusion: { in: VALID_TYPES }
-  validates :origin_field_id, presence: true, if: -> { %w{previous_field category_inventory_field}.include? field_type }
-  validates :category_report_id, presence: true, if: -> { field_type == 'category_report' }
-  validates :category_inventory_id, presence: true, if: -> { field_type == 'category_inventory' }
-  validates :values, presence: true, if: -> { %w{checkbox radio}.include? field_type }
-  validate :category_inventory_present?, if: -> { field_type == 'category_inventory_field' }
+  validates :origin_field_id, presence: true, if: -> { %w{previous_field inventory_field}.include? field_type }
+  validates :values, presence: true, if: -> { %w{checkbox radio select}.include? field_type }
+  validate :category_inventory_present?, if: -> { field_type == 'inventory_field' }
 
   after_create :add_field_to_step_field_versions!
   before_save :set_origin_field_version, if: :origin_field_id?
@@ -44,6 +40,34 @@ class Field < ActiveRecord::Base
     step.update! fields_versions: order_ids
   end
 
+  def category_inventory
+    Inventory::Category.where(id: category_inventory_id)
+  end
+
+  def category_report
+    Reports::Category.where(id: category_report_id)
+  end
+
+  def values=(values)
+    if field_type == 'report_item'
+      self.category_report_id = values.map(&:to_i)
+    elsif field_type == 'inventory_item'
+      self.category_inventory_id = values.map(&:to_i)
+    else
+      super(values)
+    end
+  end
+
+  def values
+    if field_type == 'report_item'
+      category_report_id
+    elsif field_type == 'inventory_item'
+      category_inventory_id
+    else
+      super
+    end
+  end
+
   def inactive!
     versions.present? ? update!(active: false) : destroy!
   end
@@ -59,9 +83,9 @@ class Field < ActiveRecord::Base
   private
 
   def category_inventory_present?
-    category   = step.my_fields(field_type: 'category_inventory').first
+    category   = step.my_fields(field_type: 'inventory_item').first
     category ||= get_flow.my_steps(step_type: 'form').map do |step_form|
-                   step_form.my_fields(field_type: 'category_inventory').first
+                   step_form.my_fields(field_type: 'inventory_item').first
                  end.flatten.first
     errors.add(:field_type, I18n.t(:need_set_category_inventory_before)) if category.blank?
   end
@@ -71,6 +95,12 @@ class Field < ActiveRecord::Base
     origin_field_version.blank? ? Field.find_by(id: origin_field_id) : Version.reify(origin_field_version)
   end
 
+  def previous_field_step_id
+    return if field_type != 'previous_field'
+    field = origin_field_version.blank? ? Field.find_by(id: origin_field_id) : Version.reify(origin_field_version)
+    field.step.id
+  end
+
   def set_origin_field_version
     return if field_type != 'previous_field' || origin_field_version.present?
     field = Field.find_by(id: origin_field_id)
@@ -78,7 +108,7 @@ class Field < ActiveRecord::Base
   end
 
   def category_inventory_field
-    return if field_type != 'category_inventory_field'
+    return if field_type != 'inventory_field'
     Inventory::Field.find(origin_field_id)
   end
 
@@ -122,11 +152,13 @@ class Field < ActiveRecord::Base
     expose :category_inventory_field, using: Inventory::Field::Entity
     expose :category_report, using: Reports::Category::Entity
     expose :requirements
+    expose :multiple
     expose :values
     expose :active
     expose :version_id
     expose :updated_at
     expose :created_at
+    expose :previous_field_step_id
     expose :previous_field, using: Field::EntityVersion
   end
 
@@ -141,11 +173,13 @@ class Field < ActiveRecord::Base
     expose :category_inventory_field, using: Inventory::Field::Entity
     expose :category_report, using: Reports::Category::Entity
     expose :requirements
+    expose :multiple
     expose :values
     expose :active
     expose :version_id
     expose :updated_at
     expose :created_at
+    expose :previous_field_step_id
     expose :previous_field, using: Field::EntityVersion
     expose :list_versions,  using: Field::EntityVersion
   end

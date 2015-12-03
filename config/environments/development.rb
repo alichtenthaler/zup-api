@@ -18,5 +18,3 @@ class CacheStore
 end
 
 Application.config.cache = CacheStore.new
-
-ActiveRecord::Base.connection

@@ -1,4 +1,5 @@
 class Flow < ActiveRecord::Base
+  include PgSearch
   attr_accessor :user
   has_paper_trail only: :just_with_build!, on: :update
 
@@ -10,11 +11,22 @@ class Flow < ActiveRecord::Base
   has_many :cases,             class_name: 'Case', foreign_key: :initial_flow_id
   has_many :parent_steps,      class_name: 'Step', foreign_key: :child_flow_id
   has_many :steps,             dependent: :destroy
+  has_many :fields,            through: :steps
   has_many :resolution_states, dependent: :destroy
   has_many :cases_log_entries
   has_many :cases_log_entries_as_new_flow, class_name: 'CasesLogEntry', foreign_key: :new_flow_id
 
   scope :active, -> { where.not(status: :inactive) }
+
+  pg_search_scope :search,
+    against: [:title, :status],
+    associated_against: {
+      steps: :title,
+      resolution_states: :title
+    },
+    using: {
+      tsearch: { prefix: true }
+    }
 
   validates :title, :created_by, presence: true
   validates :title, length: { maximum: 100 }
@@ -29,9 +41,22 @@ class Flow < ActiveRecord::Base
     find_by(initial: true, id: id)
   end
 
+  # This method publishes the flow
+  #
+  # What does 'publish' mean?
+  #
+  # Once a flow is edited by the user, it's marked as a draf, thus a user can publish it.
+  # By publishing it, a series of steps are taken:
+  #
+  # 1. Build new versions for resolution states, or override if no case are using it
+  # 2. Build new versions for steps which are changed, or override the latest version if no case are using
+  #    this flow yet
+  # 3. Same of step 2 for triggers, fields and the flow itself
+  # 4. The flow is unmarked as `draft`
   def publish(current_user)
     user = current_user
     return if user.blank? || !draft
+
     transaction do
       override_old_version = versions.present? && Version.reify_last_version(self).cases_arent_using?
       resolutions_versions = resolution_states_versions.dup
@@ -76,8 +101,41 @@ class Flow < ActiveRecord::Base
 
       update!(resolution_states_versions: resolutions_versions, steps_versions: step_versions,
                    draft: false, current_version: nil, updated_by: user)
+
       Version.build!(self, override_old_version)
     end
+  end
+
+  def update_resolution_states(resolution_states)
+    current_rs_ids = self.resolution_states.pluck(:id) # ids of the existing resolution states for this flow
+
+    transaction do
+      # If creating or updating the default state, change the old one to false
+      new_default_rs = resolution_states.select { |rs| rs['default'] }
+      fail(ActiveRecord::RecordInvalid.new(self)) if new_default_rs.count > 1
+
+      if new_default_rs.any?
+        new_default_rs = new_default_rs.first
+        current_default = self.resolution_states.where(default: true).first
+        current_default.update_attribute(:default, false) if current_default && current_default.id != new_default_rs['id']
+      end
+
+      # Add new resolution states
+      resolution_states.select { |rs| !rs['id'] }
+          .each { |rs| self.resolution_states.create!(rs.merge!(flow_id: id)) }
+
+      # Update existing resolution states
+      resolution_states.select { |rs| rs['id'] } # items with an id field are meant to be updated
+          .select { |rs| current_rs_ids.include?(rs['id'].to_i) } # so they must exist in the current_rs_ids
+          .each { |rs| self.resolution_states.find(rs['id']).update!(rs) }
+
+      # Prune old resolution states
+      new_rs_ids = resolution_states.map { |rs| rs['id'] } # ids of the new resolution state set
+      rs_ids_to_remove = current_rs_ids.select { |rs_id| !new_rs_ids.include?(rs_id) } # if not present they must be removed
+      self.resolution_states.where(id: rs_ids_to_remove).update_all(active: false)
+    end
+
+    nil
   end
 
   def cases_arent_using?
@@ -85,7 +143,7 @@ class Flow < ActiveRecord::Base
   end
 
   def inactive!
-    versions.present? ? update!(updated_by: user, status: :inactive) : destroy!
+    versions.present? ? update!(updated_by: user, status: 'inactive') : destroy!
   end
 
   def my_cases(options = {})
@@ -228,6 +286,7 @@ class Flow < ActiveRecord::Base
     expose :my_steps,             using: Step::Entity, if: { display_type: 'full' }
     expose :my_steps_flows,       if: { display_type: 'full' }
     expose :steps_versions
+    expose :steps_order
     expose :steps_id,             unless: { display_type: 'full' }
     expose :resolution_states,    using: ResolutionState::Entity
     expose :my_resolution_states, using: ResolutionState::Entity
@@ -254,6 +313,7 @@ class Flow < ActiveRecord::Base
     expose :my_steps,             using: Step::Entity, if: { display_type: 'full' }
     expose :my_steps_flows,       if: { display_type: 'full' }
     expose :steps_versions
+    expose :steps_order
     expose :steps_id,             unless: { display_type: 'full' }
     expose :resolution_states,    using: ResolutionState::Entity
     expose :my_resolution_states, using: ResolutionState::Entity

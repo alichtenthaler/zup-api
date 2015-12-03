@@ -200,8 +200,8 @@ describe Cases::API, versioning: true do
         create(:step_type_form_without_fields, flow: flow)
         flow.reload
         create(:field, step: flow.steps.first, title: 'user_age', field_type: 'integer')
-        create(:field, step: flow.steps.first, title: 'inventory_items', field_type: 'category_inventory', category_inventory_id: inventory_item.category.id, multiple: true)
-        create(:field, step: flow.steps.first, title: 'size_of_tree',    field_type: 'category_inventory_field', origin_field_id: inventory_field_id)
+        create(:field, step: flow.steps.first, title: 'inventory_items', field_type: 'inventory_item', category_inventory_id: [inventory_item.category.id], multiple: true)
+        create(:field, step: flow.steps.first, title: 'size_of_tree',    field_type: 'inventory_field', origin_field_id: inventory_field_id)
         create(:step, flow: flow, child_flow: other_flow)
         flow.publish(user)
         flow.reload

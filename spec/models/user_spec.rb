@@ -66,6 +66,18 @@ describe User do
           end
         end
       end
+
+      describe 'password confirmation' do
+        let(:user) { build(:user) }
+
+        it 'is not allowed diferent values between `password` and `password_confirmation`' do
+          user.password = '123456'
+          user.password_confirmation = '654321'
+
+          expect(user).to_not be_valid
+          expect(user.errors).to include(:password_confirmation)
+        end
+      end
     end
 
     context 'from_webhook' do

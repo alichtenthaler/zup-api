@@ -157,12 +157,16 @@ if ENV['WITH_FAKE_DATA'] == 'true'
   coleta_de_entulho = fg.create(:reports_category_with_statuses, title: 'Coleta de Entulho', color: '#ffac2d')
 
   limpeza_de_boca.update!(
-      marker: bocas_de_lobo_icon,
-      icon: bocas_de_lobo_icon
+    marker: bocas_de_lobo_icon,
+    icon: bocas_de_lobo_icon,
+    solver_groups_ids: [admin.id],
+    default_solver_group_id: admin.id
   )
   coleta_de_entulho.update!(
-      marker: entulhos_icon,
-      icon: entulhos_icon
+    marker: entulhos_icon,
+    icon: entulhos_icon,
+    solver_groups_ids: [admin.id],
+    default_solver_group_id: admin.id
   )
 
   # Association reports categories to inventory categories

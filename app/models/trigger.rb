@@ -29,8 +29,8 @@ class Trigger < ActiveRecord::Base
       ids[id.to_s] = triggers[id.to_s]
       ids
     end
-    step.update! triggers_versions: {}
-    step.update! triggers_versions: order_ids
+    step.update!(triggers_versions: {})
+    step.update!(triggers_versions: order_ids)
   end
 
   def inactive!
@@ -51,20 +51,20 @@ class Trigger < ActiveRecord::Base
   def add_trigger_on_step
     trigger_versions = step.triggers_versions.dup
     trigger_versions.merge!(id.to_s => nil)
-    step.update! user: user, triggers_versions: {}
-    step.update! user: user, triggers_versions: trigger_versions
+    step.update!(user: user, triggers_versions: {})
+    step.update!(user: user, triggers_versions: trigger_versions)
   end
 
   def set_draft
-    get_flow.update! updated_by: reload.user, draft: true
+    get_flow.update! updated_by: user, draft: true
     self.draft = true
   end
 
   def remove_trigger_on_step
     trigger_versions = step.triggers_versions.dup
     trigger_versions.delete(id.to_s)
-    step.update! user: user, triggers_versions: {}
-    step.update! user: user, triggers_versions: trigger_versions
+    step.update!(user: user, triggers_versions: {})
+    step.update!(user: user, triggers_versions: trigger_versions)
   end
 
   # used on Entity
@@ -79,6 +79,7 @@ class Trigger < ActiveRecord::Base
   class EntityVersion < Grape::Entity
     expose :id
     expose :title
+    expose :description
     expose :trigger_conditions,    using: TriggerCondition::Entity
     expose :my_trigger_conditions, using: TriggerCondition::Entity
     expose :action_type
@@ -92,6 +93,7 @@ class Trigger < ActiveRecord::Base
   class Entity < Grape::Entity
     expose :id
     expose :title
+    expose :description
     expose :trigger_conditions,    using: TriggerCondition::Entity
     expose :my_trigger_conditions, using: TriggerCondition::Entity
     expose :action_type

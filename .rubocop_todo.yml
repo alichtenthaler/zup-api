@@ -57,7 +57,7 @@ Lint/Void:
 
 # Offense count: 71
 Metrics/AbcSize:
-  Max: 400
+  Max: 420
 
 # Offense count: 1
 Metrics/BlockNesting:
@@ -80,7 +80,7 @@ Metrics/LineLength:
 # Offense count: 80
 # Configuration parameters: CountComments.
 Metrics/MethodLength:
-  Max: 200
+  Max: 205
 
 # Offense count: 1
 # Configuration parameters: CountKeywordArgs.
@@ -89,7 +89,7 @@ Metrics/ParameterLists:
 
 # Offense count: 15
 Metrics/PerceivedComplexity:
-  Max: 60
+  Max: 75
 
 # Offense count: 6
 Style/AccessorMethodName:

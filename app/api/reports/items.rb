@@ -84,7 +84,7 @@ module Reports::Items
         end
 
         # Forward to default group
-        if category.default_solver_group
+        if category.default_solver_group || category.perimeters?
           Reports::ForwardToGroup.new(report).forward_without_comment!(
             category.default_solver_group
           )
@@ -179,6 +179,13 @@ module Reports::Items
             params[:longitude], params[:latitude]
           )
           report.address = params[:address]
+
+          # Forward to default group
+          if category.default_solver_group || category.perimeters?
+            Reports::ForwardToGroup.new(report).forward_without_comment!(
+              category.default_solver_group
+            )
+          end
         end
 
         report.update_images(params[:images]) if params[:images]
@@ -192,8 +199,8 @@ module Reports::Items
         create_history = Reports::CreateHistoryEntry.new(report, current_user)
 
         # Save history data
-        if report.previous_changes[:address] || report.previous_changes[:description]
-          create_history.detect_changes_and_create!([:address, :description])
+        if report.previous_changes[:address] || report.previous_changes[:description] || report.previous_changes[:reference]
+          create_history.detect_changes_and_create!([:address, :description, :reference])
         end
 
         {

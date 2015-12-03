@@ -54,28 +54,34 @@ describe Reports::CreateHistoryEntry do
 
   describe '#detect_changes_and_create!' do
     context 'detecting changes' do
-      let(:action) { 'Alterou um atributo' }
+      let(:action) { 'Alterou atributo' }
 
       before do
-        item.description = 'Test'
-        item.address = 'St Test'
+        item.description = 'Updated description'
+        item.address = 'Updated address'
+        item.reference = 'Updated reference'
         item.save!
       end
 
       it 'saves those changes in the `saved_changes` attribute' do
-        subject.detect_changes_and_create!([:description, :address])
+        attributes = [:description, :address, :reference]
 
-        entry = Reports::ItemHistory.find_by(
-          kind: 'address',
-          user_id: user.id,
-          reports_item_id: item.id
-        )
+        subject.detect_changes_and_create!(attributes)
 
-        expect(entry).to_not be_nil
-        expect(entry.saved_changes).to match(
-          'old' => an_instance_of(String),
-          'new' => 'St Test'
-        )
+        attributes.each do |attribute|
+          entry = Reports::ItemHistory.find_by(
+            kind: attribute,
+            user_id: user.id,
+            action: action,
+            reports_item_id: item.id
+          )
+
+          expect(entry).to_not be_nil
+          expect(entry.saved_changes).to match(
+            'old' => an_instance_of(String),
+            'new' => "Updated #{attribute}"
+          )
+        end
       end
     end
   end

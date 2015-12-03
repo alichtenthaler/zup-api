@@ -15,30 +15,37 @@ class Reports::Item < Reports::Base
   belongs_to :assigned_group, class_name: 'Group'
   belongs_to :assigned_user, class_name: 'User'
 
+  belongs_to :perimeter,
+    foreign_key: 'reports_perimeter_id',
+    class_name: 'Reports::Perimeter'
+
+  has_one :feedback, class_name: 'Reports::Feedback',
+                     foreign_key: :reports_item_id,
+                     dependent: :destroy
+
   has_many :inventory_categories, through: :category
-  has_many :images, foreign_key: 'reports_item_id',
+  has_many :images, foreign_key: :reports_item_id,
                     class_name: 'Reports::Image',
                     dependent: :destroy,
                     autosave: true
   has_many :statuses, through: :category
   has_many :status_categories, through: :category
-  has_many :status_history, foreign_key: 'reports_item_id',
+  has_many :status_history, foreign_key: :reports_item_id,
                             class_name: 'Reports::ItemStatusHistory',
                             dependent: :destroy,
                             autosave: true
-  has_one :feedback, class_name: 'Reports::Feedback',
-                     foreign_key: :reports_item_id,
-                     dependent: :destroy
   has_many :comments, class_name: 'Reports::Comment',
                      foreign_key: :reports_item_id,
                      dependent: :destroy
   has_many :histories, class_name: 'Reports::ItemHistory',
-                       foreign_key: 'reports_item_id',
+                       foreign_key: :reports_item_id,
                        dependent: :destroy
-
   has_many :offensive_flags, class_name: 'Reports::OffensiveFlag',
                              foreign_key: :reports_item_id,
                              dependent: :destroy
+  has_many :notifications, class_name: 'Reports::Notification',
+                           foreign_key: :reports_item_id,
+                           dependent: :destroy
 
   before_save :set_initial_status
   after_update :update_version
@@ -107,12 +114,34 @@ class Reports::Item < Reports::Base
 
   def images_structure
     images.map do |image|
-      fetch_image_versions(image.image).merge(original: image.url)
+      fetch_image_versions(image.image).merge(
+        original: image.url,
+        title: image.title,
+        date: image.date
+      )
     end
   end
 
   def status_history_for_user
     status_history.all_public
+  end
+
+  def address_for_exposure
+    if inventory_item.present?
+      inventory_address = inventory_item.location[:address]
+    end
+
+    inventory_address || address
+  end
+
+  def full_address
+    address_array = [address_for_exposure, number, district, postal_code].compact
+
+    if address_array.size == 4
+      format('%s, %s - %s, %s', *address_array)
+    else
+      address_array.join(', ')
+    end
   end
 
   class Entity < Grape::Entity
@@ -124,15 +153,10 @@ class Reports::Item < Reports::Base
     expose :version
     expose :assigned_user, using: User::Entity
     expose :assigned_group, using: Group::Entity
-
-    expose :address do |obj, _|
-      if obj.address
-        obj.address
-      elsif obj.inventory_item.present?
-        obj.inventory_item.location[:address]
-      end
-    end
-
+    expose :notifications, using: Reports::Notification::Entity
+    expose :last_notification, using: Reports::Notification::Entity
+    expose :address_for_exposure, as: :address
+    expose :perimeter, using: Reports::Perimeter::Entity
     expose :number
     expose :reference
     expose :district
@@ -223,6 +247,17 @@ class Reports::Item < Reports::Base
         User::Entity.represent(User::Anonymous.new, options)
       end
     end
+
+    def last_notification
+      Reports::Notification.last_notification_for(object)
+    end
+  end
+
+  class ListingEntity < Entity
+    unexpose :notifications
+    unexpose :last_notification
+    unexpose :category_icon
+    unexpose :perimeter
   end
 
   private

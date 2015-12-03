@@ -2,14 +2,13 @@ require 'app_helper'
 
 describe Reports::ForwardToGroup do
   let(:category) { create(:reports_category_with_statuses) }
-  let(:report) { create(:reports_item, category: category) }
-  let(:user) { create(:user) }
+  let(:report)   { create(:reports_item, category: category) }
+  let(:user)     { create(:user) }
+  let(:group)    { create(:group) }
 
   subject { described_class.new(report, user) }
 
   describe '#forward!' do
-    let(:group) { create(:group) }
-
     context 'group is a solver' do
       before do
         category.solver_groups = [group]
@@ -60,6 +59,61 @@ describe Reports::ForwardToGroup do
     context 'group isn\'t a solver' do
       it 'assigns to that group' do
         expect { subject.forward!(group) }.to raise_error
+      end
+    end
+
+    context 'group is nil' do
+      it 'do not change group' do
+        expect{ subject.forward!(nil) }.to_not change{ report.assigned_group }
+      end
+    end
+
+    context 'perimeter group' do
+      let!(:perimeter) { create(:reports_perimeter, group: create(:group)) }
+
+      it 'use perimeter group instead category default group' do
+        allow(Reports::Perimeter).to receive(:search) { [perimeter] }
+
+        subject.forward!(group)
+
+        history = report.histories.first
+
+        expect(report.reload.assigned_group).to eq(perimeter.group)
+        expect(report.reload.perimeter).to eq(perimeter)
+        expect(history.action).to eq("Este relato está localizado dentro do perímetro 'Perimeter'")
+        expect(history.kind).to eq('perimeter')
+      end
+    end
+
+    context 'category perimeter group' do
+      let!(:category_perimeter) { create(:reports_category_perimeter, category: category) }
+      let!(:perimeter)          { create(:reports_perimeter) }
+
+      before(:each) do
+        allow_any_instance_of(Reports::Category).to receive(:find_perimeter) { category_perimeter }
+      end
+
+      it 'set group and perimeter' do
+        subject.forward!(group)
+        history = report.histories.first
+
+        expect(report.reload.assigned_group).to eq(category_perimeter.group)
+        expect(report.reload.perimeter).to eq(category_perimeter.perimeter)
+        expect(history.action).to eq("Este relato está localizado dentro do perímetro 'Perimeter'")
+        expect(history.kind).to eq('perimeter')
+      end
+
+      it 'change group when perimeter is already set' do
+        allow(category).to receive(:solver_groups) { [group] }
+        allow_any_instance_of(Reports::Item).to receive(:perimeter) { perimeter }
+
+        subject.forward!(group)
+
+        history = report.histories.first
+
+        expect(report.reload.assigned_group).to eq(group)
+        expect(history.action).to eq("Relato foi encaminhado para o grupo '#{group.name}'")
+        expect(history.kind).to eq('forward')
       end
     end
   end

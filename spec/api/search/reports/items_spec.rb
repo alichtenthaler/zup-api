@@ -6,7 +6,8 @@ describe Search::Reports::Items::API do
   describe 'GET /search/reports/:category_id/status/:status_id/items' do
     let(:category) { create(:reports_category_with_statuses) }
     let(:items) do
-      create_list(:reports_item, 5, category: category) end
+      create_list(:reports_item, 5, category: category)
+    end
 
     let(:valid_params) do
       Oj.load <<-JSON
@@ -59,7 +60,7 @@ describe Search::Reports::Items::API do
     end
 
     context 'sorting' do
-      context 'by user name' do
+      describe 'by user name' do
         let!(:users) { create_list(:user, 5) }
         let!(:items) do
           users.map do |u|
@@ -89,7 +90,7 @@ describe Search::Reports::Items::API do
       end
     end
 
-    context 'by categories' do
+    describe 'by categories' do
       let!(:items) do
         create_list(:reports_item, 3, category: category)
       end
@@ -117,7 +118,36 @@ describe Search::Reports::Items::API do
       end
     end
 
-    context 'by users' do
+    describe 'by perimeters' do
+      let(:perimeter) { create(:reports_perimeter) }
+      let!(:items) do
+        create_list(:reports_item, 3, perimeter: perimeter)
+      end
+      let!(:wrong_items) do
+        create_list(:reports_item, 3)
+      end
+
+      let(:valid_params) do
+        Oj.load <<-JSON
+          {
+            "reports_perimeters_ids": #{perimeter.id}
+          }
+        JSON
+      end
+
+      it 'returns the correct items with the correct address' do
+        get '/search/reports/items', valid_params, auth(user)
+
+        returned_ids = parsed_body['reports'].map do |r|
+          r['id']
+        end
+
+        expect(returned_ids).to match_array(items.map(&:id))
+        expect(returned_ids).to_not match_array(wrong_items.map(&:id))
+      end
+    end
+
+    describe 'by users' do
       context 'only one user' do
         let(:user) { create(:user) }
         let!(:items) do
@@ -146,7 +176,7 @@ describe Search::Reports::Items::API do
         end
       end
 
-      context 'by multiple users' do
+      describe 'by multiple users' do
         let(:user) { create(:user) }
         let(:user2) { create(:user) }
         let!(:items) do
@@ -178,7 +208,7 @@ describe Search::Reports::Items::API do
       end
     end
 
-    context 'by reporters' do
+    describe 'by reporters' do
       context 'only one reporter' do
         let(:reporter) { create(:user) }
         let!(:items) do
@@ -207,7 +237,7 @@ describe Search::Reports::Items::API do
         end
       end
 
-      context 'by multiple reporters' do
+      describe 'by multiple reporters' do
         let(:reporter) { create(:user) }
         let(:reporter2) { create(:user) }
         let!(:items) do
@@ -239,7 +269,7 @@ describe Search::Reports::Items::API do
       end
     end
 
-    context 'by statuses' do
+    describe 'by statuses' do
       let!(:items) do
         create_list(:reports_item, 3, category: category)
       end
@@ -274,10 +304,11 @@ describe Search::Reports::Items::API do
       end
     end
 
-    context 'by address' do
+    describe 'by address' do
       let(:items) do
         create_list(:reports_item, 3, category: category)
       end
+
       let(:valid_params) do
         Oj.load <<-JSON
           {
@@ -295,7 +326,51 @@ describe Search::Reports::Items::API do
       end
     end
 
-    context 'by overdue' do
+    describe 'by district' do
+      let(:items) do
+        create_list(:reports_item, 3, category: category)
+      end
+
+      let(:valid_params) do
+        Oj.load <<-JSON
+          {
+            "address": "centro"
+          }
+        JSON
+      end
+
+      it 'returns the correct items with the correct address' do
+        correct_item = items.sample
+        correct_item.update(district: 'Centro')
+
+        get '/search/reports/items', valid_params, auth(user)
+        expect(parsed_body['reports'].first['id']).to eq(correct_item.id)
+      end
+    end
+
+    describe 'by postal code' do
+      let(:items) do
+        create_list(:reports_item, 3, category: category)
+      end
+
+      let(:valid_params) do
+        Oj.load <<-JSON
+          {
+            "address": "12345-000"
+          }
+        JSON
+      end
+
+      it 'returns the correct items with the correct address' do
+        correct_item = items.sample
+        correct_item.update(postal_code: '12345-000')
+
+        get '/search/reports/items', valid_params, auth(user)
+        expect(parsed_body['reports'].first['id']).to eq(correct_item.id)
+      end
+    end
+
+    describe 'by overdue' do
       let(:items) do
         create_list(:reports_item, 3, category: category)
       end
@@ -316,7 +391,7 @@ describe Search::Reports::Items::API do
       end
     end
 
-    context 'by query' do
+    describe 'by query' do
       let!(:items) do
         create_list(:reports_item, 5, category: category)
       end
@@ -348,7 +423,7 @@ describe Search::Reports::Items::API do
       end
     end
 
-    context 'by user document' do
+    describe 'by user document' do
       let!(:items) do
         create_list(:reports_item, 5, category: category)
       end
@@ -381,7 +456,7 @@ describe Search::Reports::Items::API do
       end
     end
 
-    context 'by address or position' do
+    describe 'by address or position' do
       let(:items) do
         create_list(:reports_item, 3, category: category)
       end
@@ -422,7 +497,7 @@ describe Search::Reports::Items::API do
       end
     end
 
-    context 'with clusterization active' do
+    describe 'with clusterization active' do
       let(:items) do
         create_list(:reports_item, 3, category: category)
       end
@@ -465,7 +540,7 @@ describe Search::Reports::Items::API do
       end
     end
 
-    context 'assigned to groups that user belongs' do
+    describe 'assigned to groups that user belongs' do
       let(:items) do
         create_list(:reports_item, 3, category: category)
       end
@@ -493,7 +568,7 @@ describe Search::Reports::Items::API do
       end
     end
 
-    context 'assigned to the requesting user' do
+    describe 'assigned to the requesting user' do
       let(:items) do
         create_list(:reports_item, 3, category: category)
       end
@@ -515,7 +590,7 @@ describe Search::Reports::Items::API do
       end
     end
 
-    context 'reports with offensive flags' do
+    describe 'reports with offensive flags' do
       let(:items) do
         create_list(:reports_item, 3, category: category)
       end
@@ -576,6 +651,185 @@ describe Search::Reports::Items::API do
             expect(response.status).to eq(200)
             expect(parsed_body['reports'].map { |r| r['id'] }).to match_array(items.map(&:id) + offensive_items.map(&:id))
           end
+        end
+      end
+    end
+
+    context 'filter for notifications' do
+      describe '`with_notification` filter' do
+        let!(:correct_items) do
+          create_list(:reports_item, 3, category: category)
+        end
+        let!(:wrong_items) do
+          create_list(:reports_item, 3, category: category)
+        end
+
+        let(:params) do
+          {
+            with_notifications: true
+          }
+        end
+
+        before do
+          correct_items.each do |correct_item|
+            create(:reports_notification, item: correct_item)
+          end
+        end
+
+        it 'returns the correct items' do
+          get '/search/reports/items', params, auth(user)
+          expect(response.status).to eq(200)
+
+          expect(parsed_body['reports'].map do
+            |r| r['id']
+          end).to match_array(correct_items.map(&:id))
+        end
+      end
+
+      describe 'days_since_last_notification filter' do
+        let!(:correct_items) do
+          create_list(:reports_item, 3, category: category)
+        end
+        let!(:wrong_items) do
+          create_list(:reports_item, 3, category: category)
+        end
+        let(:group) { create(:group) }
+        let(:params) do
+          {
+            days_since_last_notification: {
+              begin: 1,
+              end: 10
+            }
+          }
+        end
+
+        before do
+          correct_items.each_with_index do |correct_item, i|
+            create(:reports_notification, item: correct_item, created_at: ((i + 1) * 2).days.ago)
+          end
+
+          wrong_items.each do |wrong_item|
+            create(:reports_notification, item: wrong_item, created_at: 20.days.ago)
+          end
+        end
+
+        it 'returns the correct items' do
+          get '/search/reports/items', params, auth(user)
+          expect(response.status).to eq(200)
+          expect(parsed_body['reports'].map { |r| r['id'] }).to match_array(correct_items.map(&:id))
+        end
+      end
+
+      describe '`days_for_last_notification_deadline` filter' do
+        let!(:correct_items) do
+          create_list(:reports_item, 3, category: category)
+        end
+        let!(:wrong_items) do
+          create_list(:reports_item, 3, category: category)
+        end
+        let!(:wrong_items_overdue) do
+          create_list(:reports_item, 3, category: category)
+        end
+        let(:group) { create(:group) }
+        let(:params) do
+          {
+            days_for_last_notification_deadline: {
+              begin: 2,
+              end: 10,
+            }
+          }
+        end
+
+        before do
+          correct_items.each_with_index do |correct_item, i|
+            create(:reports_notification, item: correct_item, overdue_at: ((i + 1) * 3).days.from_now)
+          end
+
+          wrong_items.each do |wrong_item|
+            create(:reports_notification, item: wrong_item, overdue_at: 15.days.from_now)
+          end
+
+          wrong_items_overdue.each do |wrong_item|
+            create(:reports_notification, item: wrong_item, overdue_at: 2.days.ago)
+          end
+        end
+
+        it 'returns the correct items' do
+          get '/search/reports/items', params, auth(user)
+          expect(response.status).to eq(200)
+          expect(parsed_body['reports'].map { |r| r['id'] }).to match_array(correct_items.map(&:id))
+        end
+      end
+
+      describe '`minimum_notification_number` filter' do
+        let!(:correct_items) do
+          create_list(:reports_item, 3, category: category)
+        end
+        let!(:wrong_items) do
+          create_list(:reports_item, 3, category: category)
+        end
+        let(:group) { create(:group) }
+        let(:params) do
+          {
+            minimum_notification_number: 3
+          }
+        end
+
+        before do
+          correct_items.each do |correct_item|
+            create_list(:reports_notification, 3, item: correct_item)
+          end
+
+          wrong_items.each do |wrong_item|
+            create(:reports_notification, item: wrong_item)
+          end
+        end
+
+        it 'returns the correct items' do
+          get '/search/reports/items', params, auth(user)
+          expect(response.status).to eq(200)
+          expect(parsed_body['reports'].map { |r| r['id'] }).to match_array(correct_items.map(&:id))
+        end
+      end
+
+      describe '`days_for_overdue_notification` filter' do
+        let!(:correct_items) do
+          create_list(:reports_item, 3, category: category)
+        end
+        let!(:wrong_items) do
+          create_list(:reports_item, 3, category: category)
+        end
+        let!(:wrong_items_overdue) do
+          create_list(:reports_item, 3, category: category)
+        end
+        let(:group) { create(:group) }
+        let(:params) do
+          {
+            days_for_overdue_notification: {
+              begin: 2,
+              end: 10
+            }
+          }
+        end
+
+        before do
+          correct_items.each_with_index do |correct_item, i|
+            create(:reports_notification, item: correct_item, overdue_at: ((i + 1) * 3).days.ago)
+          end
+
+          wrong_items.each do |wrong_item|
+            create(:reports_notification, item: wrong_item, overdue_at: 15.days.ago)
+          end
+
+          wrong_items_overdue.each do |wrong_item|
+            create(:reports_notification, item: wrong_item, overdue_at: 1.days.from_now)
+          end
+        end
+
+        it 'returns the correct items' do
+          get '/search/reports/items', params, auth(user)
+          expect(response.status).to eq(200)
+          expect(parsed_body['reports'].map { |r| r['id'] }).to match_array(correct_items.map(&:id))
         end
       end
     end

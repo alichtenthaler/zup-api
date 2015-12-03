@@ -42,6 +42,12 @@ RSpec::Matchers.define :be_a_success_request do
   end
 end
 
+RSpec::Matchers.define :be_a_no_content_request do
+  match do |actual|
+    actual == 204
+  end
+end
+
 RSpec::Matchers.define :be_an_error do |hash_error|
   match do
     parsed_body['error'] == hash_error

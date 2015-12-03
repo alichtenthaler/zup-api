@@ -6,7 +6,8 @@
 /config/database.yml
 /log/*.log
 *.log
-/tmp
+/tmp/*.png
+/tmp/*.jpg
 /.idea
 *.swp
 *.swo

@@ -7,9 +7,10 @@ describe Flows::Steps::Fields::API do
   describe 'on create' do
     let!(:flow) do
        flow = create(:flow, steps: [build(:step_type_form_without_fields)])
-       flow.steps.first.fields << build(:field, field_type: 'category_inventory', category_inventory_id: inventory_item.category.id, multiple: true)
+       flow.steps.first.fields << build(:field, field_type: 'inventory_item', category_inventory_id: [inventory_item.category.id], multiple: true)
        flow
     end
+
     let(:inventory_item) { create(:inventory_item) }
     let(:step)         { flow.steps.first }
     let(:valid_params) { { title: 'Number', field_type: 'integer' } }
@@ -28,7 +29,13 @@ describe Flows::Steps::Fields::API do
       context 'and user can manage steps' do
         context 'and failure' do
           context 'because validations fields' do
-            let(:errors) { { 'title' => [I18n.t('activerecord.errors.messages.blank')], 'field_type' => [I18n.t('activerecord.errors.messages.blank')] } }
+            let(:errors) do
+              {
+                'title' => [I18n.t('activerecord.errors.messages.blank')],
+                'field_type' => [I18n.t('activerecord.errors.messages.blank')]
+              }
+            end
+
             before { post "/flows/#{flow.id}/steps/#{step.id}/fields", {}, auth(user) }
 
             it { expect(response.status).to be_a_bad_request }
@@ -49,7 +56,7 @@ describe Flows::Steps::Fields::API do
           context 'with checkbox field' do
             let(:checkbox_params) do
               { title: 'Services', field_type: 'checkbox', requirements: { presence: true },
-               values: { option_1: 'Option 1', option_2: 'Option 2' } }
+               values: ['Option 1', 'Option 2'] }
             end
             let(:field) { step.reload.fields.last }
 
@@ -59,16 +66,20 @@ describe Flows::Steps::Fields::API do
             it { expect(response.body).to be_a_success_message_with(I18n.t(:field_created)) }
             it { expect(parsed_body['field']).to be_an_entity_of(field) }
 
-            it 'should has values' do
-              expect(field.values).to_not be_blank
+            it 'should have the specified values' do
+              expect(field.values).to match_array(checkbox_params[:values])
             end
           end
 
           context 'with Inventory field' do
             let(:field)          { step.reload.fields.last }
             let(:inventory_params) do
-              { title: 'Size of tree', field_type: 'category_inventory_field',
-               origin_field_id: inventory_item.category.fields.first.id, requirements: { presence: true } }
+              {
+                title: 'Size of tree',
+                field_type: 'inventory_field',
+                origin_field_id: inventory_item.category.fields.first.id,
+                requirements: { presence: true }
+              }
             end
 
             before { post "/flows/#{flow.id}/steps/#{step.id}/fields", inventory_params, auth(user) }

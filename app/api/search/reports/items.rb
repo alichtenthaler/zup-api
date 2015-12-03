@@ -37,17 +37,36 @@ module Search::Reports::Items
                desc: 'User document, only numbers'
       optional :flagged_offensive, type: Boolean,
                desc: 'Show only reports flagged as offensive'
+      optional :days_since_last_notification, type: Hash,
+               desc: 'Filter report by the days since last notification'
+      optional :days_for_last_notification_deadline, type: Hash,
+               desc: 'Filter report by the days remaining to overdue the last notification'
+      optional :minimum_notification_number, type: Integer,
+               desc: 'Filter reports by the minimum count of notifications'
+      optional :days_for_overdue_notification, type: Hash,
+               desc: 'Filter reports by range the days remaining to overdue the last notification'
+      optional :with_notifications, type: Boolean,
+               desc: 'Shows only report items with notifications sent'
+      optional :reports_perimeters_ids, type: String,
+               desc: 'Perimeters ids, format: "1,2,3"'
     end
     get 'reports/items' do
+      authenticate!
+
       search_params = safe_params.permit(
-        :begin_date, :end_date, :address, :query, :overdue, :clusterize, :zoom,
-        :assigned_to_my_group, :assigned_to_me, :user_document, :flagged_offensive
+        :sort, :order, :page, :per_page, :begin_date, :end_date, :address,
+        :query, :overdue, :clusterize, :zoom, :assigned_to_my_group, :assigned_to_me,
+        :user_document, :flagged_offensive, :minimum_notification_number,
+        :with_notifications, days_for_overdue_notification: [:begin, :end],
+        days_since_last_notification: [:begin, :end], days_for_last_notification_deadline: [:begin, :end]
       )
 
       search_params[:paginator] = method(:paginate)
-      search_params[:page] = safe_params[:page]
-      search_params[:per_page] = safe_params[:per_page]
       search_params[:position] = safe_params[:position]
+
+      unless safe_params[:reports_perimeters_ids].blank?
+        search_params[:perimeter] = Reports::Perimeter.find(safe_params[:reports_perimeters_ids].split(','))
+      end
 
       unless safe_params[:reports_categories_ids].blank?
         search_params[:category] = Reports::Category.find(safe_params[:reports_categories_ids].split(','))
@@ -68,9 +87,6 @@ module Search::Reports::Items
         search_params[:statuses] = Reports::Status.find(safe_params[:statuses_ids].split(','))
       end
 
-      search_params[:sort] = safe_params[:sort]
-      search_params[:order] = safe_params[:order]
-
       results = Reports::SearchItems.new(current_user, search_params).search
 
       if safe_params[:clusterize]
@@ -83,8 +99,8 @@ module Search::Reports::Items
       else
         {
           reports: Reports::Item::Entity.represent(results, only: return_fields,
-                                                  display_type: safe_params[:display_type],
-                                                  user: current_user)
+                                                   display_type: safe_params[:display_type],
+                                                   user: current_user)
         }
       end
     end

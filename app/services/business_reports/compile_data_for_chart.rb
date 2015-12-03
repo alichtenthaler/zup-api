@@ -18,7 +18,7 @@ module BusinessReports
 
       # Use the metric class to compile data
       chart_data = metric_class.new(
-        chart.begin_date..chart.end_date, chart_params
+        chart.begin_date.beginning_of_day..chart.end_date.end_of_day, chart_params
       ).fetch_data
 
       chart_data = adapt_to_chart_type(chart_data)

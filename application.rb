@@ -4,6 +4,7 @@ module ZupApi
 end
 
 require 'rack/session/cookie'
+require 'sidekiq/web'
 
 ZupServer = Rack::Builder.new do
   use Rack::Session::Cookie,
@@ -17,5 +18,13 @@ ZupServer = Rack::Builder.new do
 
   map '/' do
     run ZUP::API
+  end
+
+  map '/sidekiq' do
+    use Rack::Auth::Basic, 'Secret Area' do |username, password|
+      username == 'zup' && password == '!@#ntxadmin'
+    end
+
+    run Sidekiq::Web
   end
 end

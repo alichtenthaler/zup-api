@@ -166,6 +166,21 @@ class UserAbility
       permissions.reports_items_alter_status.include?(report.reports_category_id)
     end
 
+    can [:send_notification, :restart_notification], Reports::Item do |report|
+      permissions.reports_items_edit.include?(report.reports_category_id) ||
+      permissions.reports_categories_edit.include?(report.reports_category_id) ||
+      permissions.manage_reports_categories ||
+      permissions.reports_full_access
+    end
+
+    can :send_notification, Reports::Item do |report|
+      permissions.reports_items_send_notification.include?(report.reports_category_id)
+    end
+
+    can :restart_notification, Reports::Item do |report|
+      permissions.reports_items_restart_notification.include?(report.reports_category_id)
+    end
+
     can :create_internal, Reports::Comment do |comment|
       report = comment.item
       permissions.reports_items_create_internal_comment.include?(report.reports_category_id) ||

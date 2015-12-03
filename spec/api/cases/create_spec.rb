@@ -20,11 +20,11 @@ describe Cases::API, versioning: true do
         create(:field, step: flow.steps.first, title: 'user_email', field_type: 'email')
         create(:field, step: flow.steps.first, title: 'user_photo', field_type: 'image')
         create(:field, step: flow.steps.first, title: 'user_att', field_type: 'attachment', filter: 'jpg,png,txt')
-        create(:field, step: flow.steps.first, title: 'inventory_items', field_type: 'category_inventory', category_inventory_id: inventory_item.category.id, multiple: true)
-        create(:field, step: flow.steps.first, title: 'size_of_tree', field_type: 'category_inventory_field', origin_field_id: inventory_field_id)
-        create(:field, step: flow.steps.first, title: 'Services', field_type: 'checkbox', values: { option_1: 'Option 1', option_2: 'Option 2' })
-        create(:field, step: flow.steps.first, title: 'Newsletter', field_type: 'radio', values: { yes: 'Yes', no: 'No' }, requirements: { presence: true })
-        create(:field, step: flow.steps.first, title: 'Country', field_type: 'select', values: { brazil: 'Brazil', usa: 'USA' })
+        create(:field, step: flow.steps.first, title: 'inventory_items', field_type: 'inventory_item', category_inventory_id: [inventory_item.category.id], multiple: true)
+        create(:field, step: flow.steps.first, title: 'size_of_tree', field_type: 'inventory_field', origin_field_id: inventory_field_id)
+        create(:field, step: flow.steps.first, title: 'Services', field_type: 'checkbox', values: ['Option 1', 'Option 2'])
+        create(:field, step: flow.steps.first, title: 'Newsletter', field_type: 'radio', values: ['Yes', 'No'], requirements: { presence: true })
+        create(:field, step: flow.steps.first, title: 'Country', field_type: 'select', values: ['Brazil', 'USA'])
         flow.publish(user)
         flow.the_version
       end
@@ -60,9 +60,9 @@ describe Cases::API, versioning: true do
            ] },
            { id: fields[5].id, value: [inventory_item.id] },
            { id: fields[6].id, value: inventory_value },
-           { id: fields[7].id, value: ['option_2'] },
-           { id: fields[8].id, value: 'no' },
-           { id: fields[9].id, value: 'usa' }]
+           { id: fields[7].id, value: ['Option 2'] },
+           { id: fields[8].id, value: 'No' },
+           { id: fields[9].id, value: ['USA', 'Brazil'] }]
         }
       end
 
@@ -216,8 +216,8 @@ describe Cases::API, versioning: true do
       let(:flow) do
         flow = create(:flow, initial: true, steps: [build(:step_type_form_without_fields), build(:step_type_form_without_fields)])
         create(:field, step: flow.steps.first, title: 'user_age',        field_type: 'integer')
-        create(:field, step: flow.steps.first, title: 'inventory_items', field_type: 'category_inventory', category_inventory_id: inventory_item.category.id, multiple: true)
-        create(:field, step: flow.steps.first, title: 'size_of_tree',    field_type: 'category_inventory_field', origin_field_id: inventory_field_id)
+        create(:field, step: flow.steps.first, title: 'inventory_items', field_type: 'inventory_item', category_inventory_id: [inventory_item.category.id], multiple: true)
+        create(:field, step: flow.steps.first, title: 'size_of_tree',    field_type: 'inventory_field', origin_field_id: inventory_field_id)
         flow.steps.first.triggers << build(:trigger, action_type: 'disable_steps', action_values: [flow.steps.first.fields.reload.first.step.id])
         flow.publish(user)
         flow.reload

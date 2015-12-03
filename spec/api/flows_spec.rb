@@ -264,6 +264,20 @@ describe Flows::API, versioning: true do
           it { expect(parsed_body['flows']).to_not include_an_entity_of(flow.reload) }
           it { expect(parsed_body['flows']).to include_an_entity_of(other_flow.reload) }
         end
+
+        context 'with query search' do
+          let!(:amazing_flow) { create(:flow, title: 'Amazing flow') }
+          let!(:boring_flow) { create(:flow, title: 'Boring flow') }
+
+          before do
+            get '/flows', { query: 'Amazing' }, auth(user)
+          end
+
+          it { expect(response.status).to be_a_success_request }
+          it { expect(parsed_body['flows']).to include_an_entity_of(amazing_flow) }
+          it { expect(parsed_body['flows']).to_not include_an_entity_of(boring_flow) }
+          it { expect(parsed_body['flows'].count).to eq(1) }
+        end
       end
     end
   end
@@ -497,6 +511,62 @@ describe Flows::API, versioning: true do
             it { expect(response.body).to be_a_success_message_with(I18n.t(:flow_published)) }
             it { expect(flow.reload.draft).to be false }
             it { expect(flow.versions.size).to eql 1 }
+          end
+        end
+      end
+    end
+  end
+
+  describe 'GET fields' do
+    let!(:flow) { create(:flow) }
+
+    context 'no authentication' do
+      before { get "/flows/#{flow.id}/fields" }
+      it     { expect(response.status).to be_an_unauthorized }
+    end
+
+    context 'with authentication' do
+      let!(:fields) do
+        create_list(:field, 2, step: flow.steps.first)
+      end
+
+      it "returns all flow's fields" do
+        get "/flows/#{flow.id}/fields", {}, auth(user)
+        expect(response.status).to be_a_success_request
+
+        fields.each do |field|
+          expect(parsed_body['fields']).to include_an_entity_of(field)
+        end
+      end
+
+      context 'with `inventory_field_contender` param' do
+        let!(:incorrect_fields) do
+          fields + create_list(:field, 2,
+                               step: flow.steps.first,
+                               field_type: 'inventory_item',
+                               category_inventory_id: [1, 2]
+                              )
+        end
+
+        let!(:correct_fields) do
+          create_list(
+            :field, 2,
+            step: flow.steps.first,
+            field_type: 'inventory_item',
+            category_inventory_id: [1]
+          )
+        end
+
+        it "returns all flow's fields which are inventory_item type and has one category" do
+          get "/flows/#{flow.id}/fields", { inventory_field_contender: true }, auth(user)
+          expect(response.status).to be_a_success_request
+
+          correct_fields.each do |field|
+            expect(parsed_body['fields']).to include_an_entity_of(field)
+          end
+
+          incorrect_fields.each do |field|
+            expect(parsed_body['fields']).to_not include_an_entity_of(field)
           end
         end
       end

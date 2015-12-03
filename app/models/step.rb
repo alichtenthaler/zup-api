@@ -33,8 +33,11 @@ class Step < ActiveRecord::Base
       ids
     end
 
-    flow.update! steps_versions: {}
-    flow.update! steps_versions: order_ids
+    transaction do
+      flow.update! steps_versions: {}
+      flow.update!(steps_versions: order_ids)
+      flow.update_attribute(:steps_order, steps_ids)
+    end
   end
 
   def inactive!
@@ -79,8 +82,11 @@ class Step < ActiveRecord::Base
   def add_step_on_flow
     step_versions = get_flow.steps_versions.dup
     step_versions.merge!(id.to_s => nil)
-    get_flow.update! updated_by: user, steps_versions: {}
-    get_flow.update! updated_by: user, steps_versions: step_versions
+    transaction do
+      get_flow.update! updated_by: user, steps_versions: {}
+      get_flow.update! updated_by: user, steps_versions: step_versions
+      get_flow.update_attribute(:steps_order, get_flow.steps_order + [id])
+    end
   end
 
   def set_draft
@@ -91,8 +97,11 @@ class Step < ActiveRecord::Base
   def remove_step_on_flow
     step_versions = get_flow.steps_versions.dup
     step_versions.delete(id.to_s)
-    get_flow.update! updated_by: user, steps_versions: {}
-    get_flow.update! updated_by: user, steps_versions: step_versions
+    transaction do
+      get_flow.update! updated_by: user, steps_versions: {}
+      get_flow.update! updated_by: user, steps_versions: step_versions
+      get_flow.update_attribute(:steps_order, get_flow.steps_order - [id])
+    end
   end
 
   # used on Entity
@@ -147,6 +156,8 @@ class Step < ActiveRecord::Base
     expose :child_flow_id, unless: { display_type: 'full' }
     expose :fields,        using: 'Field::Entity', if: { display_type: 'full' }
     expose :my_fields,     using: 'Field::Entity', if: { display_type: 'full' }
+    expose :triggers,      using: 'Trigger::Entity', if: { display_type: 'full' }
+    expose :my_triggers,   using: 'Trigger::Entity', if: { display_type: 'full' }
     expose :fields_id,     unless: { display_type: 'full' }
     expose :active
     expose :version_id

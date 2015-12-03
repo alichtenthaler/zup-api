@@ -74,6 +74,11 @@ pt-BR:
   case_created: Caso criado com sucesso
   permission_denied: "Usuário não pode '%{action}' %{table_name}"
   reports:
+    categories:
+      priority:
+        low: Baixa
+        medium: Média
+        high: Alta
     items:
       offensive:
         flag:
@@ -83,7 +88,60 @@ pt-BR:
         error:
           already_reported: Você já reportou esse relato!
           limit_reached: Você já atingiu o limite de reportagem de relatos por hora, aguarde antes de reportar outros relatos.
+    notification_types:
+      delete:
+        success: Tipo de notificação deletado com sucesso
+    notifications:
+      create:
+        error: Ocorreu um erro ao criar a notificação
+      resend:
+        error: Ocorreu um erro ao re-enviar a notificação
+      restart:
+        success: O processo de notificação para o relato foi reiniciado
+  errors: &errors
+    format: ! '%{attribute} %{message}'
+    messages:
+      accepted: deve ser aceito
+      blank: não pode ficar em branco
+      present: deve ficar em branco
+      confirmation: não é igual a %{attribute}
+      empty: não pode ficar vazio
+      equal_to: deve ser igual a %{count}
+      even: deve ser par
+      exclusion: não está disponível
+      greater_than: deve ser maior que %{count}
+      greater_than_or_equal_to: deve ser maior ou igual a %{count}
+      inclusion: não está incluído na lista
+      invalid: não é válido
+      less_than: deve ser menor que %{count}
+      less_than_or_equal_to: deve ser menor ou igual a %{count}
+      not_a_number: não é um número
+      not_an_integer: não é um número inteiro
+      odd: deve ser ímpar
+      changed: não pode ser alterado
+      record_invalid: ! 'A validação falhou: %{errors}'
+      restrict_dependent_destroy:
+        one: "Não é possível excluir o registro pois existe um %{record} dependente"
+        many: "Não é possível excluir o registro pois existem %{record} dependentes"
+      taken: já está em uso
+      too_long: ! 'é muito longo (máximo: %{count} caracteres)'
+      too_short: ! 'é muito curto (mínimo: %{count} caracteres)'
+      wrong_length: não possui o tamanho esperado (%{count} caracteres)
+      unique: Já existe essa relação no sistema. Tente novamente com outros usuários.
+      invalid_belonging_to_category: Não pertece à categoria
+      end_date_lower_than_begin_date: Data inicial precisa ser anterior à data final
+      version_mismatch: A manipulação do relato é improcedente, nova versão foi inserida no servidor, atualize a sua versão local
+    template:
+      body: ! 'Por favor, verifique o(s) seguinte(s) campo(s):'
+      header:
+        one: ! 'Não foi possível gravar %{model}: 1 erro'
+        other: ! 'Não foi possível gravar %{model}: %{count} erros.'
+  activemodel:
+    errors:
+      <<: *errors
   activerecord:
+    errors:
+      <<: *errors
     models:
       group: Grupo
       access_key: Chave de Acesso
@@ -106,6 +164,8 @@ pt-BR:
         postal_code: CEP
         district: Bairro
         city: Cidade
+        password: Senha
+        password_confirmation: Confirmação de Senha
       reports:
         item:
           address: Endereço
@@ -218,43 +278,6 @@ pt-BR:
       month: Mês
       second: Segundo
       year: Ano
-  errors: &errors
-    format: ! '%{attribute} %{message}'
-    messages:
-      accepted: deve ser aceito
-      blank: não pode ficar em branco
-      present: deve ficar em branco
-      confirmation: não está de acordo com a confirmação
-      empty: não pode ficar vazio
-      equal_to: deve ser igual a %{count}
-      even: deve ser par
-      exclusion: não está disponível
-      greater_than: deve ser maior que %{count}
-      greater_than_or_equal_to: deve ser maior ou igual a %{count}
-      inclusion: não está incluído na lista
-      invalid: não é válido
-      less_than: deve ser menor que %{count}
-      less_than_or_equal_to: deve ser menor ou igual a %{count}
-      not_a_number: não é um número
-      not_an_integer: não é um número inteiro
-      odd: deve ser ímpar
-      changed: não pode ser alterado
-      record_invalid: ! 'A validação falhou: %{errors}'
-      restrict_dependent_destroy:
-        one: "Não é possível excluir o registro pois existe um %{record} dependente"
-        many: "Não é possível excluir o registro pois existem %{record} dependentes"
-      taken: já está em uso
-      too_long: ! 'é muito longo (máximo: %{count} caracteres)'
-      too_short: ! 'é muito curto (mínimo: %{count} caracteres)'
-      wrong_length: não possui o tamanho esperado (%{count} caracteres)
-      unique: Já existe essa relação no sistema. Tente novamente com outros usuários.
-      end_date_lower_than_begin_date: Data inicial precisa ser anterior à data final
-      version_mismatch: A manipulação do relato é improcedente, nova versão foi inserida no servidor, atualize a sua versão local
-    template:
-      body: ! 'Por favor, verifique o(s) seguinte(s) campo(s):'
-      header:
-        one: ! 'Não foi possível gravar %{model}: 1 erro'
-        other: ! 'Não foi possível gravar %{model}: %{count} erros.'
   helpers:
     select:
       prompt: Por favor selecione
@@ -329,10 +352,3 @@ pt-BR:
       long: ! '%d de %B de %Y, %H:%M'
       short: ! '%d de %B, %H:%M'
     pm: ''
-  # remove these aliases after 'activemodel' and 'activerecord' namespaces are removed from Rails repository
-  activemodel:
-    errors:
-      <<: *errors
-  activerecord:
-    errors:
-      <<: *errors

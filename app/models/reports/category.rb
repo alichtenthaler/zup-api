@@ -2,23 +2,43 @@ class Reports::Category < Reports::Base
   include EncodedImageUploadable
   include SolverGroup
 
-  has_and_belongs_to_many :inventory_categories, class_name: 'Inventory::Category',
-                          foreign_key: 'reports_category_id',
-                          association_foreign_key: 'inventory_category_id'
+  belongs_to :parent_category,
+    class_name: 'Reports::Category',
+    foreign_key: 'parent_id'
+
+  has_and_belongs_to_many :inventory_categories,
+    class_name: 'Inventory::Category',
+    foreign_key: 'reports_category_id',
+    association_foreign_key: 'inventory_category_id'
+
+  has_many :category_perimeters,
+    class_name: 'Reports::CategoryPerimeter',
+    foreign_key: 'reports_category_id',
+    dependent: :delete_all
+
+  has_many :notification_types,
+    class_name: 'Reports::NotificationType',
+    foreign_key: 'reports_category_id',
+    dependent: :destroy
+
+  has_many :reports,
+    class_name: 'Reports::Item',
+    foreign_key: 'reports_category_id',
+    dependent: :destroy
 
   has_many :status_categories,
     class_name: 'Reports::StatusCategory',
     foreign_key: 'reports_category_id',
     dependent: :destroy
+
   has_many :statuses,
     class_name: 'Reports::Status',
     through: :status_categories,
     source: :status
 
-  has_many :reports,  class_name: 'Reports::Item', foreign_key: 'reports_category_id', dependent: :destroy
-
-  belongs_to :parent_category, class_name: 'Reports::Category', foreign_key: 'parent_id'
-  has_many :subcategories, class_name: 'Reports::Category', foreign_key: 'parent_id'
+  has_many :subcategories,
+    class_name: 'Reports::Category',
+    foreign_key: 'parent_id'
 
   enum priority: [:low, :medium, :high]
 
@@ -108,6 +128,14 @@ class Reports::Category < Reports::Base
     icon.to_s
   end
 
+  def find_perimeter(latitude = nil, longitude = nil)
+    return unless latitude && longitude
+
+    category_perimeters.joins(:perimeter)
+                       .merge(Reports::Perimeter.search(latitude, longitude))
+                       .first
+  end
+
   class Entity < Grape::Entity
     expose :id
     expose :title
@@ -116,6 +144,11 @@ class Reports::Category < Reports::Base
     expose :marker_structure, as: :marker
     expose :color
     expose :priority
+    expose :priority_pretty do |instance, _|
+      if !instance.priority.nil?
+        I18n.t("reports.categories.priority.#{instance.priority}")
+      end
+    end
     expose :resolution_time_enabled
     expose :resolution_time
     expose :private_resolution_time
@@ -130,6 +163,9 @@ class Reports::Category < Reports::Base
     expose :solver_groups_ids
     expose :default_solver_group, using: Group::Entity
     expose :default_solver_group_id
+    expose :notifications
+    expose :ordered_notifications
+    expose :perimeters
 
     with_options(if: { display_type: :full }) do
       expose :active

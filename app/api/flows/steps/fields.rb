@@ -27,14 +27,15 @@ module Flows::Steps::Fields
         optional :category_report_id,    type: Integer, desc: 'Category Report ID'
         optional :order_number,          type: Integer, desc: 'Order Number for Field'
         optional :requirements,          type: Hash,    desc: 'Requirements for Field'
-        optional :values,                type: Hash,    desc: 'Values for Checkbox Field'
+        optional :values,                type: Array,   desc: 'Values for choice fields'
+        optional :multiple,              type: Boolean, desc: 'If the field supports multiple values'
       end
       post do
         authenticate!
         validate_permission!(:create, Field)
 
-        parameters = safe_params.permit(:title, :field_type, :filter, :origin_field_id, :category_inventory_id,
-                                        :category_report_id, requirements: [:presence, :minimum, :maximum])
+        parameters = safe_params.permit(:title, :field_type, :filter, :origin_field_id, :category_inventory_id, :multiple,
+                                        :category_report_id, requirements: [:presence, :minimum, :maximum, :multiline])
         parameters.merge!(values: safe_params[:values], user: current_user)
 
         field = Step.find(safe_params[:step_id]).fields.create!(parameters)
@@ -51,18 +52,20 @@ module Flows::Steps::Fields
         optional :category_report_id,    type: Integer, desc: 'Category Report ID'
         optional :order_number,          type: Integer, desc: 'Order Number for Field'
         optional :requirements,          type: Hash,    desc: 'Requirements for Field'
-        optional :values,                type: Hash,    desc: 'Values for Checkbox Field'
+        optional :values,                type: Array,   desc: 'Values for choice fields'
+        optional :multiple,              type: Boolean, desc: 'If the field supports multiple values'
       end
       put ':id' do
         authenticate!
         validate_permission!(:update, Field)
 
-        parameters = safe_params.permit(:title, :field_type, :filter, :origin_field_id, :category_inventory_id,
-                                        :category_report_id, requirements: [:presence, :minimum, :maximum])
+        parameters = safe_params.permit(:title, :field_type, :filter, :origin_field_id, :category_inventory_id, :multiple,
+                                        :category_report_id, requirements: [:presence, :minimum, :maximum, :multiline])
         parameters.merge!(values: safe_params[:values], user: current_user)
 
-        Step.find(safe_params[:step_id]).fields.find(safe_params[:id]).update!(parameters)
-        { message: I18n.t(:field_updated) }
+        field = Step.find(safe_params[:step_id]).fields.find(safe_params[:id])
+        field.update!(parameters)
+        { message: I18n.t(:field_updated), field: Field::Entity.represent(field.reload, only: return_fields) }
       end
 
       desc 'Delete a Field'

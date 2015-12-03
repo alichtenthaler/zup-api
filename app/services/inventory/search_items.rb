@@ -65,7 +65,9 @@ class Inventory::SearchItems
             permission_statement = "(inventory_category_id = #{category.id} AND user_id = #{user.id})"
           end
         end
-      else
+      end
+
+      if permission_statement.blank?
         permission_statement = { inventory_category_id: categories_ids }
       end
 

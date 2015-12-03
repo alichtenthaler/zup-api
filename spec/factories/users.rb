@@ -8,11 +8,18 @@ FactoryGirl.define do
 
     name { FFaker::Name.name }
     phone '11912231545'
+    commercial_phone '11912231545'
+    skype { FFaker::Internet.user_name }
     document { Faker::CPF.numeric }
+    birthdate { Date.new(1990, 10, 10) }
     address { FFaker::Address.street_address }
     address_additional { FFaker::Address.secondary_address }
     postal_code '04005000'
     district { FFaker::Address.city }
+
+    institution { FFaker::Company.name }
+    position { FFaker::Company.position }
+
     device_token { SecureRandom.hex }
     device_type 'ios'
 

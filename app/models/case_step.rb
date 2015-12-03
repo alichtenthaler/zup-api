@@ -28,9 +28,11 @@ class CaseStep < ActiveRecord::Base
 
   def fields_of_step
     field_data = convert_field_data(case_step_data_fields)
+
     my_step.my_fields.each do |field|
       data_field  = field_data.select{ |f| f.field_id == field.id }.try(:first)
       requirement = Hash(field.requirements)
+
       if data_field.present?
         value   = convert_data(field.field_type, data_field['value'],    data_field)
         minimum = convert_data(field.field_type, requirement['minimum'], data_field)
@@ -38,9 +40,11 @@ class CaseStep < ActiveRecord::Base
       else
         value, minimum, maximum = nil
       end
+
       presence = requirement['presence'] == 'true'
       custom_validations(field, value, minimum, maximum, presence)
     end
+
     @items_with_update.map(&:save!) if errors.blank? && @items_with_update.present?
   end
 
@@ -68,16 +72,18 @@ class CaseStep < ActiveRecord::Base
     when 'previous_field'
       #nothing to do
     when 'radio'
-      errors_add(field.title, :invalid) if (Array(value) - Array(field.values.keys)).present?
+      errors_add(field.title, :invalid) if (Array(value) - field.values).present?
     when 'checkbox', 'select'
-      errors_add(field.title, :inclusion) if (Array(value) - Array(field.values.keys)).present?
-    when 'category_inventory'
-      errors_add(field.title, :inclusion) if (Array(value) - field.category_inventory.items.pluck(:id)).present?
-    when 'category_inventory_field'
+      errors_add(field.title, :inclusion) if (Array(value) - field.values).present?
+    when 'inventory_item'
+      errors_add(field.title, :inclusion) if (Array(value) - Inventory::Item.where(inventory_category_id: field.category_inventory_id).pluck(:id)).present?
+    when 'inventory_field'
       inventory_field = Inventory::Field.find(field.origin_field_id)
+
       value   = convert_data(inventory_field.kind, value)
       minimum = convert_data(inventory_field.kind, inventory_field.minimum)
       maximum = convert_data(inventory_field.kind, inventory_field.maximum)
+
       custom_validations(inventory_field, value, minimum, maximum, inventory_field.required, inventory_field.kind)
       if errors.blank? && @items_with_update
         @items_with_update.each do |item|
@@ -85,8 +91,8 @@ class CaseStep < ActiveRecord::Base
           item_field.content = value
         end
       end
-    when 'category_report'
-      errors_add(field.title, :inclusion) if (Array(value) - field.category_report.items.pluck(:id)).present?
+    when 'report_item'
+      errors_add(field.title, :inclusion) if (Array(value) - Reports::Item.where(reports_category_id: field.category_report_id).pluck(:id)).present?
     end
     if value.is_a?(String) || value.is_a?(Array)
       errors_add(field.title, :greater_than, count: minimum) if minimum.present? && value.size < minimum.to_i
@@ -141,13 +147,13 @@ class CaseStep < ActiveRecord::Base
       elem.update_case_step_data_attachments data_value
     when 'previous_field'
       #nothing to do
-    when 'category_inventory'
-      @items_with_update = elem.field.category_inventory.items.where(id: convert_field_data(data_value))
-      data_value = @items_with_update.map(&:id)
-    when 'category_inventory_field'
+    when 'inventory_item'
+      @items_with_update = Inventory::Item.where(inventory_category_id: elem.field.category_inventory).where(id: convert_field_data(data_value))
+      data_value = @items_with_update.pluck(:id)
+    when 'inventory_field'
       inventory_field = Inventory::Field.find(elem.field.origin_field_id)
       data_value      = convert_data(inventory_field.kind, data_value)
-    when 'category_report'
+    when 'report_item'
       #nothing to do
     end
     data_value

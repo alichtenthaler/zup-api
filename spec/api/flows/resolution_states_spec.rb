@@ -1,147 +1,85 @@
 require 'app_helper'
 
-describe Flows::ResolutionStates::API do
-  let(:user)       { create(:user) }
+describe Flows::API do
+  let(:user) { create(:user) }
   let(:guest_user) { create(:guest_user) }
+  let(:valid_params) do
+    { title: 'title test', description: 'description test',
+      resolution_states: [{ title: 'Done', default: false }, { title: 'Open', default: true }] }
+  end
 
-  describe 'on create' do
-    let!(:flow)        { create(:flow_without_relation) }
-    let(:valid_params) { { title: 'Success', default: true } }
+  describe 'when creating a flow with resolution states' do
+    describe 'and the user does not have permission' do
+      before { post '/flows', valid_params, auth(guest_user) }
 
-    context 'no authentication' do
-      before { post "/flows/#{flow.id}/resolution_states", valid_params }
-      it     { expect(response.status).to be_an_unauthorized }
+      let(:error) { I18n.t(:permission_denied, action: I18n.t(:create), table_name: I18n.t(:flows)) }
+      it { expect(response.status).to be_a_forbidden }
+      it { expect(parsed_body).to be_an_error(error) }
     end
 
-    context 'with authentication' do
-      context 'and user can\'t manage resolution state' do
-        let(:error) { I18n.t(:permission_denied, action: I18n.t(:create), table_name: I18n.t(:resolution_states)) }
+    describe 'and the user has permission' do
+      before { post '/flows', valid_params, auth(user) }
+      it { expect(response.status).to be_a_requisition_created }
+      it { expect(response.body).to be_a_success_message_with(I18n.t(:flow_created)) }
+      it { expect(parsed_body['flow']['resolution_states'].count).to eq(2) }
 
-        before { post "/flows/#{flow.id}/resolution_states", valid_params, auth(guest_user) }
-        it     { expect(response.status).to be_a_forbidden }
-        it     { expect(parsed_body).to be_an_error(error) }
-      end
+      let(:done_state) { parsed_body['flow']['resolution_states'].select { |rs| rs['title'] == 'Done' }.first }
+      it { expect(done_state['default']).to be_falsey }
 
-      context 'and user can manage resolution state' do
-        context 'and failure' do
-          context 'because validations fields' do
-            before { post "/flows/#{flow.id}/resolution_states", {}, auth(user) }
-
-            it { expect(response.status).to be_a_bad_request }
-            it { expect(response.body).to be_an_error('title' => [I18n.t('activerecord.errors.messages.blank')]) }
-          end
-        end
-
-        context 'successfully' do
-          context 'one with default' do
-            let(:title) { valid_params.delete(:title) }
-            before { post "/flows/#{flow.id}/resolution_states", valid_params, auth(user) }
-
-            it { expect(response.status).to be_a_requisition_created }
-            it { expect(response.body).to be_a_success_message_with(I18n.t(:resolution_state_created)) }
-            it { expect(parsed_body['resolution_state']).to be_an_entity_of(flow.resolution_states.find_by(title: title)) }
-          end
-
-          context 'exists one with default and create another without default' do
-            let!(:first_resolution) { flow.resolution_states.create(title:'test with default', default: true) }
-            before { post "/flows/#{flow.id}/resolution_states", valid_params.except(:default), auth(user) }
-
-            it { expect(response.status).to be_a_requisition_created }
-            it { expect(response.body).to be_a_success_message_with(I18n.t(:resolution_state_created)) }
-            it { expect(parsed_body['resolution_state']).to be_an_entity_of(flow.resolution_states.find_by(valid_params.slice(:title))) }
-
-            it 'should total resolution states for this Flow be 2' do
-              expect(flow.resolution_states.count).to eql(2)
-            end
-          end
-        end
-      end
+      let(:open_state) { parsed_body['flow']['resolution_states'].select { |rs| rs['title'] == 'Open' }.first }
+      it { expect(open_state['default']).to be_truthy }
     end
   end
 
-  describe 'on update' do
-    let(:flow)         { create(:flow, :with_resolution_state) }
-    let!(:resolution)  { flow.resolution_states.first }
-    let(:valid_params) { { title: 'Success', default: true } }
+  describe 'when updating a flow with resolution states' do
+    let(:new_state) { { title: 'New state', default: false } }
+    let(:new_default_state) { { title: 'New state', default: true } }
 
-    context 'no authentication' do
-      before { put "/flows/#{flow.id}/resolution_states/#{resolution.id}", valid_params }
-      it     { expect(response.status).to be_an_unauthorized }
-    end
+    describe 'and the user adds a new resolution state' do
+      context 'that is not set as default' do
+        let(:flow) { create(:flow, initial: true, resolution_states: [build(:resolution_state, default: true)]) }
+        before do
+          put "/flows/#{flow.id}", { resolution_states: flow.resolution_states.map { |rs| rs.as_json } << new_state }, auth(user)
+          flow.reload
+        end
 
-    context 'with authentication' do
-      context 'and user can\'t manage resolution state' do
-        let(:error) { I18n.t(:permission_denied, action: I18n.t(:update), table_name: I18n.t(:resolution_states)) }
-
-        before { put "/flows/#{flow.id}/resolution_states/#{resolution.id}", valid_params, auth(guest_user) }
-        it     { expect(response.status).to be_a_forbidden }
-        it     { expect(parsed_body).to be_an_error(error) }
+        let(:resolution_states) { flow.resolution_states }
+        it { expect(resolution_states.count).to eq(2) }
+        it { expect(resolution_states.last.title).to eq(new_state[:title]) }
+        it { expect(resolution_states.last.default).to be_falsey }
       end
 
-      context 'and user can manage resolution state' do
-        context 'and failure' do
-          context 'because validations fields' do
-            before { put "/flows/#{flow.id}/resolution_states/#{resolution.id}", {}, auth(user) }
-
-            it { expect(response.status).to be_a_bad_request }
-            it { expect(response.body).to be_an_error('title' => [I18n.t('activerecord.errors.messages.blank')]) }
-          end
-
-          context 'because not found' do
-            before { put "/flows/#{flow.id}/resolution_states/12345678", valid_params, auth(user) }
-
-            it { expect(response.status).to be_a_not_found }
-            it { expect(response.body).to be_an_error('Couldn\'t find ResolutionState with \'id\'=12345678 [WHERE "resolution_states"."flow_id" = $1]') }
-          end
+      context 'using a new default state' do
+        let(:flow) { create(:flow, initial: true, resolution_states: [build(:resolution_state, default: true)]) }
+        before do
+          current_rs = flow.resolution_states.each { |rs| rs.default = false }.map { |rs| rs.as_json }
+          put "/flows/#{flow.id}", { resolution_states: current_rs << new_default_state }, auth(user)
+          flow.reload
         end
 
-        context 'successfully' do
-          context 'one with default' do
-            before { put "/flows/#{flow.id}/resolution_states/#{resolution.id}", valid_params, auth(user) }
-
-            it { expect(response.status).to be_a_success_request }
-            it { expect(response.body).to be_a_success_message_with(I18n.t(:resolution_state_updated)) }
-          end
-        end
+        let(:resolution_states) { flow.resolution_states }
+        it { expect(resolution_states.count).to eq(2) }
+        it { expect(resolution_states.last.title).to eq(new_default_state[:title]) }
+        it { expect(resolution_states.first.default).to be_falsey }
+        it { expect(resolution_states.last.default).to be_truthy }
       end
     end
-  end
 
-  describe 'on delete' do
-    let(:flow)         { create(:flow, :with_resolution_state) }
-    let!(:resolution)  { flow.resolution_states.first }
+    describe 'and the user modifies an existing resolution state' do
+      let(:flow) { create(:flow, initial: true, resolution_states: [build(:resolution_state, default: true)]) }
+      let(:state_id) { flow.resolution_states.first.id }
 
-    context 'no authentication' do
-      before { delete "/flows/#{flow.id}/resolution_states/#{resolution.id}" }
-      it     { expect(response.status).to be_an_unauthorized }
-    end
-
-    context 'with authentication' do
-      context 'and user can\'t manage resolution state' do
-        let(:error) { I18n.t(:permission_denied, action: I18n.t(:delete), table_name: I18n.t(:resolution_states)) }
-
-        before { delete "/flows/#{flow.id}/resolution_states/#{resolution.id}", {}, auth(guest_user) }
-        it     { expect(response.status).to be_a_forbidden }
-        it     { expect(parsed_body).to be_an_error(error) }
+      before do
+        current_rs = flow.resolution_states.each { |rs| rs.default = false }.map { |rs| rs.as_json }
+        current_rs[0]['title'] = 'Modified title'
+        current_rs[0]['active'] = false
+        put "/flows/#{flow.id}", { resolution_states: current_rs }, auth(user)
+        flow.reload
       end
 
-      context 'and user can manage resolution state' do
-        context 'and failure' do
-          context 'because not found' do
-            before { delete "/flows/#{flow.id}/resolution_states/12345678", {}, auth(user) }
-
-            it { expect(response.status).to be_a_not_found }
-            it { expect(response.body).to be_an_error('Couldn\'t find ResolutionState with \'id\'=12345678 [WHERE "resolution_states"."flow_id" = $1]') }
-          end
-        end
-
-        context 'successfully' do
-          before { delete "/flows/#{flow.id}/resolution_states/#{resolution.id}", {}, auth(user) }
-
-          it { expect(response.status).to be_a_success_request }
-          it { expect(response.body).to be_a_success_message_with(I18n.t(:resolution_state_deleted)) }
-        end
-      end
+      it { expect(flow.resolution_states.first.id).to eq(state_id) }
+      it { expect(flow.resolution_states.first.title).to eq('Modified title') }
+      it { expect(flow.resolution_states.first.active).to be_falsey }
     end
   end
 end

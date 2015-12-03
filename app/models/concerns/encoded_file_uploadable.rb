@@ -19,6 +19,13 @@ module EncodedFileUploadable
           def #{attr_name}=(new_file)
             if new_file.is_a?(String)
               new_file = encoded_to_file(new_file)
+            elsif new_file.is_a?(Hash)
+              file_name = new_file['file_name']
+              content   = new_file['content']
+
+              if file_name && content
+                new_file = encoded_to_file(content, file_name)
+              end
             end
 
             super

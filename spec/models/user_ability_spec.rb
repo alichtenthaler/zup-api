@@ -45,4 +45,114 @@ describe UserAbility do
       end
     end
   end
+
+  describe 'reports items permissions' do
+    let(:permission) { create(:group_permission) }
+    let(:group)      { create(:group, permission: permission) }
+    let(:category)   { create(:reports_category_with_statuses) }
+    let(:item)       { create(:reports_item, category: category) }
+    let(:other_item) { create(:reports_item) }
+
+    before(:each) do
+      user.groups.push(group)
+    end
+
+    context 'user with full access' do
+      let(:permission) { create(:group_permission, reports_full_access: true) }
+
+      it 'can send a notification' do
+        expect(subject.can?(:send_notification, item)).to be_truthy
+        expect(subject.can?(:send_notification, other_item)).to be_truthy
+      end
+
+      it 'can restart a notification' do
+        expect(subject.can?(:restart_notification, item)).to be_truthy
+        expect(subject.can?(:restart_notification, other_item)).to be_truthy
+      end
+    end
+
+    context 'user in a group that can send notifications for category' do
+      let(:permission) { create(:group_permission, reports_items_send_notification: [category.id]) }
+
+      it 'can send a notification' do
+        expect(subject.can?(:send_notification, item)).to be_truthy
+      end
+
+      it 'can not send a notification' do
+        expect(subject.can?(:send_notification, other_item)).to be_falsy
+      end
+    end
+
+    context 'user in a group that can restart notifications for category' do
+      let(:permission) { create(:group_permission, reports_items_restart_notification: [category.id]) }
+
+      it 'can restart a notification' do
+        expect(subject.can?(:restart_notification, item)).to be_truthy
+      end
+
+      it 'can not restart a notification' do
+        expect(subject.can?(:restart_notification, other_item)).to be_falsy
+      end
+    end
+
+    context 'user in a group that can edit item for category' do
+      let(:permission) do
+        create(:group_permission, reports_items_edit: [category.id])
+      end
+
+      it 'can send a notification' do
+        expect(subject.can?(:send_notification, item)).to be_truthy
+      end
+
+      it 'can not send a notification' do
+        expect(subject.can?(:send_notification, other_item)).to be_falsy
+      end
+
+      it 'can restart a notification' do
+        expect(subject.can?(:restart_notification, item)).to be_truthy
+      end
+
+      it 'can not restart a notification' do
+        expect(subject.can?(:restart_notification, other_item)).to be_falsy
+      end
+    end
+
+    context 'user in a group that can manage categories' do
+      let(:permission) do
+        create(:group_permission, manage_reports_categories: true)
+      end
+
+      it 'can send a notification' do
+        expect(subject.can?(:send_notification, item)).to be_truthy
+        expect(subject.can?(:send_notification, other_item)).to be_truthy
+      end
+
+      it 'can restart a notification' do
+        expect(subject.can?(:restart_notification, item)).to be_truthy
+        expect(subject.can?(:restart_notification, other_item)).to be_truthy
+      end
+    end
+
+    context 'user in a group that can edit categories' do
+      let(:permission) do
+        create(:group_permission, reports_categories_edit: [category.id])
+      end
+
+      it 'can send a notification' do
+        expect(subject.can?(:send_notification, item)).to be_truthy
+      end
+
+      it 'can not send a notification' do
+        expect(subject.can?(:send_notification, other_item)).to be_falsy
+      end
+
+      it 'can restart a notification' do
+        expect(subject.can?(:restart_notification, item)).to be_truthy
+      end
+
+      it 'can not restart a notification' do
+        expect(subject.can?(:restart_notification, other_item)).to be_falsy
+      end
+    end
+  end
 end

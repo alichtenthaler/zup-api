@@ -60,6 +60,15 @@ module Reports::Categories
 
         optional :comment_required_when_updating_status, type: Boolean,
                  desc: 'Requires comment when updating item status'
+
+        optional :notifications, type: Boolean,
+                 desc: 'Enables or disables notification feature for categories'
+
+        optional :ordered_notifications, type: Boolean,
+                 desc: 'Enables or disables the requirement for ordered notifications (if notifications is enabled)'
+
+        optional :perimeters, type: Boolean,
+                 desc: 'Enables or disables perimeter feature for categories'
       end
 
       post do
@@ -74,7 +83,8 @@ module Reports::Categories
           :icon, :marker, :parent_id, :private, :confidential,
           :private_resolution_time, :resolution_time_enabled,
           :default_solver_group_id, :comment_required_when_forwarding,
-          :comment_required_when_updating_status,
+          :comment_required_when_updating_status, :notifications,
+          :ordered_notifications, :perimeters,
           solver_groups_ids: []
         )
 
@@ -120,14 +130,16 @@ module Reports::Categories
                  desc: 'Return subcategories with categories'
       end
       get do
-        permissions = UserAbility.for_user(current_user)
+        user = current_user || User::Guest.new
+
+        permissions = UserAbility.for_user(user)
 
         unless permissions.can?(:manage, Reports::Category)
           params[:categories_visible] = permissions.reports_categories_visible
         end
 
         garner.bind(
-          CustomCacheControl.new(Reports::Category, current_user, params)
+          CustomCacheControl.new(Reports::Category, user, params)
         ).options(expires_in: 1.day) do
           display_type = params[:display_type].to_sym if params[:display_type]
           subcategories_flat = params[:subcategories_flat]
@@ -147,7 +159,7 @@ module Reports::Categories
               categories_scope,
               only: return_fields,
               display_type: display_type,
-              user: current_user
+              user: user
             )
           }.as_json
         end
@@ -168,7 +180,8 @@ module Reports::Categories
           :parent_id, :confidential, :icon, :marker,
           :private_resolution_time, :resolution_time_enabled,
           :statuses, :default_solver_group_id, :comment_required_when_forwarding,
-          :comment_required_when_updating_status, :private,
+          :comment_required_when_updating_status, :private, :notifications,
+          :ordered_notifications, :perimeters,
           solver_groups_ids: []
         )
 

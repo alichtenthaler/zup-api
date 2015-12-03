@@ -6,6 +6,7 @@ module Search
 
       # Reports
       mount Search::Reports::Items::API
+      mount Search::Reports::Notifications::API
 
       # Inventory
       mount Search::Inventory::Items::API

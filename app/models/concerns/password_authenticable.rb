@@ -10,7 +10,8 @@ module PasswordAuthenticable
 
     validates_presence_of :password, :password_confirmation,
       if: :should_require_password_fields?
-    validates :password, length: { in: 6..16 }, if: :should_require_password_fields?
+    validates :password, length: { in: 6..16 }, confirmation: true,
+      if: :should_require_password_fields?
 
     validate :presence_of_current_password
   end

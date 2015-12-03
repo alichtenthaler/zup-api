@@ -59,8 +59,11 @@ module EncodedImageUploadable
 
           def update_#{param_name}(images)
             images.each do |image|
-              file_name = image.is_a?(Hash) ? image['file_name'] : nil
-              content   = image.is_a?(Hash) ? image['content'] : nil
+              if image.is_a?(Hash)
+                file_name = image['file_name']
+                content   = image['content']
+                title     = image['title']
+              end
 
               if image.is_a? String
                 temp_file = encoded_to_file(image)
@@ -68,9 +71,12 @@ module EncodedImageUploadable
                 temp_file.close
 
               elsif image.is_a?(Hash) && file_name && content
-                extension = file_name ? ".\#{file_name.match(/[^\.]+$/)}" : nil
+                extension = file_name ? file_name.match(/[^\.]+$/).to_s : nil
                 temp_file = encoded_to_file(content, extension)
-                self.#{param_name}.build(image: temp_file, file_name: file_name)
+
+                record = self.#{param_name}.build(image: temp_file)
+                record.title = title if record.respond_to?(:title)
+
                 temp_file.close
 
                 # If the image already exists and you are
@@ -78,10 +84,18 @@ module EncodedImageUploadable
               elsif image.is_a?(Hash) && image['id'].present?
                 if image['file'].is_a?(String)
                   temp_file = encoded_to_file(image['file'])
-                  self.#{param_name}.find(image['id']).update(image: temp_file)
+
+                  record = self.#{param_name}.find(image['id'])
+                  record.image = temp_file
+                  record.title = title if record.respond_to?(:title)
+                  record.save
+
                   temp_file.close
                 else
-                  self.#{param_name}.find(image['id']).update(image: image['file'])
+                  record = self.#{param_name}.find(image['id'])
+                  record.image = image['file']
+                  record.title = title if record.respond_to?(:title)
+                  record.save
                 end
               else
                 self.#{param_name}.build(image: image)

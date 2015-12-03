@@ -32,8 +32,14 @@ module Flows::Steps::Triggers
 
         parameters = safe_params.permit(:title, :description, :action_type, action_values: [],
                                         trigger_conditions_attributes: [:field_id, :condition_type, values: []])
-        trigger = Step.find(safe_params[:step_id]).triggers.create!(parameters.merge(user: current_user))
-        { message: I18n.t(:trigger_created), trigger: Trigger::Entity.represent(trigger, only: return_fields) }
+
+        parameters = parameters.merge(user: current_user)
+        parameters['trigger_conditions_attributes'].try(:map!) do |param|
+          param.merge(user: current_user)
+        end
+
+        trigger = Step.find(safe_params[:step_id]).triggers.create!(parameters)
+        { message: I18n.t(:trigger_created), trigger: Trigger::Entity.represent(trigger.reload, only: return_fields) }
       end
 
       desc 'Update a Trigger'
@@ -51,7 +57,12 @@ module Flows::Steps::Triggers
         parameters = safe_params.permit(:title, :description, :action_type, action_values: [],
                                         trigger_conditions_attributes: [:id, :field_id, :condition_type, values: []])
 
-        Step.find(safe_params[:step_id]).triggers.find(safe_params[:id]).update!(parameters.merge(user: current_user))
+        parameters = parameters.merge(user: current_user)
+        parameters['trigger_conditions_attributes'].try(:map!) do |param|
+          param.merge(user: current_user)
+        end
+
+        Step.find(safe_params[:step_id]).triggers.find(safe_params[:id]).update!(parameters)
         { message: I18n.t(:trigger_updated) }
       end
 

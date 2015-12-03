@@ -11,7 +11,7 @@ class ZupMailer < ActionMailer::Base
   # Disables email deliver if the
   # option is false
   def self.perform_deliveries
-    Settings.email_notification.all
+    ENV['DISABLE_EMAIL_SENDING'] != 'true'
   end
 
   protected

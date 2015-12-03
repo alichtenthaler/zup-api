@@ -40,6 +40,8 @@ RSpec.configure do |config|
   end
 
   config.filter_run_excluding broken: true
+  config.filter_run :focus
+  config.run_all_when_everything_filtered = true
 
   config.before(:each) do
     # Always create the guest group

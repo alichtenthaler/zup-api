@@ -140,12 +140,17 @@ class User < ActiveRecord::Base
     with_options(if: { display_type: 'full' }) do
       expose :email
       expose :phone
+      expose :commercial_phone
+      expose :skype
       expose :document
+      expose :birthdate
       expose :address
       expose :address_additional
       expose :postal_code
       expose :district
       expose :city
+      expose :institution
+      expose :position
       expose :device_token
       expose :device_type
       expose :created_at

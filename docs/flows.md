@@ -231,11 +231,21 @@ Method: post
 
 #### Parâmetros de Entrada
 
-| Nome        | Tipo    | Obrigatório | Descrição                                |
-|-------------|---------|-------------|------------------------------------------|
-| title       | String  | Sim         | Título do Fluxo. (até 100 caracteres)    |
-| description | Text    | Não         | Descrição do Fluxo. (até 600 caracteres) |
-| initial     | Boolean | Não         | Para definir um Fluxo como inicial.      |
+| Nome                  | Tipo    | Obrigatório | Descrição                                                 |
+|-----------------------|---------|-------------|-----------------------------------------------------------|
+| title                 | String  | Sim         | Título do Fluxo. (até 100 caracteres)                     |
+| description           | Text    | Não         | Descrição do Fluxo. (até 600 caracteres)                  |
+| initial               | Boolean | Não         | Para definir um Fluxo como inicial.                       |
+| resolution_states     | Array   | Não         | Conjunto de estado de resolução (ver campos abaixo).      |
+
+#### Parâmetros para estados de resolução
+
+| Nome                  | Tipo    | Obrigatório | Descrição                                                 |
+|-----------------------|---------|-------------|-----------------------------------------------------------|
+| title                 | String  | Sim         | Título do Fluxo. (até 100 caracteres)                     |
+| default               | Boolean | Não         | Se verdadeiro, novos casos são criados com este estado.   |
+| active                | Boolean | Não         | Se falso este estado foi excluído e não pode ser usado.   |
+
 
 #### Status HTTP
 
@@ -416,6 +426,16 @@ Method: put
 | title       | String  | Sim         | Título do Fluxo. (até 100 caracteres)    |
 | description | Text    | Não         | Descrição do Fluxo. (até 600 caracteres) |
 | initial     | Boolean | Não         | Para definir um Fluxo como inicial.      |
+| resolution_states     | Array   | Não         | Conjunto de estado de resolução (ver campos abaixo).      |
+
+#### Parâmetros para estados de resolução
+
+| Nome                  | Tipo    | Obrigatório | Descrição                                                 |
+|-----------------------|---------|-------------|-----------------------------------------------------------|
+| title                 | String  | Sim         | Título do Fluxo. (até 100 caracteres)                     |
+| default               | Boolean | Não         | Se verdadeiro, novos casos são criados com este estado.   |
+| active                | Boolean | Não         | Se falso este estado foi excluído e não pode ser usado.   |
+
 
 #### Status HTTP
 

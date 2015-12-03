@@ -109,6 +109,8 @@ describe Users::API do
           "password_confirmation": "astrongpassword",
           "name": "John Mayer",
           "phone": "11941892958",
+          "commercial_phone": "11941892958",
+          "skype": "john.mayer",
           "document": "11111111111",
           "address": "Rua Abilio Soares, 140",
           "postal_code": "04005000",

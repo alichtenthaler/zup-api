@@ -49,7 +49,7 @@ describe Flows::Steps::Triggers::API do
         end
 
         context 'successfully' do
-          let(:trigger) { step.reload.triggers.first }
+          let(:trigger) { step.reload.triggers.last }
 
           before { post "/flows/#{flow.id}/steps/#{step.id}/triggers", valid_params, auth(user) }
 
@@ -110,12 +110,13 @@ describe Flows::Steps::Triggers::API do
         end
 
         context 'successfully' do
-          let(:trigger) { step.reload.triggers.first }
+          let(:trigger) { step.reload.triggers.last }
 
           before { put "/flows/#{flow.id}/steps/#{step.id}/triggers/#{@trigger.id}", valid_params, auth(user) }
 
           it { expect(response.status).to be_a_success_request }
           it { expect(response.body).to be_a_success_message_with(I18n.t(:trigger_updated)) }
+          it { expect(trigger.title).to eql(valid_params['title']) }
 
           it 'should has update triggers_versions on Step' do
             expect(trigger.step.reload.triggers_versions).to eql(trigger.id.to_s => nil)
@@ -237,16 +238,12 @@ describe Flows::Steps::Triggers::API do
       end
 
       context 'and user can manage triggers' do
+        let(:triggers_ids) { step.reload.my_triggers.map(&:id) }
         before { put "/flows/#{flow.id}/steps/#{step.id}/triggers", valid_params, auth(user) }
 
         it { expect(response.status).to be_a_success_request }
         it { expect(response.body).to be_a_success_message_with(I18n.t(:trigger_order_updated)) }
-
-        it 'should has triggers_versions on Step' do
-          expect(step.reload.triggers_versions).to eql(@trigger2.id.to_s => nil,
-                                                        @trigger3.id.to_s => nil,
-                                                        @trigger1.id.to_s => nil)
-        end
+        it { expect(triggers_ids).to eql(valid_params[:ids]) }
       end
     end
   end

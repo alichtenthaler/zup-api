@@ -1,6 +1,8 @@
 require 'spec_helper'
 
 describe Reports::Item do
+  let(:inventory) { build(:inventory_item) }
+
   context 'validations' do
     it 'should not allow description' do
       report = build(:reports_item)
@@ -67,6 +69,41 @@ describe Reports::Item do
       report = build(:reports_item, postal_code: postal_code)
 
       expect(report).to be_valid
+    end
+  end
+
+  context '#address_for_exposure' do
+    let(:report) { build(:reports_item, address: 'Address') }
+
+    it 'show reports item address'  do
+      expect(report.address_for_exposure).to eq('Address')
+    end
+
+    it 'show inventory item address'  do
+      allow(inventory).to receive(:location) { { address: 'Inventory Address' } }
+
+      report.inventory_item = inventory
+      expect(report.address_for_exposure).to eq('Inventory Address')
+    end
+  end
+
+  context '#full_address' do
+    let(:report) { build(:reports_item, address: 'Address', number: '123', district: 'District', postal_code: '12345-678') }
+
+    it 'show full address of item' do
+      expect(report.full_address).to eq('Address, 123 - District, 12345-678')
+    end
+
+    it 'show item address without district' do
+      report = build(:reports_item, address: 'Address', number: '123', district: nil, postal_code: '12345-678')
+      expect(report.full_address).to eq('Address, 123, 12345-678')
+    end
+
+    it 'show inventory item address instead report item address' do
+      allow(inventory).to receive(:location) { { address: 'Inventory Address' } }
+
+      report.inventory_item = inventory
+      expect(report.full_address).to eq('Inventory Address, 123 - District, 12345-678')
     end
   end
 

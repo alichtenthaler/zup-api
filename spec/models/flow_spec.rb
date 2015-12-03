@@ -12,6 +12,40 @@ describe Flow do
     it { should have_many(:cases_log_entries_as_new_flow).class_name('CasesLogEntry').with_foreign_key(:new_flow_id) }
   end
 
+  describe 'search' do
+    context 'by status' do
+      let!(:pending_flow) { create(:flow) }
+      let!(:inactive_flow) { create(:flow).inactive! }
+
+      it { expect(Flow.search('pending')).to include(pending_flow) }
+      it { expect(Flow.search('pending')).not_to include(inactive_flow) }
+      it { expect(Flow.search('inactive')).not_to include(pending_flow) }
+    end
+
+    context 'by title' do
+      let!(:flow) { create(:flow) }
+
+      it { expect(Flow.search(flow.title)).to include(flow) }
+      it { expect(Flow.search(flow.title.split('').shuffle.join)).to_not include(flow) }
+    end
+
+    context 'by resolution states' do
+      let!(:flow) { create(:flow) }
+      let!(:resolution_state) { create(:resolution_state, flow: flow) }
+
+      it { expect(Flow.search(resolution_state.title)).to include(flow) }
+      it { expect(Flow.search(resolution_state.title.split('').shuffle.join)).to_not include(flow) }
+    end
+
+    context 'by steps' do
+      let!(:flow) { create(:flow) }
+      let!(:step) { create(:step, flow: flow) }
+
+      it { expect(Flow.search(step.title)).to include(flow) }
+      it { expect(Flow.search(step.title.split('').shuffle.join)).to_not include(flow) }
+    end
+  end
+
   describe 'scopes' do
     describe 'active' do
       let!(:active_flow) { create(:flow, status: 'active') }
